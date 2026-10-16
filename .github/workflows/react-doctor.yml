@@ -1,0 +1,34 @@
+name: React Doctor
+
+# React Doctor: seguridad, performance, correctitud, accesibilidad, bundle y
+# arquitectura en código React. Docs: https://www.react.doctor/ci
+# Falla solo en hallazgos de severidad `error` (warning = advisory).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+
+concurrency:
+  group: react-doctor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  react-doctor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # fetch-depth: 0 permite encontrar el merge base con la rama destino y
+      # reportar solo los issues que introdujo el PR.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: millionco/react-doctor@v2
+        with:
+          blocking: error

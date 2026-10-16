@@ -1,0 +1,54 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+concurrency:
+  group: lighthouse-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse-ci:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6.5.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Instalar pnpm
+        run: |
+          version=$(node -p 'require("./package.json").packageManager.split("@")[1]')
+          npm install --global "pnpm@$version"
+          pnpm --version
+
+      - run: pnpm install --frozen-lockfile
+
+      # Si el build/runtime necesita variables (Supabase, etc.), mapealas acá o
+      # desde Repository variables.
+      - run: pnpm build
+
+      # `pnpm lhci` corre `lhci autorun` con .lighthouserc.json: levanta
+      # `pnpm start`, audita las URLs y aplica los thresholds (no se relajan).
+      - name: Audit with Lighthouse CI
+        run: pnpm lhci
+
+      - name: Publicar reportes de Lighthouse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

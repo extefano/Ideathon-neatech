@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+
+set -e
+
+echo "Pre-push: validando calidad antes de subir..."
+
+pnpm lint
+pnpm typecheck
+pnpm test
+
+if grep -rnE 'console\.log|debugger' src app components lib hooks --include='*.ts' --include='*.tsx' 2>/dev/null; then
+  echo "Encontrados console.log o debugger en código de aplicación."
+  echo "Usá console.warn/error/info o eliminá los debugger antes de pushear."
+  exit 1
+fi
+
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+  if git diff origin/main -- package.json | grep -qE '"dependencies"|"devDependencies"|"peerDependencies"|"optionalDependencies"'; then
+    if ! git diff --name-only origin/main -- pnpm-lock.yaml | grep -q pnpm-lock.yaml; then
+      echo "Dependencias en package.json cambiaron pero pnpm-lock.yaml no."
+      echo "Corregí con pnpm install antes de pushear."
+      exit 1
+    fi
+  fi
+fi
+
+pnpm format:check
+
+echo "Pre-push OK"

@@ -1,0 +1,10 @@
+# Falsos positivos conocidos de Gitleaks (cadenas que parecen secretos).
+# Cada entrada lleva el porqué. Nunca agregar secretos reales acá.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Sin falsos positivos por ahora"
+paths = []
+regexes = []

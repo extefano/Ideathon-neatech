@@ -1,0 +1,112 @@
+name: Next.js Bundle Analysis
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+concurrency:
+  group: bundle-analysis-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  analyze:
+    name: Analyze Bundle Size
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6.5.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Instalar pnpm
+        run: |
+          version=$(node -p 'require("./package.json").packageManager.split("@")[1]')
+          npm install --global "pnpm@$version"
+          pnpm --version
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm build
+
+      - name: Report Bundle Size Summary
+        uses: actions/github-script@v7
+        env:
+          BUNDLE_BUDGET_KB: '2500'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const staticDir = path.join(process.cwd(), '.next', 'static');
+            if (!fs.existsSync(staticDir)) {
+              core.setFailed(`No existe ${path.relative(process.cwd(), staticDir)}: revisar la salida de next build.`);
+              return;
+            }
+
+            let totalBytes = 0;
+            let fileCount = 0;
+
+            function scanDir(dir) {
+              if (!fs.existsSync(dir)) return;
+              const files = fs.readdirSync(dir, { withFileTypes: true });
+              for (const file of files) {
+                const fullPath = path.join(dir, file.name);
+                if (file.isDirectory()) {
+                  scanDir(fullPath);
+                } else if (file.name.endsWith('.js') || file.name.endsWith('.css')) {
+                  const stat = fs.statSync(fullPath);
+                  totalBytes += stat.size;
+                  fileCount++;
+                }
+              }
+            }
+
+            scanDir(staticDir);
+            if (fileCount === 0) {
+              core.setFailed(`No se encontraron assets JS/CSS en ${path.relative(process.cwd(), staticDir)}.`);
+              return;
+            }
+
+            const totalKb = (totalBytes / 1024).toFixed(2);
+            const thresholdKb = Number(process.env.BUNDLE_BUDGET_KB || '2500');
+            const exceeded = parseFloat(totalKb) > thresholdKb;
+            const body = `### 📦 Bundle Analysis Report (Next.js)\n\n- **Client Static JS/CSS Assets**: ${fileCount} archivos\n- **Tamaño Total del Bundle**: **${totalKb} KB** / ${thresholdKb} KB\n- **Estado**: ${exceeded ? '❌ Excede presupuesto' : '✅ Dentro de presupuesto'}.`;
+
+            if (exceeded) {
+              core.warning(`Bundle ${totalKb} KB excede presupuesto ${thresholdKb} KB (warn, no bloquea)`);
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c => c.body.includes('Bundle Analysis Report'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }

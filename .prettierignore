@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# build output
+.next/
+out/
+build/
+dist/
+.vercel/
+
+# testing / reports
+coverage/
+.lighthouseci/
+*.lcov
+
+# env files
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+Thumbs.db
+*.pem
+*.tsbuildinfo
+next-env.d.ts
+pnpm-lock.yaml
+CHANGELOG.md
+
+# debug
+npm-debug.log*
+pnpm-debug.log*
+*.log
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+
+# AI artefacts
+.claude/
+.cursor/
+.agents/
+.mcp-cache/

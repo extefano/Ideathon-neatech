@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+set -e
+
+echo "Pre-commit: lint-staged..."
+pnpm exec lint-staged
+
+echo "Pre-commit OK"
