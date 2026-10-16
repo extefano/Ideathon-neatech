@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import type { LatLngExpression } from 'leaflet';
 import { useEffect } from 'react';
 import { MapContainer, Polygon, Polyline, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { UbicacionMapa } from '@/components/ubicacion-mapa';
 import { MIN_VERTICES, type Punto } from './dibujo';
 
 function ClickHandler({
@@ -62,6 +63,7 @@ export default function MapaDibujo({
         />
         <ClaseModoDibujo activo={activo} />
         <ClickHandler activo={activo} onAgregar={onAgregar} />
+        <UbicacionMapa poligono={puntos.length >= MIN_VERTICES ? puntos : undefined} />
         {puntos.length >= MIN_VERTICES ? (
           <Polygon positions={positions} pathOptions={estilo} />
         ) : (
