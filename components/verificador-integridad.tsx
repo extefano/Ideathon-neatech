@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent, type DragEvent } from 'react';
+import { Aviso } from '@/components/ui/aviso';
+import { Tarjeta } from '@/components/ui/tarjeta';
 
 type HashEsperado = { etiqueta: string; hash: string };
 
@@ -15,45 +17,65 @@ export function VerificadorIntegridad({ hashes }: { hashes: HashEsperado[] }) {
     match: string | null;
   } | null>(null);
 
-  async function alSeleccionarArchivo(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  async function verificar(file: File) {
     const buffer = await file.arrayBuffer();
     const hash = bufferAHex(await crypto.subtle.digest('SHA-256', buffer));
     const encontrado = hashes.find((h) => h.hash.toLowerCase() === hash) ?? null;
     setResultado({ archivo: file.name, hash, match: encontrado?.etiqueta ?? null });
   }
 
+  function alSeleccionarArchivo(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void verificar(file);
+  }
+
+  function alSoltar(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (file) void verificar(file);
+  }
+
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-5">
-      <h2 className="text-lg font-semibold">Auditar integridad de un archivo (SHA-256)</h2>
-      <p className="mt-1 text-xs text-neutral-500">
-        Arrastrá o elegí un documento (PDF del RENSPA, acta de vacunación, DT-e, etc.). El hash se
-        calcula localmente en tu navegador y se compara contra los hashes anclados en Stellar.
-      </p>
-      <input
-        type="file"
-        className="mt-3 block w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
-        onChange={(event) => void alSeleccionarArchivo(event)}
-      />
+    <Tarjeta
+      titulo="Verificá un documento"
+      descripcion="Arrastrá el PDF o la imagen para comprobar que no fue alterado."
+    >
+      <label
+        htmlFor="verificador-archivo"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={alSoltar}
+        className="rounded-tarjeta focus-within:ring-foco border-borde bg-panel flex cursor-pointer flex-col items-center justify-center border border-dashed p-6 text-center focus-within:ring-2"
+      >
+        <span className="text-sm font-semibold text-neutral-200">
+          Arrastrá un archivo acá o elegilo
+        </span>
+        <span className="mt-1 text-xs text-neutral-500">
+          El hash se calcula en tu navegador; el archivo no se sube a ningún servidor.
+        </span>
+        <input
+          id="verificador-archivo"
+          type="file"
+          className="mt-3 block w-full max-w-xs text-sm text-neutral-300"
+          onChange={alSeleccionarArchivo}
+        />
+      </label>
+
       {resultado && (
-        <div className="mt-3 text-xs">
+        <div className="mt-4 space-y-2 text-xs">
           <p className="font-mono break-all text-neutral-400">
             {resultado.archivo}: {resultado.hash}
           </p>
           {resultado.match ? (
-            <p className="border-brand/40 bg-brand/10 text-brand mt-2 rounded border p-2">
-              ✔ Íntegro — coincide con <span className="font-mono">{resultado.match}</span>{' '}
-              registrado en el contrato.
-            </p>
+            <Aviso variante="exito" titulo="Documento íntegro">
+              Coincide con “{resultado.match}” registrado en el contrato.
+            </Aviso>
           ) : (
-            <p className="mt-2 rounded border border-red-500/40 bg-red-500/10 p-2 text-red-300">
-              ✘ El archivo no coincide con ninguno de los hashes registrados en el contrato.
-            </p>
+            <Aviso variante="error" titulo="El documento no coincide">
+              No coincide con ninguno de los hashes registrados en el contrato.
+            </Aviso>
           )}
         </div>
       )}
-    </div>
+    </Tarjeta>
   );
 }
