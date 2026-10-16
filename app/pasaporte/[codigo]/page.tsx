@@ -16,7 +16,7 @@ function TxLink({ txHash }: { txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="font-mono text-xs text-sky-400 hover:text-sky-300"
+      className="text-brand hover:text-brand/80 font-mono text-xs"
     >
       {txHash.slice(0, 12)}… ↗
     </a>
@@ -69,10 +69,10 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
 
   return (
     <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <header className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-6">
+      <header className="border-brand/40 bg-brand/5 rounded-xl border p-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
-            <p className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">
+            <p className="text-brand text-xs font-semibold tracking-widest uppercase">
               Lote certificado EUDR — 3/3 sellos verificados en Stellar Soroban (testnet)
             </p>
             <h1 className="mt-2 text-3xl font-bold">{lote.codigo_lote}</h1>
@@ -96,7 +96,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             <a
               href={qrDataUrl}
               download={`${codigo}-qr.png`}
-              className="mt-2 block text-xs text-emerald-400 hover:text-emerald-300"
+              className="text-brand hover:text-brand/80 mt-2 block text-xs"
             >
               Descargar QR
             </a>
@@ -149,7 +149,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             <li>
               <span className="text-neutral-500">Descargas:</span>{' '}
               <a
-                className="text-sky-400 hover:text-sky-300"
+                className="text-brand hover:text-brand/80"
                 href={geoDataUri}
                 download={`${codigo}.geojson`}
               >
@@ -174,7 +174,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             </thead>
             <tbody>
               <tr className="border-t border-neutral-900">
-                <td className="py-2 pr-4 font-medium text-emerald-300">1 · Origen EUDR</td>
+                <td className="text-brand py-2 pr-4 font-medium">1 · Origen EUDR</td>
                 <td className="py-2 pr-4">
                   Polígono sin pérdida arbórea post-2020 (GFW real) + padrón RFID + RENSPA
                 </td>
@@ -188,7 +188,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
                 </td>
               </tr>
               <tr className="border-t border-neutral-900">
-                <td className="py-2 pr-4 font-medium text-emerald-300">2 · Sanidad y engorde</td>
+                <td className="text-brand py-2 pr-4 font-medium">2 · Sanidad y engorde</td>
                 <td className="py-2 pr-4">
                   Acta SIGSA firmada por el veterinario + ADPV {String(lote.adpv_kg_dia ?? '—')}{' '}
                   kg/día (rango INTA 0,5–1,3)
@@ -202,7 +202,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
                 </td>
               </tr>
               <tr className="border-t border-neutral-900">
-                <td className="py-2 pr-4 font-medium text-emerald-300">3 · Cierre y recepción</td>
+                <td className="text-brand py-2 pr-4 font-medium">3 · Cierre y recepción</td>
                 <td className="py-2 pr-4">
                   DT-e de tránsito + recepción en balanza fiscal del frigorífico con conciliación
                   RFID
@@ -281,7 +281,10 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
 
       <p className="text-center text-xs text-neutral-600">
         Pasaporte generado por Ideathon Neatech ·{' '}
-        <Link href={`/lotes/${codigo}`}>ver ficha interna</Link> · {urlPublica}
+        <Link href={`/lotes/${codigo}`} className="text-brand hover:text-brand/80">
+          ver ficha interna
+        </Link>{' '}
+        · {urlPublica}
       </p>
     </main>
   );

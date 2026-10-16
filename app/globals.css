@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-brand: #fdda24;
+}
+
 :root {
   color-scheme: dark;
 }

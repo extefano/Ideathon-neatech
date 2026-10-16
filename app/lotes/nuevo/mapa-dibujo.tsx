@@ -32,9 +32,9 @@ export default function MapaDibujo({
         />
         <ClickHandler onAgregar={onAgregar} />
         {puntos.length >= 3 ? (
-          <Polygon positions={positions} pathOptions={{ color: '#34d399', weight: 2 }} />
+          <Polygon positions={positions} pathOptions={{ color: '#FDDA24', weight: 2 }} />
         ) : (
-          <Polyline positions={positions} pathOptions={{ color: '#34d399', weight: 2 }} />
+          <Polyline positions={positions} pathOptions={{ color: '#FDDA24', weight: 2 }} />
         )}
       </MapContainer>
     </div>

@@ -20,7 +20,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
   }
 
   const volver = (
-    <Link href={`/lotes/${codigo}`} className="text-sm text-neutral-400 hover:text-neutral-200">
+    <Link href={`/lotes/${codigo}`} className="hover:text-brand text-sm text-neutral-400">
       ← Volver a la ficha
     </Link>
   );
@@ -62,7 +62,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
       )}
 
       {!puedeDespachar && !puedeRecepcionar && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="border-brand/40 bg-brand/10 rounded-md border p-4 text-sm text-neutral-200">
           Este lote no tiene acciones de cierre disponibles en su estado actual (
           {String(lote.estado_publicacion).replaceAll('_', ' ')}).
         </div>

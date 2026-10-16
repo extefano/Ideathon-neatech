@@ -13,7 +13,7 @@ const MapaDibujo = dynamic(() => import('./mapa-dibujo'), {
 });
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none';
+  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
 const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
 
 type CsvInfo = {
@@ -222,7 +222,7 @@ export function FormularioLote() {
             />
             <button
               type="button"
-              className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+              className="text-brand hover:text-brand/80 mt-1 text-xs"
               onClick={() =>
                 void cargarArchivoDemo(
                   renspaRef,
@@ -254,7 +254,7 @@ export function FormularioLote() {
             id="marcaLiquida"
             name="marcaLiquida"
             type="checkbox"
-            className="h-4 w-4 accent-emerald-500"
+            className="accent-brand h-4 w-4"
           />
           <label htmlFor="marcaLiquida" className="text-sm text-neutral-300">
             Marca líquida (todos los animales con la marca del vendedor)
@@ -293,7 +293,7 @@ export function FormularioLote() {
               Limpiar dibujo
             </button>
             {geo && (
-              <span className={geo.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
+              <span className={geo.ok ? 'text-brand text-xs' : 'text-xs text-red-400'}>
                 {geo.ok ? `Polígono válido — ${geo.superficieHa} ha` : geo.errors.join(' · ')}
               </span>
             )}
@@ -322,7 +322,7 @@ export function FormularioLote() {
           />
           <button
             type="button"
-            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+            className="text-brand hover:text-brand/80 mt-1 text-xs"
             onClick={() =>
               void cargarArchivoDemo(
                 csvRef,
@@ -346,7 +346,7 @@ export function FormularioLote() {
               ) : (
                 <p className="text-neutral-300">
                   {csvInfo.rows} cabezas · promedio {csvInfo.promedio} kg · rango {csvInfo.min}–
-                  {csvInfo.max} kg · <span className="text-emerald-400">{csvInfo.uniformidad}</span>
+                  {csvInfo.max} kg · <span className="text-brand">{csvInfo.uniformidad}</span>
                 </p>
               )}
             </div>
@@ -544,7 +544,7 @@ export function FormularioLote() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950 disabled:opacity-50"
         >
           {pending ? 'Validando EUDR y registrando Sello 1…' : 'Enviar lote y validar EUDR'}
         </button>

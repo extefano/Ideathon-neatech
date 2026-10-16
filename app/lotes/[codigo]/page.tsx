@@ -11,7 +11,7 @@ import { createAdminClient } from '@/lib/storage';
 export const dynamic = 'force-dynamic';
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none';
+  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
 const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
 
 type GfwConsulta = {
@@ -37,11 +37,11 @@ function Chip({ activo, texto }: { activo: boolean; texto: string }) {
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
         activo
-          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+          ? 'border-brand/40 bg-brand/10 text-brand'
           : 'border-neutral-700 bg-neutral-900 text-neutral-500'
       }`}
     >
-      <span className={`h-2 w-2 rounded-full ${activo ? 'bg-emerald-400' : 'bg-neutral-600'}`} />
+      <span className={`h-2 w-2 rounded-full ${activo ? 'bg-brand' : 'bg-neutral-600'}`} />
       {texto}
     </span>
   );
@@ -70,7 +70,7 @@ function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="text-xs text-sky-400 hover:text-sky-300"
+      className="text-brand hover:text-brand/80 text-xs"
     >
       {etiqueta} ↗
     </a>
@@ -105,7 +105,7 @@ export default async function LotePage({
 
   return (
     <main className="mx-auto max-w-6xl p-8">
-      <Link href="/" className="text-sm text-neutral-400 hover:text-neutral-200">
+      <Link href="/" className="hover:text-brand text-sm text-neutral-400">
         ← Lotes
       </Link>
 
@@ -124,7 +124,7 @@ export default async function LotePage({
         {estado === 'CERRADO_CICLO' && (
           <Link
             href={`/pasaporte/${lote.codigo_lote}`}
-            className="rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
           >
             Ver Pasaporte EUDR
           </Link>
@@ -144,12 +144,12 @@ export default async function LotePage({
       )}
 
       {estado === 'DISPONIBLE' && (
-        <section className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-5">
+        <section className="border-brand/30 bg-brand/5 mt-6 rounded-lg border p-5">
           <h2 className="text-lg font-semibold">Fondear escrow — Paso 2</h2>
           <p className="mt-1 text-sm text-neutral-300">
             Depósito de {moneda}{' '}
             {Number(lote.monto_total_financiacion ?? 0).toLocaleString('es-AR')}:{' '}
-            <span className="text-emerald-300">
+            <span className="text-brand">
               {moneda} {desembolsos.hito1.toLocaleString('es-AR')} al productor (Hito 1 · 40%)
             </span>{' '}
             · {moneda} {desembolsos.hito2.toLocaleString('es-AR')} retenido (Mes 4 · 30%) · {moneda}{' '}
@@ -182,7 +182,7 @@ export default async function LotePage({
             <div className="flex items-end">
               <button
                 type="submit"
-                className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+                className="bg-brand hover:bg-brand/90 w-full rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
               >
                 Fondear y liberar 40%
               </button>
@@ -196,7 +196,7 @@ export default async function LotePage({
       )}
 
       {estado === 'FINANCIADO_EN_ENGORDE' && !lote.seal_2_sanitary && (
-        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-500/30 bg-sky-500/5 p-5">
+        <section className="border-brand/30 bg-brand/5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-5">
           <div>
             <h2 className="text-lg font-semibold">Auditoría del Mes 4 (Paso 3)</h2>
             <p className="mt-1 text-sm text-neutral-300">
@@ -206,7 +206,7 @@ export default async function LotePage({
           </div>
           <Link
             href={`/lotes/${lote.codigo_lote}/auditoria`}
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500"
+            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
           >
             Ir a auditoría veterinaria
           </Link>
@@ -214,7 +214,7 @@ export default async function LotePage({
       )}
 
       {estado === 'FINANCIADO_EN_ENGORDE' && lote.seal_2_sanitary && (
-        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-5">
+        <section className="border-brand/30 bg-brand/5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-5">
           <div>
             <h2 className="text-lg font-semibold">Cierre de ciclo (Paso 4)</h2>
             <p className="mt-1 text-sm text-neutral-300">
@@ -224,7 +224,7 @@ export default async function LotePage({
           </div>
           <Link
             href={`/lotes/${lote.codigo_lote}/recepcion`}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
           >
             Ir a despacho y recepción
           </Link>
@@ -232,7 +232,7 @@ export default async function LotePage({
       )}
 
       {estado === 'EN_TRANSITO_A_FRIGORIFICO' && (
-        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-5">
+        <section className="border-brand/30 bg-brand/5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-5">
           <div>
             <h2 className="text-lg font-semibold">Camión en tránsito</h2>
             <p className="mt-1 text-sm text-neutral-300">
@@ -242,7 +242,7 @@ export default async function LotePage({
           </div>
           <Link
             href={`/lotes/${lote.codigo_lote}/recepcion`}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
           >
             Registrar recepción
           </Link>
@@ -267,13 +267,13 @@ export default async function LotePage({
       )}
 
       {estado === 'PENDIENTE_VALIDACION' && (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="border-brand/40 bg-brand/10 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border p-4 text-sm text-neutral-200">
           <p>La validación EUDR quedó pendiente (error de red o sin reintento).</p>
           <form action={reintentarGfwAction}>
             <input type="hidden" name="codigo" value={String(lote.codigo_lote)} />
             <button
               type="submit"
-              className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-amber-400"
+              className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
             >
               Reintentar validación EUDR
             </button>
@@ -306,7 +306,7 @@ export default async function LotePage({
             <div className="mt-3 text-sm text-neutral-300">
               <p>
                 Pérdida arbórea ≥ 2021:{' '}
-                <span className={gfw.totalLossHa === 0 ? 'text-emerald-400' : 'text-red-400'}>
+                <span className={gfw.totalLossHa === 0 ? 'text-brand' : 'text-red-400'}>
                   {gfw.totalLossHa} ha
                 </span>
               </p>
@@ -332,7 +332,7 @@ export default async function LotePage({
           <div className="mt-3 flex flex-wrap gap-3 text-xs">
             {renspaUrl && (
               <a
-                className="text-sky-400 hover:text-sky-300"
+                className="text-brand hover:text-brand/80"
                 href={renspaUrl}
                 target="_blank"
                 rel="noreferrer"
@@ -342,7 +342,7 @@ export default async function LotePage({
             )}
             {boletoUrl && (
               <a
-                className="text-sky-400 hover:text-sky-300"
+                className="text-brand hover:text-brand/80"
                 href={boletoUrl}
                 target="_blank"
                 rel="noreferrer"
