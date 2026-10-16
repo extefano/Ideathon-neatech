@@ -43,9 +43,10 @@ App Next.js + Supabase para trazabilidad ganadera con sellos EUDR en Stellar (So
 ## Entorno
 
 - Variables requeridas: ver `.env.example`.
-- Local: `.env.local` (ya creado con las credenciales del proyecto).
+- Local: `.env.local` (ya creado con las credenciales del proyecto, incluida `GFW_API_KEY`).
+- Flujo funcional de negocio documentado en `docs/flujo-completo.md`.
 - CI/CD: secrets `SUPABASE_*` y `VERCEL_*` en GitHub Actions.
-- Skills disponibles en `.agents/skills/` (mattpocock + supabase). Usalas: `/tdd`, `/diagnosing-bugs`, `/code-review`, y las de Supabase para todo lo que toque la DB.
+- Skills en `.agents/skills/`: mattpocock (`/tdd`, `/implement`, `/code-review`, `/handoff`), supabase, `teamwork-preview` (equipos multi-agente con verificación adversarial). Para orquestar workers en paralelo, usar las skills de orca (`orca-cli`, `orchestration`).
 
 ## Alcance del MVP (no negociable)
 
