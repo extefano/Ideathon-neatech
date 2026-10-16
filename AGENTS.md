@@ -49,6 +49,20 @@ App Next.js + Supabase para trazabilidad ganadera con sellos EUDR en Stellar (So
 - CI/CD: secrets `SUPABASE_*` y `VERCEL_*` en GitHub Actions.
 - Skills en `.agents/skills/`: mattpocock (`/tdd`, `/implement`, `/code-review`, `/handoff`), supabase, `teamwork-preview` (equipos multi-agente con verificación adversarial). Para orquestar workers en paralelo, usar las skills de orca (`orca-cli`, `orchestration`).
 
+## Agent skills
+
+### Issue tracker
+
+Issues y specs viven como GitHub Issues (usar `gh`). Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Vocabulario default de triage (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` en la raíz + `docs/adr/`. Ver `docs/agents/domain.md`.
+
 ## Alcance del MVP (no negociable)
 
 Los 3 sellos del flujo: (1) origen libre de deforestación, (2) sanidad/engorde, (3) cierre/faena — con trazabilidad RFID, validaciones biológicas y liquidaciones escrow. Todo lo que no aporte a ese flujo queda fuera.
