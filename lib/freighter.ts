@@ -56,9 +56,8 @@ export async function verificarEstadoCuentaUsdc(
   address: string,
 ): Promise<{ tieneTrustline: boolean; balanceUsdc: number; existe: boolean }> {
   try {
-    const { STELLAR_HORIZON_URL, USDC_ASSET_CODE, USDC_ASSET_ISSUER } = await import(
-      '@/lib/stellar-config'
-    );
+    const { STELLAR_HORIZON_URL, USDC_ASSET_CODE, USDC_ASSET_ISSUER } =
+      await import('@/lib/stellar-config');
     const res = await fetch(`${STELLAR_HORIZON_URL}/accounts/${address}`);
     if (!res.ok) return { tieneTrustline: false, balanceUsdc: 0, existe: false };
     const data = (await res.json()) as {
@@ -85,9 +84,8 @@ export async function verificarEstadoCuentaUsdc(
 /** Abre la trustline de USDC en Freighter enviando una operación changeTrust. */
 export async function crearTrustlineUsdcConFreighter(address: string): Promise<string> {
   const { Asset, Horizon, Operation, TransactionBuilder } = await import('@stellar/stellar-sdk');
-  const { STELLAR_HORIZON_URL, USDC_ASSET_CODE, USDC_ASSET_ISSUER } = await import(
-    '@/lib/stellar-config'
-  );
+  const { STELLAR_HORIZON_URL, USDC_ASSET_CODE, USDC_ASSET_ISSUER } =
+    await import('@/lib/stellar-config');
 
   const server = new Horizon.Server(STELLAR_HORIZON_URL);
   const account = await server.loadAccount(address);
@@ -106,4 +104,3 @@ export async function crearTrustlineUsdcConFreighter(address: string): Promise<s
   const result = await server.submitTransaction(txFirmada);
   return result.hash;
 }
-

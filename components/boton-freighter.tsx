@@ -44,7 +44,7 @@ export function BotonFreighter({
           href="https://www.freighter.app/"
           target="_blank"
           rel="noreferrer"
-          className="underline font-semibold text-brand hover:text-brand/80"
+          className="text-brand hover:text-brand/80 font-semibold underline"
         >
           Instalar extensión Freighter
         </a>{' '}
@@ -60,7 +60,7 @@ export function BotonFreighter({
           type="button"
           onClick={() => void handleConectar()}
           disabled={cargando}
-          className="inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:border-brand hover:text-brand disabled:opacity-50"
+          className="hover:border-brand hover:text-brand inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-200 disabled:opacity-50"
         >
           <span className={`h-2 w-2 rounded-full ${direccion ? 'bg-brand' : 'bg-neutral-500'}`} />
           {cargando

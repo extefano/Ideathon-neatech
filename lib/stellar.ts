@@ -36,7 +36,6 @@ function fallbackWallet(wallet: string | null | undefined, fallback: string): st
   return fallback;
 }
 
-
 export type StellarTx = { txHash: string; explorerUrl: string };
 
 export type CreateOriginInput = {
@@ -394,5 +393,3 @@ export async function transferirUsdcDemo(
   const result = await server.submitTransaction(tx);
   return { txHash: result.hash };
 }
-
-

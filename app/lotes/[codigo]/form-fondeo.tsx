@@ -37,9 +37,7 @@ export function FormFondeo({
 
   const esWalletReal = buyerWallet.startsWith('G') && buyerWallet.length === 56;
   const esMismaWallet = Boolean(
-    productorWallet &&
-      esWalletReal &&
-      buyerWallet.toUpperCase() === productorWallet.toUpperCase(),
+    productorWallet && esWalletReal && buyerWallet.toUpperCase() === productorWallet.toUpperCase(),
   );
 
   useEffect(() => {
@@ -87,7 +85,9 @@ export function FormFondeo({
       if (!res.ok) {
         throw new Error(res.error ?? 'No se pudo enviar USDC de prueba');
       }
-      setEstadoTx(`¡${monto} USDC acreditados con éxito para la prueba! (tx: ${res.txHash?.slice(0, 10)}…)`);
+      setEstadoTx(
+        `¡${monto} USDC acreditados con éxito para la prueba! (tx: ${res.txHash?.slice(0, 10)}…)`,
+      );
       const status = await verificarEstadoCuentaUsdc(buyerWallet);
       setBalanceUsdc(status.balanceUsdc);
     } catch (err) {
@@ -158,7 +158,9 @@ export function FormFondeo({
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-4 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <span className="font-semibold text-neutral-300">Estado de tu wallet en Testnet: </span>
+              <span className="font-semibold text-neutral-300">
+                Estado de tu wallet en Testnet:{' '}
+              </span>
               {verificandoUsdc ? (
                 <span className="text-neutral-400">Verificando USDC...</span>
               ) : tieneTrustline ? (
@@ -196,14 +198,20 @@ export function FormFondeo({
           </div>
 
           {esMismaWallet && (
-            <div className="mt-3 rounded border border-neutral-700 bg-neutral-900/90 p-2 text-brand">
-              ⚠️ <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del productor del lote. Por reglas del smart contract, debés usar una cuenta distinta en Freighter para actuar como comprador.
+            <div className="text-brand mt-3 rounded border border-neutral-700 bg-neutral-900/90 p-2">
+              ⚠️ <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del
+              productor del lote. Por reglas del smart contract, debés usar una cuenta distinta en
+              Freighter para actuar como comprador.
             </div>
           )}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} action={fondearLoteAction} className="mt-4 grid gap-3 sm:grid-cols-3">
+      <form
+        onSubmit={handleSubmit}
+        action={fondearLoteAction}
+        className="mt-4 grid gap-3 sm:grid-cols-3"
+      >
         <input type="hidden" name="codigo" value={codigoLote} />
         <div>
           <label className={claseLabel} htmlFor="buyer_nombre">
@@ -234,8 +242,8 @@ export function FormFondeo({
         <div className="flex items-end">
           <button
             type="submit"
-            disabled={cargando || esMismaWallet || (tieneTrustline === false)}
-            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-brand/90 disabled:opacity-50"
+            disabled={cargando || esMismaWallet || tieneTrustline === false}
+            className="bg-brand hover:bg-brand/90 w-full rounded-md px-4 py-2 text-sm font-semibold text-neutral-950 disabled:opacity-50"
           >
             {cargando ? 'Firmando con Freighter...' : 'Fondear y liberar 40%'}
           </button>
@@ -243,7 +251,7 @@ export function FormFondeo({
       </form>
 
       {estadoTx && (
-        <div className="rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs text-brand">
+        <div className="text-brand rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs">
           {estadoTx}
         </div>
       )}

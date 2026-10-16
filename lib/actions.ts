@@ -360,7 +360,9 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
           args: argsFondeo({ codigoLote: codigo, compradorWallet: buyerWallet, monto }),
         });
       } catch (err) {
-        volverConError(`Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`);
+        volverConError(
+          `Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
     txHash = txHashEnviado;
@@ -536,7 +538,9 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
           }),
         });
       } catch (err) {
-        volverConError(`Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`);
+        volverConError(
+          `Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
     txHash = txHashEnviado;
@@ -742,7 +746,9 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
           }),
         });
       } catch (err) {
-        volverConError(`Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`);
+        volverConError(
+          `Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
     txHash = txHashEnviado;
@@ -836,4 +842,3 @@ export async function solicitarUsdcDemoAction(
     };
   }
 }
-

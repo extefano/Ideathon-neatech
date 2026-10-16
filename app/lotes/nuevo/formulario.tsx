@@ -176,7 +176,8 @@ export function FormularioLote() {
               placeholder="G... (por defecto usa la wallet admin)"
             />
             <p className="mt-1 text-xs text-stone-500">
-              Si no contás con una wallet Stellar, se usará la wallet del sistema para registrar el lote.
+              Si no contás con una wallet Stellar, se usará la wallet del sistema para registrar el
+              lote.
             </p>
           </div>
         </div>
@@ -400,7 +401,7 @@ export function FormularioLote() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              className="mt-1 text-xs text-brand hover:text-brand/80"
+              className="text-brand hover:text-brand/80 mt-1 text-xs"
               onClick={() =>
                 void cargarArchivoDemo(
                   csvRef,

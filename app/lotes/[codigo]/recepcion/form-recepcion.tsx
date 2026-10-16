@@ -139,7 +139,9 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
         />
         <div className="mt-2">
           <BotonFreighter
-            walletActual={buyerWallet.startsWith('G') && buyerWallet.length === 56 ? buyerWallet : ''}
+            walletActual={
+              buyerWallet.startsWith('G') && buyerWallet.length === 56 ? buyerWallet : ''
+            }
             onConectado={(w) => setBuyerWallet(w)}
           />
         </div>

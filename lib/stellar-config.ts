@@ -25,4 +25,3 @@ export const explorerContractUrl = (contractId: string) =>
 
 export const explorerCuentaUrl = (address: string) =>
   `https://stellar.expert/explorer/${EXPERT_RED}/account/${address}`;
-
