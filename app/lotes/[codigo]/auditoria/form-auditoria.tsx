@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { BotonFreighter } from '@/components/boton-freighter';
 import { registrarAuditoriaAction } from '@/lib/actions';
 
 const claseInput =
@@ -20,6 +22,7 @@ async function cargarEnInput(inputId: string, url: string, nombre: string, tipo:
 import type { PerfilUsuario } from '@/lib/auth';
 
 export function FormAuditoria({ codigo, user }: { codigo: string; user?: PerfilUsuario }) {
+  const [vetWallet, setVetWallet] = useState(user?.wallet ?? 'GDEMO-VETERINARIO');
   return (
     <form
       action={registrarAuditoriaAction}
@@ -60,8 +63,15 @@ export function FormAuditoria({ codigo, user }: { codigo: string; user?: PerfilU
             id="vet_wallet"
             name="vet_wallet"
             className={claseInput}
-            defaultValue={user?.wallet ?? 'GDEMO-VETERINARIO'}
+            value={vetWallet}
+            onChange={(e) => setVetWallet(e.target.value)}
           />
+          <div className="mt-2">
+            <BotonFreighter
+              walletActual={vetWallet.startsWith('G') && vetWallet.length === 56 ? vetWallet : ''}
+              onConectado={(w) => setVetWallet(w)}
+            />
+          </div>
         </div>
       </div>
 

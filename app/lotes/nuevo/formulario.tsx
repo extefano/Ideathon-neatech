@@ -6,6 +6,19 @@ import { crearLoteAction, type FormState } from '@/lib/actions';
 import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
 import { CATEGORIAS, MONEDAS, RAZAS, TIPOS_OPERACION, TIPOS_RODEO } from '@/lib/domain';
 import { parseAndValidatePolygon } from '@/lib/geo';
+import {
+  ESTADO_DIBUJO_INICIAL,
+  MIN_VERTICES,
+  activarDibujo,
+  agregarPunto,
+  cancelarDibujo,
+  deshacerPunto,
+  guardarDibujo,
+  puedeGuardar,
+  puntosDesdePoligono,
+  puntosVisibles,
+  type EstadoDibujo,
+} from './dibujo';
 
 import type { PerfilUsuario } from '@/lib/auth';
 
@@ -27,24 +40,13 @@ type CsvInfo = {
   errors: string[];
 };
 
-function extraerPuntos(texto: string): [number, number][] {
-  if (!texto) return [];
-  try {
-    const parsed = JSON.parse(texto) as { coordinates?: unknown; geometry?: unknown };
-    const geom = (parsed.geometry ?? parsed) as { type?: string; coordinates?: number[][][] };
-    if (geom.type !== 'Polygon' || !geom.coordinates?.[0]) return [];
-    return geom.coordinates[0].slice(0, -1).map(([lng, lat]) => [lat, lng]);
-  } catch {
-    return [];
-  }
-}
-
 export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(crearLoteAction, {
     errors: [],
   });
 
   const [poligonoTexto, setPoligonoTexto] = useState('');
+  const [dibujo, setDibujo] = useState<EstadoDibujo>(ESTADO_DIBUJO_INICIAL);
   const [csvInfo, setCsvInfo] = useState<CsvInfo | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const renspaRef = useRef<HTMLInputElement>(null);
@@ -53,17 +55,8 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
     () => (poligonoTexto ? parseAndValidatePolygon(poligonoTexto) : null),
     [poligonoTexto],
   );
-  const puntos = useMemo(() => extraerPuntos(poligonoTexto), [poligonoTexto]);
-
-  function actualizarPuntos(lista: [number, number][]) {
-    if (lista.length === 0) {
-      setPoligonoTexto('');
-      return;
-    }
-    const ring = lista.map(([lat, lng]) => [lng, lat]);
-    ring.push([lista[0][1], lista[0][0]]);
-    setPoligonoTexto(JSON.stringify({ type: 'Polygon', coordinates: [ring] }));
-  }
+  const puntosGuardados = useMemo(() => puntosDesdePoligono(poligonoTexto), [poligonoTexto]);
+  const puntosMapa = puntosVisibles(dibujo, puntosGuardados);
 
   async function inspeccionarCsv(file: File) {
     const text = await file.text();
@@ -117,6 +110,24 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
     if (despues) await despues(file);
   }
 
+  async function generarCaravanasUnicasDemo() {
+    const prefijo = Date.now().toString().slice(-6);
+    const lineas = ['caravana_rfid,peso_kg'];
+    for (let i = 1; i <= 30; i++) {
+      const rfid = `032${prefijo}${String(i).padStart(6, '0')}`;
+      const peso = Math.round(195 + Math.random() * 15);
+      lineas.push(`${rfid},${peso}`);
+    }
+    const blob = new Blob([lineas.join('\n')], { type: 'text/csv' });
+    const file = new File([blob], `pesadas-demo-${prefijo}.csv`, { type: 'text/csv' });
+    if (csvRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      csvRef.current.files = dt.files;
+    }
+    await inspeccionarCsv(file);
+  }
+
   return (
     <form action={formAction} className="mt-8 space-y-8">
       {state.errors.length > 0 && (
@@ -160,15 +171,19 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
           </div>
           <div>
             <label className={claseLabel} htmlFor="productor_wallet">
-              Wallet Stellar (demo)
+              Wallet Stellar (G... opcional)
             </label>
             <input
               id="productor_wallet"
               name="productor_wallet"
               className={claseInput}
-              placeholder="GDEMO-PRODUCTOR"
+              placeholder="G... (por defecto usa la wallet admin)"
               defaultValue={user?.wallet ?? 'GDEMO-PRODUCTOR'}
             />
+            <p className="mt-1 text-xs text-stone-500">
+              Si no contás con una wallet Stellar, se usará la wallet del sistema para registrar el
+              lote.
+            </p>
           </div>
         </div>
 
@@ -269,23 +284,71 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
         <div className="mt-6">
           <p className={claseLabel}>Polígono del establecimiento *</p>
           <p className="text-xs text-neutral-500">
-            Dibujá el potrero haciendo clic en el mapa satelital (mínimo 3 vértices), pegá un
-            GeoJSON o cargá un archivo. Se valida el cierre y se calcula la superficie.
+            Activá <span className="text-neutral-300">Dibujar polígono</span> y hacé clic en el mapa
+            satelital (mínimo 3 vértices); después{' '}
+            <span className="text-neutral-300">Guardar polígono</span>. También podés pegar un
+            GeoJSON o cargar un archivo. Se valida el cierre y se calcula la superficie.
           </p>
           <div className="mt-2">
             <MapaDibujo
-              puntos={puntos}
-              onAgregar={(punto) => actualizarPuntos([...puntos, punto])}
+              puntos={puntosMapa}
+              activo={dibujo.activo}
+              onAgregar={(punto) => setDibujo((estado) => agregarPunto(estado, punto))}
             />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-pressed={dibujo.activo}
+              disabled={dibujo.activo}
+              className={`rounded border px-3 py-1.5 text-xs ${
+                dibujo.activo
+                  ? 'border-brand bg-brand/15 text-brand font-semibold'
+                  : 'border-neutral-700 text-neutral-200 hover:border-neutral-500'
+              }`}
+              onClick={() => setDibujo(activarDibujo(puntosGuardados))}
+            >
+              {dibujo.activo ? 'Dibujando…' : 'Dibujar polígono'}
+            </button>
+            <button
+              type="button"
+              disabled={!puedeGuardar(dibujo)}
+              className="border-brand bg-brand hover:bg-brand/90 rounded border px-3 py-1.5 text-xs font-semibold text-neutral-950 disabled:opacity-40"
+              onClick={() => {
+                const resultado = guardarDibujo(dibujo);
+                if (resultado.poligono) setPoligonoTexto(resultado.poligono);
+                setDibujo(resultado.estado);
+              }}
+            >
+              Guardar polígono
+            </button>
+            <button
+              type="button"
+              disabled={!dibujo.activo || dibujo.borrador.length === 0}
+              className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500 disabled:opacity-40 disabled:hover:border-neutral-700"
+              onClick={() => setDibujo((estado) => deshacerPunto(estado))}
+            >
+              Deshacer último punto
+            </button>
+            {dibujo.activo && (
+              <button
+                type="button"
+                className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500"
+                onClick={() => setDibujo(cancelarDibujo())}
+              >
+                Cancelar
+              </button>
+            )}
             <button
               type="button"
               className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500"
               onClick={() =>
                 void fetch('/demo/poligono.geojson')
                   .then((r) => r.text())
-                  .then(setPoligonoTexto)
+                  .then((texto) => {
+                    setPoligonoTexto(texto);
+                    setDibujo(cancelarDibujo());
+                  })
               }
             >
               Usar polígono de demo
@@ -293,7 +356,10 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <button
               type="button"
               className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500"
-              onClick={() => setPoligonoTexto('')}
+              onClick={() => {
+                setPoligonoTexto('');
+                setDibujo(cancelarDibujo());
+              }}
             >
               Limpiar dibujo
             </button>
@@ -303,10 +369,22 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               </span>
             )}
           </div>
+          {dibujo.activo && (
+            <p
+              className={`mt-1 text-xs ${
+                dibujo.borrador.length >= MIN_VERTICES ? 'text-brand' : 'text-neutral-400'
+              }`}
+            >
+              {dibujo.borrador.length >= MIN_VERTICES
+                ? `${dibujo.borrador.length} vértices — listo para guardar`
+                : `Necesitás al menos ${MIN_VERTICES} vértices para guardar (llevás ${dibujo.borrador.length})`}
+            </p>
+          )}
           <textarea
-            className={`${claseInput} mt-2 h-24 font-mono text-xs`}
+            className={`${claseInput} mt-2 h-24 font-mono text-xs disabled:opacity-60`}
             placeholder='{"type":"Polygon","coordinates":[[[-58.04,-29.16],...]]}'
             value={poligonoTexto}
+            disabled={dibujo.activo}
             onChange={(event) => setPoligonoTexto(event.target.value)}
           />
           <input type="hidden" name="poligono" value={poligonoTexto} />
@@ -325,21 +403,31 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             className={claseInput}
             onChange={(event) => void onCsvChange(event)}
           />
-          <button
-            type="button"
-            className="text-brand hover:text-brand/80 mt-1 text-xs"
-            onClick={() =>
-              void cargarArchivoDemo(
-                csvRef,
-                '/demo/pesadas-inicial.csv',
-                'pesadas-inicial.csv',
-                'text/csv',
-                inspeccionarCsv,
-              )
-            }
-          >
-            Usar CSV de demo (30 cabezas ~200 kg)
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="text-brand hover:text-brand/80 mt-1 text-xs"
+              onClick={() =>
+                void cargarArchivoDemo(
+                  csvRef,
+                  '/demo/pesadas-inicial.csv',
+                  'pesadas-inicial.csv',
+                  'text/csv',
+                  inspeccionarCsv,
+                )
+              }
+            >
+              Usar CSV de demo (30 cabezas ~200 kg)
+            </button>
+            <span className="text-xs text-neutral-600">·</span>
+            <button
+              type="button"
+              className="mt-1 text-xs text-neutral-300 hover:text-white"
+              onClick={() => void generarCaravanasUnicasDemo()}
+            >
+              ✨ Generar caravanas únicas nuevas
+            </button>
+          </div>
           {csvInfo && (
             <div className="mt-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-xs">
               {csvInfo.errors.length > 0 ? (

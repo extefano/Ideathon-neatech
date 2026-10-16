@@ -7,3 +7,9 @@
 :root {
   color-scheme: dark;
 }
+
+.leaflet-container.leaflet-dibujo-activo,
+.leaflet-container.leaflet-dibujo-activo .leaflet-grab,
+.leaflet-container.leaflet-dibujo-activo .leaflet-interactive {
+  cursor: crosshair;
+}

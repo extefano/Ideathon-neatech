@@ -46,3 +46,8 @@ pnpm-debug.log*
 .cursor/
 .agents/
 .mcp-cache/
+
+# Rust build target
+contracts/target/
+contracts/**/target/
+
