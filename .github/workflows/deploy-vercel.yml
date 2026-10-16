@@ -26,7 +26,9 @@ jobs:
       # (Conectar el repo en el dashboard de Vercel tambien deploya por Git integration.)
       - name: Sin VERCEL_TOKEN
         if: ${{ env.VERCEL_TOKEN == '' }}
-        run: echo "VERCEL_TOKEN no configurado: deploy por workflow desactivado. Cargar el secret o conectar el repo en el dashboard de Vercel."
+        run: |
+          echo "VERCEL_TOKEN no configurado: deploy por workflow desactivado."
+          echo "Cargar el secret o conectar el repo en el dashboard de Vercel."
 
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         if: ${{ env.VERCEL_TOKEN != '' }}
