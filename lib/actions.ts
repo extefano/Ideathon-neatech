@@ -151,8 +151,14 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
 
   const productorNombre = String(formData.get('productor_nombre') ?? '').trim();
   const productorCuit = String(formData.get('productor_cuit') ?? '').trim();
-  const productorWallet =
-    String(formData.get('productor_wallet') ?? '').trim() || 'GDEMO-PRODUCTOR';
+  const productorWallet = String(formData.get('productor_wallet') ?? '').trim();
+  if (!esWalletStellar(productorWallet)) {
+    return {
+      errors: [
+        'Conectá tu wallet Freighter en Stellar Testnet (dirección G...) antes de registrar el lote.',
+      ],
+    };
+  }
 
   let productorId: string | null = null;
   if (productorNombre) {
@@ -169,6 +175,10 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
       .select('id')
       .single();
     productorId = productor?.id ?? null;
+  }
+
+  if (user) {
+    await admin.from('perfiles').update({ wallet: productorWallet }).eq('id', user.id);
   }
 
   const monto = data.montoTotalFinanciacion;
@@ -317,7 +327,7 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
     loteId: String(lote.id),
     codigoLote: codigo,
     poligono: lote.poligono_geojson,
-    productorWallet: String(lote.productor_wallet ?? 'GDEMO-PRODUCTOR'),
+    productorWallet: String(lote.productor_wallet ?? ''),
     renspaDocHash: String(lote.renspa_doc_hash ?? ''),
     rfidHash: String(lote.rfid_list_hash ?? ''),
     headCount: Number(lote.cantidad_cabezas ?? 0),
@@ -363,10 +373,13 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
   if (lote.estado_publicacion !== 'DISPONIBLE' || !lote.seal_1_eudr) {
     volverConError('El lote no esta disponible para fondear');
   }
-  if (!buyerWallet) {
-    volverConError('Ingresa la wallet del comprador');
+  if (!buyerWallet || !esWalletStellar(buyerWallet)) {
+    volverConError('Conectá tu wallet Freighter en Stellar Testnet (G...) para fondear el lote');
   }
-  if (buyerWallet === lote.productor_wallet) {
+  if (
+    lote.productor_wallet &&
+    buyerWallet.toUpperCase() === String(lote.productor_wallet).toUpperCase()
+  ) {
     volverConError('La wallet del comprador no puede ser la del productor (auto-compra bloqueada)');
   }
 
@@ -377,7 +390,7 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
   let txHash: string;
 
   if (txHashEnviado) {
-    if (process.env.STELLAR_MODE === 'real') {
+    if (process.env.STELLAR_MODE === 'real' && process.env.NEXT_PUBLIC_STELLAR_CONTRACT_ID) {
       try {
         await verificarTxOnChain({
           txHash: txHashEnviado,
@@ -410,6 +423,10 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
     },
     { onConflict: 'wallet' },
   );
+
+  if (user) {
+    await admin.from('perfiles').update({ wallet: buyerWallet }).eq('id', user.id);
+  }
 
   await admin.from('movimientos_escrow').insert([
     {
@@ -445,7 +462,7 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
   const codigo = String(formData.get('codigo') ?? '');
   const vetNombre = String(formData.get('vet_nombre') ?? '').trim();
   const matricula = String(formData.get('matricula') ?? '').trim();
-  const vetWallet = String(formData.get('vet_wallet') ?? '').trim() || 'GDEMO-VETERINARIO';
+  const vetWallet = String(formData.get('vet_wallet') ?? '').trim();
   const observaciones = String(formData.get('observaciones') ?? '').trim();
   const diasCiclo = Number(formData.get('dias_ciclo') ?? 120) || 120;
 
@@ -459,6 +476,12 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
 
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  if (!vetWallet || !esWalletStellar(vetWallet)) {
+    volverConError(
+      'Conectá tu wallet Freighter en Stellar Testnet (G...) para firmar la auditoría',
+    );
+  }
 
   const user = await getCurrentUser();
   if (user && user.rol !== 'VETERINARIO') {
@@ -555,7 +578,7 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
   let txHash: string;
 
   if (txHashEnviado) {
-    if (process.env.STELLAR_MODE === 'real') {
+    if (process.env.STELLAR_MODE === 'real' && process.env.NEXT_PUBLIC_STELLAR_CONTRACT_ID) {
       try {
         await verificarTxOnChain({
           txHash: txHashEnviado,
@@ -587,6 +610,10 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
       midtermRfidWeightsHash: csvHash,
     });
     txHash = tx.txHash;
+  }
+
+  if (user) {
+    await admin.from('perfiles').update({ wallet: vetWallet }).eq('id', user.id);
   }
 
   await admin.from('auditorias_veterinarias').insert({
@@ -709,6 +736,19 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     volverConError('El lote no esta en transito a frigorifico');
   }
 
+  const effectiveBuyerWallet = buyerWallet || String(lote.comprador_wallet ?? '');
+  if (!effectiveBuyerWallet || !esWalletStellar(effectiveBuyerWallet)) {
+    volverConError(
+      'Conectá tu wallet Freighter en Stellar Testnet (G...) para confirmar la recepción',
+    );
+  }
+  if (
+    lote.productor_wallet &&
+    effectiveBuyerWallet.toUpperCase() === String(lote.productor_wallet).toUpperCase()
+  ) {
+    volverConError('La wallet del comprador no puede ser la del productor (auto-compra bloqueada)');
+  }
+
   const archivoCsv = formData.get('csv_recepcion');
   if (!(archivoCsv instanceof File) || archivoCsv.size === 0) {
     volverConError('Subi el CSV de la balanza fiscal de recepcion');
@@ -770,11 +810,10 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     .maybeSingle();
 
   const txHashEnviado = String(formData.get('tx_hash') ?? '').trim();
-  const effectiveBuyerWallet = buyerWallet || String(lote.comprador_wallet ?? 'GDEMO-FRIGORIFICO');
   let txHash: string;
 
   if (txHashEnviado) {
-    if (process.env.STELLAR_MODE === 'real') {
+    if (process.env.STELLAR_MODE === 'real' && process.env.NEXT_PUBLIC_STELLAR_CONTRACT_ID) {
       try {
         await verificarTxOnChain({
           txHash: txHashEnviado,
@@ -805,6 +844,10 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
       shortfallDeduction: liquidacion.deduccion,
     });
     txHash = tx.txHash;
+  }
+
+  if (user) {
+    await admin.from('perfiles').update({ wallet: effectiveBuyerWallet }).eq('id', user.id);
   }
 
   const datosRecepcion = {

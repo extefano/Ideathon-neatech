@@ -15,6 +15,7 @@ import type { EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { resumirLote } from '@/lib/estado-lote';
 import { getLoteCompleto } from '@/lib/queries';
+import { esWalletStellar } from '@/lib/stellar-args';
 import { createAdminClient } from '@/lib/storage';
 import { FormFondeo } from './form-fondeo';
 
@@ -416,13 +417,25 @@ export default async function LotePage({
                     Productor y trazabilidad
                   </h3>
                   <p>
-                    Productor: {productor?.nombre_razon_social ?? lote.productor_wallet ?? '—'}
+                    Productor:{' '}
+                    {productor?.nombre_razon_social ??
+                      (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                        ? String(lote.productor_wallet)
+                        : 'Productor registrado')}
                     {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
                   </p>
-                  <p className="font-mono text-xs text-neutral-500">{lote.productor_wallet}</p>
+                  <p className="font-mono text-xs text-neutral-500">
+                    {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                      ? String(lote.productor_wallet)
+                      : 'Wallet pendiente de vinculación en Freighter'}
+                  </p>
                   <p className="text-xs text-neutral-500">
                     {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
                     {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
+                    (Pasos 3 y 4)
                   </p>
                 </div>
               </div>

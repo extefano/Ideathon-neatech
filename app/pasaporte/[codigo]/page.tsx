@@ -10,8 +10,14 @@ import { Tarjeta } from '@/components/ui/tarjeta';
 import { VerificadorIntegridad } from '@/components/verificador-integridad';
 import { construirDocumentos } from '@/lib/documentos-hashes';
 import { getLoteCompleto } from '@/lib/queries';
+import { esWalletStellar } from '@/lib/stellar-args';
 
 export const dynamic = 'force-dynamic';
+
+function mostrarWalletPublica(wallet: unknown): string {
+  if (typeof wallet === 'string' && esWalletStellar(wallet)) return wallet;
+  return 'Cuenta verificada (testnet)';
+}
 
 function fecha(iso?: string | null): string {
   if (!iso) return '—';
@@ -234,20 +240,20 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
                 <li>
                   Productor:{' '}
                   <span className="font-mono text-xs text-neutral-400">
-                    {lote.productor_wallet}
+                    {mostrarWalletPublica(lote.productor_wallet)}
                   </span>
                 </li>
                 <li>
                   Veterinario acreditado: {auditoria?.vet_nombre ?? '—'} (
                   {auditoria?.matricula ?? '—'}) ·{' '}
                   <span className="font-mono text-xs text-neutral-400">
-                    {auditoria?.vet_wallet ?? '—'}
+                    {mostrarWalletPublica(auditoria?.vet_wallet)}
                   </span>
                 </li>
                 <li>
                   Frigorífico:{' '}
                   <span className="font-mono text-xs text-neutral-400">
-                    {lote.comprador_wallet ?? '—'}
+                    {mostrarWalletPublica(lote.comprador_wallet)}
                   </span>
                 </li>
               </ul>

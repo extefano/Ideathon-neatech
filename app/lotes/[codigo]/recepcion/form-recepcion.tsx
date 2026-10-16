@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { BotonFreighter } from '@/components/boton-freighter';
+import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
+import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
 import { despacharLoteAction, recepcionLoteAction } from '@/lib/actions';
 import type { PerfilUsuario } from '@/lib/auth';
+import { esWalletStellar } from '@/lib/stellar-args';
+import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
+import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
   'w-full rounded-control min-h-11 border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none';
@@ -74,10 +78,89 @@ export function FormDespacho({ codigo }: { codigo: string; user?: PerfilUsuario 
   );
 }
 
-export function FormRecepcion({ codigo, user }: { codigo: string; user?: PerfilUsuario }) {
-  const [buyerWallet, setBuyerWallet] = useState(user?.wallet ?? 'GDEMO-FRIGORIFICO');
+export function FormRecepcion({
+  codigo,
+  user,
+  productorWallet,
+  montoHito3Usdc,
+}: {
+  codigo: string;
+  user?: PerfilUsuario;
+  productorWallet?: string;
+  montoHito3Usdc?: number;
+}) {
+  const walletInicial = user?.wallet && esWalletStellar(user.wallet) ? user.wallet : '';
+  const [walletState, setWalletState] = useState<EstadoWalletConectada | null>(
+    walletInicial
+      ? { address: walletInicial, network: 'TESTNET', esTestnet: true, metodo: 'extension' }
+      : null,
+  );
+  const [cargando, setCargando] = useState(false);
+  const [estadoTx, setEstadoTx] = useState<string | null>(null);
+  const [errorTx, setErrorTx] = useState<string | null>(null);
+
+  const buyerWallet = walletState?.address ?? '';
+  const esWalletReal = esWalletStellar(buyerWallet);
+  const esTestnet = walletState?.esTestnet ?? true;
+  const esMismaWallet = Boolean(
+    productorWallet && esWalletReal && buyerWallet.toUpperCase() === productorWallet.toUpperCase(),
+  );
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+
+    if (!esWalletReal || !esTestnet) {
+      setErrorTx(
+        'Conectá tu wallet Freighter en Stellar TESTNET para confirmar la recepción y liquidar el lote.',
+      );
+      return;
+    }
+
+    if (esMismaWallet) {
+      setErrorTx(
+        'Auto-compra bloqueada: la wallet del frigorífico/comprador no puede ser la misma que la del productor.',
+      );
+      return;
+    }
+
+    setCargando(true);
+    setErrorTx(null);
+    setEstadoTx('Firmando liquidación final USDC en Freighter (Sello 3)...');
+
+    try {
+      const formData = new FormData(form);
+      formData.set('buyer_wallet', buyerWallet);
+
+      const signer =
+        walletState?.metodo === 'walletconnect'
+          ? (xdr: string, opts: { address: string }) =>
+              firmarXdrConWalletConnect(xdr, { address: opts.address })
+          : undefined;
+
+      const pago = await ejecutarPagoUsdcTestnet({
+        sourceAddress: buyerWallet,
+        destinationAddress: productorWallet,
+        amountUsdc: montoHito3Usdc ?? 1,
+        memoText: `SEAL3:${codigo}`,
+        signer,
+      });
+
+      formData.set('tx_hash', pago.txHash);
+      setEstadoTx(
+        `¡Liquidación firmada en Stellar Testnet! (${pago.txHash.slice(0, 10)}…). Registrando cierre de ciclo...`,
+      );
+
+      await recepcionLoteAction(formData);
+    } catch (err) {
+      setErrorTx(err instanceof Error ? err.message : String(err));
+      setCargando(false);
+      setEstadoTx(null);
+    }
+  };
+
   return (
-    <form action={recepcionLoteAction} className="space-y-4">
+    <form onSubmit={(e) => void handleSubmit(e)} action={recepcionLoteAction} className="space-y-4">
       <input type="hidden" name="codigo" value={codigo} />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -136,29 +219,41 @@ export function FormRecepcion({ codigo, user }: { codigo: string; user?: PerfilU
           </button>
         </div>
       </div>
+
       <div>
-        <label className={claseLabel} htmlFor="buyer_wallet">
-          Wallet Stellar del frigorífico (firma la recepción)
-        </label>
-        <input
-          id="buyer_wallet"
+        <ConnectWallet
           name="buyer_wallet"
-          className={claseInput}
-          value={buyerWallet}
-          onChange={(e) => setBuyerWallet(e.target.value)}
+          label="Wallet Stellar del frigorífico (firma la recepción) *"
+          initialAddress={walletInicial}
+          onChange={(w) => setWalletState(w)}
         />
-        <div className="mt-2">
-          <BotonFreighter
-            walletActual={
-              buyerWallet.startsWith('G') && buyerWallet.length === 56 ? buyerWallet : ''
-            }
-            onConectado={(w) => setBuyerWallet(w)}
-          />
-        </div>
       </div>
-      <BotonConEstado cargando="Confirmando recepción…">
-        Confirmar recepción y liberar 30 %
-      </BotonConEstado>
+
+      {esMismaWallet && (
+        <Aviso variante="alerta" titulo="Auto-compra bloqueada">
+          La wallet del comprador no puede ser igual a la del productor del lote.
+        </Aviso>
+      )}
+
+      {estadoTx && (
+        <Aviso variante="info" titulo="Transacción Stellar Testnet">
+          {estadoTx}
+        </Aviso>
+      )}
+
+      {errorTx && (
+        <Aviso variante="error" titulo="Error de transacción">
+          {errorTx}
+        </Aviso>
+      )}
+
+      <Boton
+        type="submit"
+        cargando={cargando}
+        disabled={cargando || !esWalletReal || !esTestnet || esMismaWallet}
+      >
+        {cargando ? 'Firmando en Freighter…' : 'Confirmar recepción y liberar 30 % final'}
+      </Boton>
     </form>
   );
 }

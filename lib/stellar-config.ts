@@ -15,7 +15,15 @@ export const STELLAR_HORIZON_URL =
   process.env.NEXT_PUBLIC_STELLAR_HORIZON_URL ?? 'https://horizon-testnet.stellar.org';
 
 export const USDC_ASSET_CODE = 'USDC';
-export const USDC_ASSET_ISSUER = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+export const USDC_ASSET_ISSUER =
+  process.env.NEXT_PUBLIC_USDC_ISSUER_TESTNET ??
+  'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
+
+export const STELLAR_ESCROW_WALLET =
+  process.env.NEXT_PUBLIC_STELLAR_ESCROW_WALLET ?? USDC_ASSET_ISSUER;
+
+export const WALLETCONNECT_PROJECT_ID =
+  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? 'b56e18d47c72ab683b10814fe9495694';
 
 export const explorerTxUrl = (txHash: string) =>
   `https://stellar.expert/explorer/${EXPERT_RED}/tx/${txHash}`;

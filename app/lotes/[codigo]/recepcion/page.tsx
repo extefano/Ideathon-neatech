@@ -4,6 +4,7 @@ import { Aviso } from '@/components/ui/aviso';
 import { Pasos } from '@/components/ui/pasos';
 import { Tarjeta } from '@/components/ui/tarjeta';
 import { getCurrentUser } from '@/lib/auth';
+import { calcularDesembolsos } from '@/lib/escrow';
 import { getLoteCompleto } from '@/lib/queries';
 import { FormDespacho, FormRecepcion } from './form-recepcion';
 
@@ -96,7 +97,14 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
           ) : (
             <div className="space-y-4">
               <CredencialSesion user={user} />
-              <FormRecepcion codigo={codigo} user={user} />
+              <FormRecepcion
+                codigo={codigo}
+                user={user}
+                productorWallet={lote.productor_wallet ?? undefined}
+                montoHito3Usdc={
+                  calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0)).hito3
+                }
+              />
             </div>
           )}
         </Tarjeta>

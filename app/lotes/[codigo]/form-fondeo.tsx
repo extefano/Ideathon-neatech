@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { signTransaction as signWithFreighter } from '@stellar/freighter-api';
-import { BotonFreighter } from '@/components/boton-freighter';
+import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
 import { invocarContrato } from '@/lib/stellar-invoke';
-import { argsFondeo } from '@/lib/stellar-args';
+import { argsFondeo, esWalletStellar } from '@/lib/stellar-args';
 import { STELLAR_CONTRACT_ID } from '@/lib/stellar-config';
 import { fondearLoteAction, solicitarUsdcDemoAction } from '@/lib/actions';
 import { crearTrustlineUsdcConFreighter, verificarEstadoCuentaUsdc } from '@/lib/freighter';
+import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
+import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
   'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
@@ -26,8 +28,15 @@ export function FormFondeo({
   buyerNombreInicial?: string;
   buyerWalletInicial?: string;
 }) {
-  const [buyerWallet, setBuyerWallet] = useState(buyerWalletInicial ?? 'GDEMO-FRIGORIFICO');
-  const [buyerNombre, setBuyerNombre] = useState(buyerNombreInicial ?? 'Frigorífico Demo SA');
+  const walletInicialValida =
+    buyerWalletInicial && esWalletStellar(buyerWalletInicial) ? buyerWalletInicial : '';
+
+  const [walletState, setWalletState] = useState<EstadoWalletConectada | null>(
+    walletInicialValida
+      ? { address: walletInicialValida, network: 'TESTNET', esTestnet: true, metodo: 'extension' }
+      : null,
+  );
+  const [buyerNombre, setBuyerNombre] = useState(buyerNombreInicial ?? 'Frigorífico Exportador SA');
   const [cargando, setCargando] = useState(false);
   const [estadoTx, setEstadoTx] = useState<string | null>(null);
   const [errorTx, setErrorTx] = useState<string | null>(null);
@@ -39,16 +48,17 @@ export function FormFondeo({
   const [creandoTrustline, setCreandoTrustline] = useState(false);
   const [pidiendoUsdc, setPidiendoUsdc] = useState(false);
 
-  const esWalletReal = buyerWallet.startsWith('G') && buyerWallet.length === 56;
+  const buyerWallet = walletState?.address ?? '';
+  const esWalletReal = esWalletStellar(buyerWallet);
+  const esTestnet = walletState?.esTestnet ?? true;
   const esMismaWallet = Boolean(
     productorWallet && esWalletReal && buyerWallet.toUpperCase() === productorWallet.toUpperCase(),
   );
 
   useEffect(() => {
-    if (!esWalletReal) return;
+    if (!esWalletReal || !esTestnet) return;
 
     let cancelado = false;
-    // Iniciamos la verificación asíncrona de la cuenta
     verificarEstadoCuentaUsdc(buyerWallet)
       .then((res) => {
         if (!cancelado) {
@@ -63,7 +73,7 @@ export function FormFondeo({
     return () => {
       cancelado = true;
     };
-  }, [buyerWallet, esWalletReal]);
+  }, [buyerWallet, esWalletReal, esTestnet]);
 
   const handleActivarTrustline = async () => {
     try {
@@ -102,39 +112,59 @@ export function FormFondeo({
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    const tieneContrato = Boolean(STELLAR_CONTRACT_ID);
+    e.preventDefault();
 
-    if (!tieneContrato || !esWalletReal) {
-      // Modo demo estándar o sin Freighter
+    if (!esWalletReal || !esTestnet) {
+      setErrorTx('Conectá tu wallet Freighter en Stellar TESTNET antes de fondear el lote.');
       return;
     }
 
     if (esMismaWallet) {
-      e.preventDefault();
       setErrorTx('Auto-compra bloqueada: tu wallet es la misma que la del productor de este lote.');
       return;
     }
 
-    e.preventDefault();
     setCargando(true);
     setErrorTx(null);
-    setEstadoTx('Preparando llamada y solicitando firma en Freighter...');
+    setEstadoTx('Construyendo pago clásico USDC en Stellar Testnet y solicitando firma...');
 
     try {
-      setEstadoTx('Firmá la transacción en la ventana emergente de Freighter...');
-      const { txHash } = await invocarContrato({
-        metodo: 'fund_lot_escrow',
-        args: argsFondeo({
-          codigoLote,
-          compradorWallet: buyerWallet,
-          monto,
-        }),
-        publicKey: buyerWallet,
-        signTransaction: signWithFreighter,
-      });
+      const tieneContrato = Boolean(STELLAR_CONTRACT_ID);
+      let txHash: string;
+
+      if (tieneContrato && walletState?.metodo === 'extension') {
+        setEstadoTx('Firmá la transacción en la ventana emergente de Freighter...');
+        const res = await invocarContrato({
+          metodo: 'fund_lot_escrow',
+          args: argsFondeo({
+            codigoLote,
+            compradorWallet: buyerWallet,
+            monto,
+          }),
+          publicKey: buyerWallet,
+          signTransaction: signWithFreighter,
+        });
+        txHash = res.txHash;
+      } else {
+        setEstadoTx('Firmá el pago USDC en Freighter (Testnet)...');
+        const signer =
+          walletState?.metodo === 'walletconnect'
+            ? (xdr: string, opts: { address: string }) =>
+                firmarXdrConWalletConnect(xdr, { address: opts.address })
+            : undefined;
+
+        const pago = await ejecutarPagoUsdcTestnet({
+          sourceAddress: buyerWallet,
+          destinationAddress: productorWallet,
+          amountUsdc: monto,
+          memoText: `FUND:${codigoLote}`,
+          signer,
+        });
+        txHash = pago.txHash;
+      }
 
       setEstadoTx(
-        `¡Transacción confirmada en Soroban! (${txHash.slice(0, 10)}…). Registrando en la plataforma...`,
+        `¡Pago firmado y confirmado en Stellar Testnet! (${txHash.slice(0, 10)}…). Registrando movimiento...`,
       );
 
       const formData = new FormData();
@@ -153,12 +183,14 @@ export function FormFondeo({
 
   return (
     <div className="space-y-4">
-      <BotonFreighter
-        walletActual={esWalletReal ? buyerWallet : ''}
-        onConectado={(w) => setBuyerWallet(w)}
-      />
+      <div className="rounded-md border border-neutral-800 bg-neutral-950/80 p-3 text-xs text-neutral-400">
+        ℹ️ <strong>Nota de transparencia:</strong> El esquema de escrow 40/30/30 opera en modo demo
+        hasta el despliegue del contrato Soroban definitivo; cada hito ejecuta un{' '}
+        <strong>pago clásico USDC real en Stellar Testnet</strong> firmado con tu wallet Freighter y
+        registrado con su <code>tx_hash</code> verificable en Stellar Expert.
+      </div>
 
-      {esWalletReal && (
+      {esWalletReal && esTestnet && (
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-4 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -180,7 +212,7 @@ export function FormFondeo({
               {!tieneTrustline && !verificandoUsdc && (
                 <button
                   type="button"
-                  onClick={handleActivarTrustline}
+                  onClick={() => void handleActivarTrustline()}
                   disabled={creandoTrustline}
                   className="rounded border border-neutral-700 bg-neutral-800 px-3 py-1 font-semibold text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
                 >
@@ -191,7 +223,7 @@ export function FormFondeo({
               {tieneTrustline && balanceUsdc < monto && (
                 <button
                   type="button"
-                  onClick={handleSolicitarUsdc}
+                  onClick={() => void handleSolicitarUsdc()}
                   disabled={pidiendoUsdc}
                   className="rounded border border-neutral-700 bg-neutral-800 px-3 py-1 font-semibold text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
                 >
@@ -202,19 +234,22 @@ export function FormFondeo({
           </div>
 
           {esMismaWallet && (
-            <div className="text-brand mt-3 rounded border border-neutral-700 bg-neutral-900/90 p-2">
+            <div
+              role="alert"
+              className="text-brand mt-3 rounded border border-neutral-700 bg-neutral-900/90 p-2"
+            >
               ⚠️ <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del
-              productor del lote. Por reglas del smart contract, debés usar una cuenta distinta en
-              Freighter para actuar como comprador.
+              productor del lote. Debés usar una cuenta distinta en Freighter para actuar como
+              comprador.
             </div>
           )}
         </div>
       )}
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => void handleSubmit(e)}
         action={fondearLoteAction}
-        className="mt-4 grid gap-3 sm:grid-cols-3"
+        className="mt-4 grid gap-4 sm:grid-cols-3"
       >
         <input type="hidden" name="codigo" value={codigoLote} />
         <div>
@@ -231,22 +266,19 @@ export function FormFondeo({
           />
         </div>
         <div>
-          <label className={claseLabel} htmlFor="buyer_wallet">
-            Wallet Stellar del comprador
-          </label>
-          <input
-            id="buyer_wallet"
+          <ConnectWallet
             name="buyer_wallet"
-            className={claseInput}
-            value={buyerWallet}
-            onChange={(e) => setBuyerWallet(e.target.value)}
-            required
+            label="Wallet Stellar del comprador *"
+            initialAddress={walletInicialValida}
+            onChange={(w) => setWalletState(w)}
           />
         </div>
         <div className="flex items-end">
           <button
             type="submit"
-            disabled={cargando || esMismaWallet || tieneTrustline === false}
+            disabled={
+              cargando || !esWalletReal || !esTestnet || esMismaWallet || tieneTrustline === false
+            }
             className="bg-brand hover:bg-brand/90 w-full rounded-md px-4 py-2 text-sm font-semibold text-neutral-950 disabled:opacity-50"
           >
             {cargando ? 'Firmando con Freighter...' : 'Fondear y liberar 40%'}
@@ -261,7 +293,10 @@ export function FormFondeo({
       )}
 
       {errorTx && (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+        <div
+          role="alert"
+          className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300"
+        >
           {errorTx}
         </div>
       )}

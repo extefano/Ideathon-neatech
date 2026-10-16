@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Aviso } from '@/components/ui/aviso';
 import type { PerfilUsuario, RolUsuario } from '@/lib/auth';
+import { esWalletStellar } from '@/lib/stellar-args';
 
 const NOMBRE_ROL: Record<RolUsuario, string> = {
   PRODUCTOR: 'Productor',
@@ -9,6 +10,7 @@ const NOMBRE_ROL: Record<RolUsuario, string> = {
 };
 
 export function CredencialSesion({ user }: { user: PerfilUsuario }) {
+  const walletValida = user.wallet && esWalletStellar(user.wallet) ? user.wallet : null;
   return (
     <div className="rounded-control flex flex-wrap items-center justify-between gap-2 border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-xs text-neutral-300">
       <div className="flex items-center gap-2">
@@ -18,8 +20,10 @@ export function CredencialSesion({ user }: { user: PerfilUsuario }) {
           <span className="text-brand font-semibold">{NOMBRE_ROL[user.rol]}</span>
         </span>
       </div>
-      {user.wallet && (
-        <span className="font-mono text-[11px] text-neutral-400">Wallet: {user.wallet}</span>
+      {walletValida && (
+        <span className="font-mono text-[11px] text-neutral-400">
+          Wallet: {walletValida.slice(0, 4)}…{walletValida.slice(-4)}
+        </span>
       )}
     </div>
   );

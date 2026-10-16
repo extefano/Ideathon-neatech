@@ -79,9 +79,13 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
           titulo="Completá la secuencia"
           descripcion="Al firmar se calcula el ADPV contra el rango biológico INTA (0,5 a 1,3 kg/día) y se libera el 30 % del pago."
         >
-          <CredencialSesion user={user} />
-          <div className="mt-4">
-            <FormAuditoria codigo={codigo} user={user} />
+          <div className="space-y-4">
+            <CredencialSesion user={user} />
+            <FormAuditoria
+              codigo={codigo}
+              user={user}
+              productorWallet={lote.productor_wallet ?? undefined}
+            />
           </div>
         </Tarjeta>
       )}

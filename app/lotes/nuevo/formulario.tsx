@@ -25,6 +25,8 @@ import {
 } from './dibujo';
 
 import type { PerfilUsuario } from '@/lib/auth';
+import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
+import { esWalletStellar } from '@/lib/stellar-args';
 
 const MapaDibujo = dynamic(() => import('./mapa-dibujo'), {
   ssr: false,
@@ -58,10 +60,15 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
     errors: [],
   });
 
+  const walletInicial = user?.wallet && esWalletStellar(user.wallet) ? user.wallet : '';
+  const [walletState, setWalletState] = useState<EstadoWalletConectada | null>(
+    walletInicial
+      ? { address: walletInicial, network: 'TESTNET', esTestnet: true, metodo: 'extension' }
+      : null,
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const [etapa, setEtapa] = useState(0);
   const [erroresEtapa, setErroresEtapa] = useState<ErroresEtapa>({});
-
   const [poligonoTexto, setPoligonoTexto] = useState('');
   const [dibujo, setDibujo] = useState<EstadoDibujo>(ESTADO_DIBUJO_INICIAL);
   const [csvInfo, setCsvInfo] = useState<CsvInfo | null>(null);
@@ -243,15 +250,11 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             />
           </div>
           <div>
-            <label className={claseLabel} htmlFor="productor_wallet">
-              Wallet Stellar (opcional)
-            </label>
-            <input
-              id="productor_wallet"
+            <ConnectWallet
               name="productor_wallet"
-              className={claseInput}
-              placeholder="G… (usa la wallet admin si se deja vacío)"
-              defaultValue={user?.wallet ?? 'GDEMO-PRODUCTOR'}
+              label="Wallet Stellar del productor *"
+              initialAddress={walletInicial}
+              onChange={(w) => setWalletState(w)}
             />
           </div>
         </div>
@@ -783,9 +786,20 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             Siguiente →
           </Boton>
         ) : (
-          <Boton type="submit" cargando={pending}>
-            {pending ? 'Validando EUDR y registrando Sello 1…' : 'Enviar lote y validar EUDR'}
-          </Boton>
+          <div className="flex flex-wrap items-center gap-3">
+            {!walletState?.address && (
+              <span className="text-xs text-neutral-400">
+                Conectá tu wallet Freighter en la etapa 1 para registrar el lote.
+              </span>
+            )}
+            <Boton
+              type="submit"
+              cargando={pending}
+              disabled={pending || !walletState?.address || !walletState.esTestnet}
+            >
+              {pending ? 'Validando EUDR y registrando Sello 1…' : 'Enviar lote y validar EUDR'}
+            </Boton>
+          </div>
         )}
       </div>
     </form>

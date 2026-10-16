@@ -1,10 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { BotonFreighter } from '@/components/boton-freighter';
+import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
+import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
 import { registrarAuditoriaAction } from '@/lib/actions';
+import type { PerfilUsuario } from '@/lib/auth';
+import { esWalletStellar } from '@/lib/stellar-args';
+import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
+import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
   'w-full rounded-control min-h-11 border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none';
@@ -21,22 +25,84 @@ async function cargarEnInput(inputId: string, url: string, nombre: string, tipo:
   input.files = dt.files;
 }
 
-import type { PerfilUsuario } from '@/lib/auth';
-
-function BotonFirmar() {
-  const { pending } = useFormStatus();
-  return (
-    <Boton type="submit" cargando={pending}>
-      {pending ? 'Firmando auditoría…' : 'Firmar auditoría y liberar 30 %'}
-    </Boton>
+export function FormAuditoria({
+  codigo,
+  user,
+  productorWallet,
+  montoHito2Usdc,
+}: {
+  codigo: string;
+  user?: PerfilUsuario;
+  productorWallet?: string;
+  montoHito2Usdc?: number;
+}) {
+  const walletInicial = user?.wallet && esWalletStellar(user.wallet) ? user.wallet : '';
+  const [walletState, setWalletState] = useState<EstadoWalletConectada | null>(
+    walletInicial
+      ? { address: walletInicial, network: 'TESTNET', esTestnet: true, metodo: 'extension' }
+      : null,
   );
-}
+  const [cargando, setCargando] = useState(false);
+  const [estadoTx, setEstadoTx] = useState<string | null>(null);
+  const [errorTx, setErrorTx] = useState<string | null>(null);
 
-export function FormAuditoria({ codigo, user }: { codigo: string; user?: PerfilUsuario }) {
-  const [vetWallet, setVetWallet] = useState(user?.wallet ?? 'GDEMO-VETERINARIO');
+  const vetWallet = walletState?.address ?? '';
+  const esWalletReal = esWalletStellar(vetWallet);
+  const esTestnet = walletState?.esTestnet ?? true;
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+
+    if (!esWalletReal || !esTestnet) {
+      setErrorTx(
+        'Conectá tu wallet Freighter en Stellar TESTNET para firmar la auditoría veterinaria.',
+      );
+      return;
+    }
+
+    setCargando(true);
+    setErrorTx(null);
+    setEstadoTx('Solicitando firma de auditoría sanitaria (Sello 2) en Freighter...');
+
+    try {
+      const formData = new FormData(form);
+      formData.set('vet_wallet', vetWallet);
+
+      const signer =
+        walletState?.metodo === 'walletconnect'
+          ? (xdr: string, opts: { address: string }) =>
+              firmarXdrConWalletConnect(xdr, { address: opts.address })
+          : undefined;
+
+      const pago = await ejecutarPagoUsdcTestnet({
+        sourceAddress: vetWallet,
+        destinationAddress: productorWallet,
+        amountUsdc: montoHito2Usdc ?? 0.0000001,
+        memoText: `SEAL2:${codigo}`,
+        signer,
+      });
+
+      formData.set('tx_hash', pago.txHash);
+      setEstadoTx(
+        `¡Auditoría firmada en Stellar Testnet! (${pago.txHash.slice(0, 10)}…). Guardando Sello 2...`,
+      );
+
+      await registrarAuditoriaAction(formData);
+    } catch (err) {
+      setErrorTx(err instanceof Error ? err.message : String(err));
+      setCargando(false);
+      setEstadoTx(null);
+    }
+  };
 
   return (
-    <form action={registrarAuditoriaAction} encType="multipart/form-data" className="space-y-6">
+    <form
+      onSubmit={(e) => void handleSubmit(e)}
+      action={registrarAuditoriaAction}
+      encType="multipart/form-data"
+      className="space-y-6"
+    >
       <input type="hidden" name="codigo" value={codigo} />
 
       <section className="space-y-3">
@@ -149,22 +215,12 @@ export function FormAuditoria({ codigo, user }: { codigo: string; user?: PerfilU
             />
           </div>
           <div>
-            <label className={claseLabel} htmlFor="vet_wallet">
-              Wallet Stellar del veterinario
-            </label>
-            <input
-              id="vet_wallet"
+            <ConnectWallet
               name="vet_wallet"
-              className={claseInput}
-              value={vetWallet}
-              onChange={(e) => setVetWallet(e.target.value)}
+              label="Wallet Stellar del veterinario *"
+              initialAddress={walletInicial}
+              onChange={(w) => setWalletState(w)}
             />
-            <div className="mt-2">
-              <BotonFreighter
-                walletActual={vetWallet.startsWith('G') && vetWallet.length === 56 ? vetWallet : ''}
-                onConectado={(w) => setVetWallet(w)}
-              />
-            </div>
           </div>
         </div>
 
@@ -181,7 +237,21 @@ export function FormAuditoria({ codigo, user }: { codigo: string; user?: PerfilU
         </div>
       </section>
 
-      <BotonFirmar />
+      {estadoTx && (
+        <Aviso variante="info" titulo="Transacción Stellar Testnet">
+          {estadoTx}
+        </Aviso>
+      )}
+
+      {errorTx && (
+        <Aviso variante="error" titulo="Error de transacción">
+          {errorTx}
+        </Aviso>
+      )}
+
+      <Boton type="submit" cargando={cargando} disabled={cargando || !esWalletReal || !esTestnet}>
+        {cargando ? 'Firmando en Freighter...' : 'Firmar auditoría y liberar 30 %'}
+      </Boton>
     </form>
   );
 }
