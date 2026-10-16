@@ -80,3 +80,36 @@ describe('Paleta Stellar (#FDDA24 + negro + blanco)', () => {
     }
   });
 });
+
+describe('Tokens de diseño (#26)', () => {
+  const css = readFileSync(join(process.cwd(), 'app', 'globals.css'), 'utf8');
+
+  const tokensEsperados = [
+    '--color-superficie',
+    '--color-panel',
+    '--color-panel-elevado',
+    '--color-borde',
+    '--color-borde-fuerte',
+    '--radius-control',
+    '--radius-tarjeta',
+    '--color-foco',
+    '--color-ok',
+    '--color-alerta',
+    '--color-error',
+  ];
+
+  it('define los tokens de superficies, radios, foco y estados en @theme', () => {
+    for (const token of tokensEsperados) {
+      expect(css, `Falta ${token}`).toContain(token);
+    }
+  });
+
+  it('mantiene intacto --color-brand: #fdda24', () => {
+    expect(css).toMatch(/--color-brand:\s*#fdda24/i);
+  });
+
+  it('reserva el rojo (--color-error) como única excepción de la paleta', () => {
+    const error = css.match(/--color-error:\s*([^;]+);/i)?.[1]?.trim() ?? '';
+    expect(error).toMatch(/red|#fca5a5|#(f|e)[0-9a-f]/i);
+  });
+});
