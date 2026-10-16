@@ -40,16 +40,16 @@
 
 ## Qué es REAL y qué es MODO DEMO (transparencia total)
 
-| Integración                         | Estado                                                                     |
-| ----------------------------------- | -------------------------------------------------------------------------- |
-| GFW (pérdida forestal EUDR)         | **REAL** — `data-api.globalforestwatch.org` con key en `.env.local`        |
-| Supabase (DB, Storage, RLS, Auth)   | **REAL**                                                                   |
-| Uploads + hashes SHA-256            | **REAL**                                                                   |
-| Validación CSV RFID / ADPV / escrow | **REAL** (lógica con tests)                                                |
-| QR + verificador de integridad      | **REAL** (server-side `qrcode` + Web Crypto)                               |
+| Integración                         | Estado                                                                                                                     |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| GFW (pérdida forestal EUDR)         | **REAL** — `data-api.globalforestwatch.org` con key en `.env.local`                                                        |
+| Supabase (DB, Storage, RLS, Auth)   | **REAL**                                                                                                                   |
+| Uploads + hashes SHA-256            | **REAL**                                                                                                                   |
+| Validación CSV RFID / ADPV / escrow | **REAL** (lógica con tests)                                                                                                |
+| QR + verificador de integridad      | **REAL** (server-side `qrcode` + Web Crypto)                                                                               |
 | Stellar / Soroban                   | **MODO DEMO** — tx hashes deterministas + links a Stellar Expert testnet; `lib/stellar` ya expone la interfaz del contrato |
-| Freighter (wallets)                 | **DEMO** — wallets de texto (`GDEMO-*`)                                    |
-| SENASA / SIGSA                      | Documental (subida + hash); no existe API pública integrada                |
+| Freighter (wallets)                 | **DEMO** — wallets de texto (`GDEMO-*`)                                                                                    |
+| SENASA / SIGSA                      | Documental (subida + hash); no existe API pública integrada                                                                |
 
 ## Para verlo funcionando
 
@@ -60,6 +60,7 @@ pnpm dev  →  http://localhost:3000
 ```
 
 **Producción (único pendiente):**
+
 1. Vercel → Add New → Import `Ideathon-neatech` → **copiar las variables de `.env.local`** a
    Environment Variables (Production + Preview) → Deploy. Cualquier push a `main` deploya solo.
 2. Alternativa por workflow: cargar secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
