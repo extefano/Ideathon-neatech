@@ -26,7 +26,7 @@ export default function MapaPoligono({
           attribution="Tiles: Esri World Imagery"
         />
         {ring.length >= 3 && (
-          <Polygon positions={ring} pathOptions={{ color: '#34d399', weight: 2 }} />
+          <Polygon positions={ring} pathOptions={{ color: '#FDDA24', weight: 2 }} />
         )}
       </MapContainer>
     </div>

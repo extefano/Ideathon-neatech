@@ -5,7 +5,7 @@ import { BotonFreighter } from '@/components/boton-freighter';
 import { despacharLoteAction, recepcionLoteAction } from '@/lib/actions';
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none';
+  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
 const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
 
 async function cargarEnInput(inputId: string, url: string, nombre: string, tipo: string) {
@@ -48,7 +48,7 @@ export function FormDespacho({ codigo }: { codigo: string }) {
           />
           <button
             type="button"
-            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+            className="text-brand hover:text-brand/80 mt-1 text-xs"
             onClick={() =>
               void cargarEnInput('dte_pdf', '/demo/dte-demo.pdf', 'dte-demo.pdf', 'application/pdf')
             }
@@ -59,7 +59,7 @@ export function FormDespacho({ codigo }: { codigo: string }) {
       </div>
       <button
         type="submit"
-        className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+        className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
       >
         Despachar camión (EN_TRANSITO)
       </button>
@@ -86,7 +86,7 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
           />
           <button
             type="button"
-            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+            className="text-brand hover:text-brand/80 mt-1 text-xs"
             onClick={() =>
               void cargarEnInput(
                 'csv_recepcion',
@@ -112,7 +112,7 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
           />
           <button
             type="button"
-            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+            className="text-brand hover:text-brand/80 mt-1 text-xs"
             onClick={() =>
               void cargarEnInput(
                 'ticket_pdf',
@@ -146,7 +146,7 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
       </div>
       <button
         type="submit"
-        className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+        className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
       >
         Confirmar recepción y liquidar 30% final
       </button>

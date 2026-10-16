@@ -43,7 +43,7 @@ export function VerificadorIntegridad({ hashes }: { hashes: HashEsperado[] }) {
             {resultado.archivo}: {resultado.hash}
           </p>
           {resultado.match ? (
-            <p className="mt-2 rounded border border-emerald-500/40 bg-emerald-500/10 p-2 text-emerald-300">
+            <p className="border-brand/40 bg-brand/10 text-brand mt-2 rounded border p-2">
               ✔ Íntegro — coincide con <span className="font-mono">{resultado.match}</span>{' '}
               registrado en el contrato.
             </p>

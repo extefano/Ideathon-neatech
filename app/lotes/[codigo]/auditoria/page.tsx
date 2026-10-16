@@ -20,10 +20,10 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
   if (lote.estado_publicacion !== 'FINANCIADO_EN_ENGORDE' || lote.seal_2_sanitary) {
     return (
       <main className="mx-auto max-w-3xl p-8">
-        <Link href={`/lotes/${codigo}`} className="text-sm text-neutral-400 hover:text-neutral-200">
+        <Link href={`/lotes/${codigo}`} className="hover:text-brand text-sm text-neutral-400">
           ← Volver a la ficha
         </Link>
-        <div className="mt-6 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="border-brand/40 bg-brand/10 mt-6 rounded-md border p-4 text-sm text-neutral-200">
           Este lote no está habilitado para la auditoría del Mes 4 (requiere estar financiado y sin
           Sello 2). Acceso exclusivo del veterinario acreditado.
         </div>
@@ -33,7 +33,7 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <Link href={`/lotes/${codigo}`} className="text-sm text-neutral-400 hover:text-neutral-200">
+      <Link href={`/lotes/${codigo}`} className="hover:text-brand text-sm text-neutral-400">
         ← Volver a la ficha
       </Link>
       <h1 className="mt-4 text-3xl font-bold">Auditoría sanitaria — Mes 4</h1>

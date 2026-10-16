@@ -38,13 +38,13 @@ export function BotonFreighter({
 
   if (instalado === false) {
     return (
-      <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+      <div className="rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs text-neutral-300">
         Freighter no está instalado.{' '}
         <a
           href="https://www.freighter.app/"
           target="_blank"
           rel="noreferrer"
-          className="underline font-semibold hover:text-amber-100"
+          className="underline font-semibold text-brand hover:text-brand/80"
         >
           Instalar extensión Freighter
         </a>{' '}
@@ -60,9 +60,9 @@ export function BotonFreighter({
           type="button"
           onClick={() => void handleConectar()}
           disabled={cargando}
-          className="inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:border-emerald-500 hover:text-emerald-300 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:border-brand hover:text-brand disabled:opacity-50"
         >
-          <span className={`h-2 w-2 rounded-full ${direccion ? 'bg-emerald-400' : 'bg-neutral-500'}`} />
+          <span className={`h-2 w-2 rounded-full ${direccion ? 'bg-brand' : 'bg-neutral-500'}`} />
           {cargando
             ? 'Conectando...'
             : direccion

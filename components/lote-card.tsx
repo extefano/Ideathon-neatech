@@ -12,7 +12,7 @@ export function LoteCard({ lote }: { lote: LoteListItem }) {
   return (
     <Link
       href={`/lotes/${lote.codigo_lote}`}
-      className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-4 transition hover:border-emerald-500/50"
+      className="hover:border-brand/50 rounded-lg border border-neutral-800 bg-neutral-950/60 p-4 transition"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-xs text-neutral-400">{lote.codigo_lote}</span>
@@ -32,7 +32,7 @@ export function LoteCard({ lote }: { lote: LoteListItem }) {
             key={sello.nombre}
             className={`rounded border px-1.5 py-0.5 text-[10px] ${
               sello.activo
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                ? 'border-brand/40 bg-brand/10 text-brand'
                 : 'border-neutral-700 text-neutral-500'
             }`}
           >

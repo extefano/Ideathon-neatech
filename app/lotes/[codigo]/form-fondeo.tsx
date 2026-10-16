@@ -10,7 +10,7 @@ import { fondearLoteAction, solicitarUsdcDemoAction } from '@/lib/actions';
 import { crearTrustlineUsdcConFreighter, verificarEstadoCuentaUsdc } from '@/lib/freighter';
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none';
+  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
 const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
 
 export function FormFondeo({
@@ -162,11 +162,11 @@ export function FormFondeo({
               {verificandoUsdc ? (
                 <span className="text-neutral-400">Verificando USDC...</span>
               ) : tieneTrustline ? (
-                <span className="text-emerald-400">
+                <span className="text-brand">
                   Trustline USDC activa · Balance: {balanceUsdc.toLocaleString('es-AR')} USDC
                 </span>
               ) : (
-                <span className="text-amber-400">Falta trustline de USDC</span>
+                <span className="text-neutral-400">Falta trustline de USDC</span>
               )}
             </div>
 
@@ -176,7 +176,7 @@ export function FormFondeo({
                   type="button"
                   onClick={handleActivarTrustline}
                   disabled={creandoTrustline}
-                  className="rounded bg-sky-600 px-3 py-1 font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+                  className="rounded border border-neutral-700 bg-neutral-800 px-3 py-1 font-semibold text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
                 >
                   {creandoTrustline ? 'Abriendo en Freighter...' : '➕ Habilitar Trustline USDC'}
                 </button>
@@ -187,7 +187,7 @@ export function FormFondeo({
                   type="button"
                   onClick={handleSolicitarUsdc}
                   disabled={pidiendoUsdc}
-                  className="rounded bg-emerald-700 px-3 py-1 font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
+                  className="rounded border border-neutral-700 bg-neutral-800 px-3 py-1 font-semibold text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
                 >
                   {pidiendoUsdc ? 'Enviando...' : `💧 Recibir ${monto} USDC de prueba`}
                 </button>
@@ -196,7 +196,7 @@ export function FormFondeo({
           </div>
 
           {esMismaWallet && (
-            <div className="mt-3 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-amber-300">
+            <div className="mt-3 rounded border border-neutral-700 bg-neutral-900/90 p-2 text-brand">
               ⚠️ <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del productor del lote. Por reglas del smart contract, debés usar una cuenta distinta en Freighter para actuar como comprador.
             </div>
           )}
@@ -235,7 +235,7 @@ export function FormFondeo({
           <button
             type="submit"
             disabled={cargando || esMismaWallet || (tieneTrustline === false)}
-            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-brand/90 disabled:opacity-50"
           >
             {cargando ? 'Firmando con Freighter...' : 'Fondear y liberar 40%'}
           </button>
@@ -243,7 +243,7 @@ export function FormFondeo({
       </form>
 
       {estadoTx && (
-        <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+        <div className="rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs text-brand">
           {estadoTx}
         </div>
       )}

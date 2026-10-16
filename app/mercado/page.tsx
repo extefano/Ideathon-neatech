@@ -16,7 +16,7 @@ export default async function MercadoPage() {
 
   return (
     <main className="mx-auto max-w-6xl p-8">
-      <Link href="/" className="text-sm text-neutral-400 hover:text-neutral-200">
+      <Link href="/" className="hover:text-brand text-sm text-neutral-400">
         ← Inicio
       </Link>
       <header className="mt-4">
