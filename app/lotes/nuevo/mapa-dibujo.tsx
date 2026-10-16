@@ -2,41 +2,77 @@
 
 import 'leaflet/dist/leaflet.css';
 import type { LatLngExpression } from 'leaflet';
-import { MapContainer, Polygon, Polyline, TileLayer, useMapEvents } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, Polygon, Polyline, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { MIN_VERTICES, type Punto } from './dibujo';
 
-function ClickHandler({ onAgregar }: { onAgregar: (punto: [number, number]) => void }) {
+function ClickHandler({
+  activo,
+  onAgregar,
+}: {
+  activo: boolean;
+  onAgregar: (punto: Punto) => void;
+}) {
   useMapEvents({
     click(event) {
+      if (!activo) return;
       onAgregar([event.latlng.lat, event.latlng.lng]);
     },
   });
   return null;
 }
 
+function ClaseModoDibujo({ activo }: { activo: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    container.classList.toggle('leaflet-dibujo-activo', activo);
+    return () => container.classList.remove('leaflet-dibujo-activo');
+  }, [map, activo]);
+  return null;
+}
+
 export default function MapaDibujo({
   puntos,
+  activo,
   onAgregar,
 }: {
-  puntos: [number, number][];
-  onAgregar: (punto: [number, number]) => void;
+  puntos: Punto[];
+  activo: boolean;
+  onAgregar: (punto: Punto) => void;
 }) {
   const centro: LatLngExpression = puntos.length > 0 ? puntos[0] : [-29.19, -58.08];
   const positions: LatLngExpression[] = puntos;
+  const estilo = {
+    color: '#34d399',
+    weight: 2,
+    dashArray: activo ? '6 6' : undefined,
+  };
 
   return (
-    <div className="h-80 overflow-hidden rounded-md border border-neutral-700">
+    <div
+      className={`relative h-80 overflow-hidden rounded-md border ${
+        activo ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-neutral-700'
+      }`}
+    >
       <MapContainer center={centro} zoom={12} className="h-full w-full" scrollWheelZoom>
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution="Tiles: Esri World Imagery"
         />
-        <ClickHandler onAgregar={onAgregar} />
-        {puntos.length >= 3 ? (
-          <Polygon positions={positions} pathOptions={{ color: '#34d399', weight: 2 }} />
+        <ClaseModoDibujo activo={activo} />
+        <ClickHandler activo={activo} onAgregar={onAgregar} />
+        {puntos.length >= MIN_VERTICES ? (
+          <Polygon positions={positions} pathOptions={estilo} />
         ) : (
-          <Polyline positions={positions} pathOptions={{ color: '#34d399', weight: 2 }} />
+          <Polyline positions={positions} pathOptions={estilo} />
         )}
       </MapContainer>
+      {activo && (
+        <span className="pointer-events-none absolute top-2 left-2 z-[1000] rounded bg-emerald-600/90 px-2 py-1 text-xs font-semibold text-white shadow">
+          Modo dibujo — clic para agregar vértices
+        </span>
+      )}
     </div>
   );
 }
