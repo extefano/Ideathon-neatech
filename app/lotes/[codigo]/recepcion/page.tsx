@@ -1,12 +1,19 @@
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
+import { Aviso } from '@/components/ui/aviso';
+import { Pasos } from '@/components/ui/pasos';
+import { Tarjeta } from '@/components/ui/tarjeta';
 import { getCurrentUser } from '@/lib/auth';
 import { getLoteCompleto } from '@/lib/queries';
 import { FormDespacho, FormRecepcion } from './form-recepcion';
 
 export const dynamic = 'force-dynamic';
 
-const tarjeta = 'rounded-lg border border-neutral-800 bg-neutral-950/60 p-6';
+const PASOS_CIERRE = [
+  { titulo: '4A Despacho', descripcion: 'DT-e en origen (Productor)' },
+  { titulo: '4B Recepción', descripcion: 'Balanza fiscal (Frigorífico)' },
+  { titulo: 'Cierre', descripcion: 'Sello 3 y pasaporte' },
+];
 
 export default async function RecepcionPage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
@@ -23,7 +30,10 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
   }
 
   const volver = (
-    <Link href={`/lotes/${codigo}`} className="text-sm text-neutral-400 hover:text-yellow-400">
+    <Link
+      href={`/lotes/${codigo}`}
+      className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400"
+    >
       ← Volver a la ficha
     </Link>
   );
@@ -31,6 +41,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
   const puedeDespachar =
     lote.estado_publicacion === 'FINANCIADO_EN_ENGORDE' && Boolean(lote.seal_2_sanitary);
   const puedeRecepcionar = lote.estado_publicacion === 'EN_TRANSITO_A_FRIGORIFICO';
+  const cerrado = lote.estado_publicacion === 'CERRADO_CICLO';
 
   const esProductor = user?.rol === 'PRODUCTOR';
   const esComprador = user?.rol === 'COMPRADOR';
@@ -45,63 +56,75 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
         </p>
       </div>
 
+      <Pasos pasos={PASOS_CIERRE} actual={cerrado ? 3 : puedeRecepcionar ? 1 : 0} />
+
       {puedeDespachar && (
-        <section className={tarjeta}>
-          <h2 className="text-lg font-semibold">4A — Despacho en origen (productor)</h2>
-          <p className="mt-1 text-sm text-neutral-400">
-            Emití el DT-e en SENASA/SIGSA y adjuntá el PDF antes de que salga el camión jaula.
-          </p>
+        <Tarjeta
+          titulo="4A — Despacho en origen"
+          descripcion="Esta parte la completa el Productor: emití el DT-e y adjuntá el PDF antes de que salga el camión."
+        >
           {!esProductor ? (
-            <div className="mt-4">
-              <BannerRolRequerido
-                rolRequerido="PRODUCTOR"
-                titulo="El despacho DT-e requiere cuenta de Productor"
-                descripcion="Solo el productor titular del establecimiento de origen puede emitir y adjuntar el DT-e de salida."
-                userActual={user}
-                redirectTo={`/lotes/${codigo}/recepcion`}
-              />
-            </div>
+            <BannerRolRequerido
+              rolRequerido="PRODUCTOR"
+              titulo="El despacho DT-e requiere cuenta de Productor"
+              descripcion="Solo el Productor titular del establecimiento de origen puede emitir y adjuntar el DT-e de salida."
+              userActual={user}
+              redirectTo={`/lotes/${codigo}/recepcion`}
+            />
           ) : (
-            <div className="mt-4 space-y-4">
+            <div className="space-y-4">
               <CredencialSesion user={user} />
               <FormDespacho codigo={codigo} user={user} />
             </div>
           )}
-        </section>
+        </Tarjeta>
       )}
 
       {puedeRecepcionar && (
-        <section className={tarjeta}>
-          <h2 className="text-lg font-semibold">4B — Recepción en balanza fiscal (frigorífico)</h2>
-          <p className="mt-1 text-sm text-neutral-400">
-            Solo la wallet del comprador/frigorífico puede confirmar. Se concilian las 30 caravanas,
-            se calcula el neto por kilos y el contrato libera el 30% final (con retención automática
-            si faltaron kilos).
-          </p>
+        <Tarjeta
+          titulo="4B — Recepción en balanza fiscal"
+          descripcion="Esta parte la completa el Frigorífico: cargá el CSV de balanza, se concilian las caravanas y se cierra el ciclo con el Sello 3."
+        >
           {!esComprador ? (
-            <div className="mt-4">
-              <BannerRolRequerido
-                rolRequerido="COMPRADOR"
-                titulo="La recepción en balanza requiere cuenta de Comprador"
-                descripcion="Solo el comprador o frigorífico de destino puede ingresar el pesaje de balanza fiscal y liquidar el cierre del ciclo."
-                userActual={user}
-                redirectTo={`/lotes/${codigo}/recepcion`}
-              />
-            </div>
+            <BannerRolRequerido
+              rolRequerido="COMPRADOR"
+              titulo="La recepción requiere cuenta de Comprador"
+              descripcion="Solo el Comprador o frigorífico de destino puede cargar el pesaje de balanza fiscal y liquidar el cierre del ciclo."
+              userActual={user}
+              redirectTo={`/lotes/${codigo}/recepcion`}
+            />
           ) : (
-            <div className="mt-4 space-y-4">
+            <div className="space-y-4">
               <CredencialSesion user={user} />
               <FormRecepcion codigo={codigo} user={user} />
             </div>
           )}
-        </section>
+        </Tarjeta>
       )}
 
-      {!puedeDespachar && !puedeRecepcionar && (
-        <div className="border-brand/40 bg-brand/10 rounded-md border p-4 text-sm text-neutral-200">
-          Este lote no tiene acciones de cierre disponibles en su estado actual (
-          {String(lote.estado_publicacion).replaceAll('_', ' ')}).
-        </div>
+      <Aviso variante="info" titulo="Cómo se liquida el pago final">
+        Se libera el 30 % restante. Si faltan kilos respecto del objetivo, se descuenta en
+        proporción y ese monto se reembolsa al Comprador.
+      </Aviso>
+
+      {cerrado && (
+        <Tarjeta titulo="Ciclo cerrado">
+          <p className="text-sm text-neutral-300">
+            Los 3 sellos están verificados. El pasaporte EUDR público ya está disponible.
+          </p>
+          <Link
+            href={`/pasaporte/${lote.codigo_lote}`}
+            className="rounded-control focus-visible:ring-foco bg-brand mt-3 inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Ver pasaporte EUDR →
+          </Link>
+        </Tarjeta>
+      )}
+
+      {!puedeDespachar && !puedeRecepcionar && !cerrado && (
+        <Aviso variante="alerta" titulo="Sin acciones de cierre disponibles">
+          Este lote no tiene acciones de cierre en su estado actual.
+        </Aviso>
       )}
     </main>
   );
