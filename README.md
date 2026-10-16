@@ -1,1 +1,1 @@
-# Ideathon-neatech
+# Ideathon-Neatech
