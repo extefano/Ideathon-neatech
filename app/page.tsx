@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { LoteCard } from '@/components/lote-card';
 import { listarLotes, type LoteListItem } from '@/lib/queries';
 
@@ -16,28 +15,9 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-6xl p-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold">Ideathon Neatech</h1>
-          <p className="mt-2 text-neutral-400">
-            Trazabilidad ganadera EUDR con sellos en Stellar (Soroban) y escrow USDC.
-          </p>
-        </div>
-        <nav className="flex gap-3">
-          <Link
-            href="/mercado"
-            className="hover:border-brand/60 rounded-md border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200"
-          >
-            Marketplace
-          </Link>
-          <Link
-            href="/lotes/nuevo"
-            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
-          >
-            Registrar lote (Paso 1)
-          </Link>
-        </nav>
-      </header>
+      <p className="text-neutral-400">
+        Trazabilidad ganadera EUDR con sellos en Stellar (Soroban) y escrow USDC.
+      </p>
 
       {dbError && (
         <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">

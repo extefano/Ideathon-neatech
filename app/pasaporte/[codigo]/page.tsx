@@ -280,7 +280,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
       <VerificadorIntegridad hashes={hashesAuditor} />
 
       <p className="text-center text-xs text-neutral-600">
-        Pasaporte generado por Ideathon Neatech ·{' '}
+        Pasaporte generado por Muunar ·{' '}
         <Link href={`/lotes/${codigo}`} className="text-brand hover:text-brand/80">
           ver ficha interna
         </Link>{' '}
