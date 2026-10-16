@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
 import { EstadoBadge } from '@/components/estado-badge';
 import { MapaLote } from '@/components/mapa-lote';
 import { fondearLoteAction, reintentarGfwAction } from '@/lib/actions';
+import { getCurrentUser } from '@/lib/auth';
 import type { EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { getLoteCompleto } from '@/lib/queries';
@@ -86,6 +88,7 @@ export default async function LotePage({
 }) {
   const { codigo } = await params;
   const sp = await searchParams;
+  const currentUser = await getCurrentUser();
   const data = await getLoteCompleto(codigo);
 
   if (!data) notFound();
@@ -155,39 +158,55 @@ export default async function LotePage({
             · {moneda} {desembolsos.hito2.toLocaleString('es-AR')} retenido (Mes 4 · 30%) · {moneda}{' '}
             {desembolsos.hito3.toLocaleString('es-AR')} retenido (recepción · 30%).
           </p>
-          <form action={fondearLoteAction} className="mt-4 grid gap-3 sm:grid-cols-3">
-            <input type="hidden" name="codigo" value={String(lote.codigo_lote)} />
-            <div>
-              <label className={claseLabel} htmlFor="buyer_nombre">
-                Comprador (razón social)
-              </label>
-              <input
-                id="buyer_nombre"
-                name="buyer_nombre"
-                className={claseInput}
-                defaultValue="Frigorífico Demo SA"
+
+          {currentUser?.rol !== 'COMPRADOR' ? (
+            <div className="mt-4">
+              <BannerRolRequerido
+                rolRequerido="COMPRADOR"
+                titulo="El fondeo de escrow requiere cuenta de Comprador"
+                descripcion="Para comprometer fondos en el contrato escrow y financiar la tropa debés identificarte con un perfil de Comprador (Frigorífico o Inversor)."
+                userActual={currentUser}
               />
             </div>
-            <div>
-              <label className={claseLabel} htmlFor="buyer_wallet">
-                Wallet Stellar del comprador
-              </label>
-              <input
-                id="buyer_wallet"
-                name="buyer_wallet"
-                className={claseInput}
-                defaultValue="GDEMO-FRIGORIFICO"
-              />
+          ) : (
+            <div className="mt-4 space-y-3">
+              <CredencialSesion user={currentUser} />
+              <form action={fondearLoteAction} className="grid gap-3 sm:grid-cols-3">
+                <input type="hidden" name="codigo" value={String(lote.codigo_lote)} />
+                <div>
+                  <label className={claseLabel} htmlFor="buyer_nombre">
+                    Comprador (razón social)
+                  </label>
+                  <input
+                    id="buyer_nombre"
+                    name="buyer_nombre"
+                    className={claseInput}
+                    defaultValue={currentUser.nombre_completo}
+                  />
+                </div>
+                <div>
+                  <label className={claseLabel} htmlFor="buyer_wallet">
+                    Wallet Stellar del comprador
+                  </label>
+                  <input
+                    id="buyer_wallet"
+                    name="buyer_wallet"
+                    className={claseInput}
+                    defaultValue={currentUser.wallet ?? 'GDEMO-FRIGORIFICO'}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="bg-brand hover:bg-brand/90 w-full cursor-pointer rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
+                  >
+                    Fondear y liberar 40%
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className="flex items-end">
-              <button
-                type="submit"
-                className="bg-brand hover:bg-brand/90 w-full rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
-              >
-                Fondear y liberar 40%
-              </button>
-            </div>
-          </form>
+          )}
+
           <p className="mt-2 text-xs text-neutral-500">
             Auto-compra bloqueada (la wallet del comprador debe ser distinta a la del productor) y
             doble fondeo bloqueado (solo lotes DISPONIBLE).

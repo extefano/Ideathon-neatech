@@ -7,6 +7,8 @@ import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
 import { CATEGORIAS, MONEDAS, RAZAS, TIPOS_OPERACION, TIPOS_RODEO } from '@/lib/domain';
 import { parseAndValidatePolygon } from '@/lib/geo';
 
+import type { PerfilUsuario } from '@/lib/auth';
+
 const MapaDibujo = dynamic(() => import('./mapa-dibujo'), {
   ssr: false,
   loading: () => <div className="h-80 rounded-md border border-neutral-700 bg-neutral-900" />,
@@ -37,7 +39,7 @@ function extraerPuntos(texto: string): [number, number][] {
   }
 }
 
-export function FormularioLote() {
+export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(crearLoteAction, {
     errors: [],
   });
@@ -141,6 +143,7 @@ export function FormularioLote() {
               name="productor_nombre"
               className={claseInput}
               placeholder="Estancia La Esperanza SA"
+              defaultValue={user?.nombre_completo ?? ''}
             />
           </div>
           <div>
@@ -152,6 +155,7 @@ export function FormularioLote() {
               name="productor_cuit"
               className={claseInput}
               placeholder="30-71234567-8"
+              defaultValue={user?.cuit ?? ''}
             />
           </div>
           <div>
@@ -163,6 +167,7 @@ export function FormularioLote() {
               name="productor_wallet"
               className={claseInput}
               placeholder="GDEMO-PRODUCTOR"
+              defaultValue={user?.wallet ?? 'GDEMO-PRODUCTOR'}
             />
           </div>
         </div>

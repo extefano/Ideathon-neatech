@@ -17,7 +17,9 @@ async function cargarEnInput(inputId: string, url: string, nombre: string, tipo:
   input.files = dt.files;
 }
 
-export function FormAuditoria({ codigo }: { codigo: string }) {
+import type { PerfilUsuario } from '@/lib/auth';
+
+export function FormAuditoria({ codigo, user }: { codigo: string; user?: PerfilUsuario }) {
   return (
     <form
       action={registrarAuditoriaAction}
@@ -35,7 +37,7 @@ export function FormAuditoria({ codigo }: { codigo: string }) {
             name="vet_nombre"
             required
             className={claseInput}
-            defaultValue="MV Laura Benítez"
+            defaultValue={user?.nombre_completo ?? 'MV Laura Benítez'}
           />
         </div>
         <div>
@@ -47,7 +49,7 @@ export function FormAuditoria({ codigo }: { codigo: string }) {
             name="matricula"
             required
             className={claseInput}
-            defaultValue="MV 1234 Corrientes"
+            defaultValue={user?.matricula ?? 'MV 1234 Corrientes'}
           />
         </div>
         <div>
@@ -58,7 +60,7 @@ export function FormAuditoria({ codigo }: { codigo: string }) {
             id="vet_wallet"
             name="vet_wallet"
             className={claseInput}
-            defaultValue="GDEMO-VETERINARIO"
+            defaultValue={user?.wallet ?? 'GDEMO-VETERINARIO'}
           />
         </div>
       </div>

@@ -19,7 +19,11 @@ export async function createClient() {
       setAll(cookiesToSet) {
         try {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            if (options?.maxAge === 0 || value === '') {
+              cookieStore.delete(name);
+            } else {
+              cookieStore.set(name, value, options);
+            }
           }
         } catch {
           // Server Component: las cookies solo se pueden escribir desde

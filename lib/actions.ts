@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth';
 import { eudrGeoHash, rfidListHash, sha256Hex } from '@/lib/crypto';
 import { parsePesadasCsv, resumenPesadas, conciliarCaravanas } from '@/lib/csv';
 import { ADPV_MAX_KG_DIA, ADPV_MIN_KG_DIA, paso1Schema } from '@/lib/domain';
@@ -96,6 +97,11 @@ async function intentarValidacionGfw(input: {
 }
 
 export async function crearLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'PRODUCTOR') {
+    return { errors: ['Esta acción requiere una cuenta con perfil de Productor.'] };
+  }
+
   const parsed = paso1Schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return {
@@ -284,6 +290,15 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
   const codigo = String(formData.get('codigo') ?? '');
   if (!codigo) redirect('/');
 
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'PRODUCTOR') {
+    redirect(
+      `/lotes/${codigo}?error=${encodeURIComponent(
+        'El reintento EUDR requiere una cuenta con perfil de Productor.',
+      )}`,
+    );
+  }
+
   const admin = createAdminClient();
   const { data: lote } = await admin
     .from('lotes')
@@ -314,6 +329,17 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
 
 export async function fondearLoteAction(formData: FormData): Promise<void> {
   const codigo = String(formData.get('codigo') ?? '');
+  if (!codigo) redirect('/');
+
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'COMPRADOR') {
+    redirect(
+      `/lotes/${codigo}?error=${encodeURIComponent(
+        'El fondeo de escrow requiere una cuenta con perfil de Comprador.',
+      )}`,
+    );
+  }
+
   const buyerWallet = String(formData.get('buyer_wallet') ?? '').trim();
   const buyerNombre = String(formData.get('buyer_nombre') ?? '').trim() || 'Frigorifico Demo SA';
 
@@ -405,6 +431,13 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
 
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'VETERINARIO') {
+    volverConError(
+      'La auditoría sanitaria está reservada exclusivamente a Veterinarios acreditados. El productor y el comprador tienen prohibido este paso.',
+    );
+  }
 
   if (
     lote.estado_publicacion !== 'FINANCIADO_EN_ENGORDE' ||
@@ -558,6 +591,11 @@ export async function despacharLoteAction(formData: FormData): Promise<void> {
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
 
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'PRODUCTOR') {
+    volverConError('El despacho DT-e requiere una cuenta con perfil de Productor.');
+  }
+
   if (lote.estado_publicacion !== 'FINANCIADO_EN_ENGORDE' || !lote.seal_2_sanitary) {
     volverConError('El lote requiere el Sello 2 (auditoria del Mes 4) antes del despacho');
   }
@@ -604,6 +642,11 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
 
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'COMPRADOR') {
+    volverConError('La recepción en balanza fiscal requiere una cuenta con perfil de Comprador.');
+  }
 
   if (lote.estado_publicacion !== 'EN_TRANSITO_A_FRIGORIFICO') {
     volverConError('El lote no esta en transito a frigorifico');
@@ -733,3 +776,7 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
 
   redirect(`/lotes/${codigo}`);
 }
+
+export const registrarLoteAction = crearLoteAction;
+export const auditoriaVeterinariaAction = registrarAuditoriaAction;
+export const recepcionFrigorificoAction = recepcionLoteAction;

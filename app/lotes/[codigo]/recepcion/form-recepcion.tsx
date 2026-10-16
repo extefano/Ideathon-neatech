@@ -1,6 +1,7 @@
 'use client';
 
 import { despacharLoteAction, recepcionLoteAction } from '@/lib/actions';
+import type { PerfilUsuario } from '@/lib/auth';
 
 const claseInput =
   'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
@@ -17,7 +18,7 @@ async function cargarEnInput(inputId: string, url: string, nombre: string, tipo:
   input.files = dt.files;
 }
 
-export function FormDespacho({ codigo }: { codigo: string }) {
+export function FormDespacho({ codigo, user: _user }: { codigo: string; user?: PerfilUsuario }) {
   return (
     <form action={despacharLoteAction} className="mt-4 space-y-4">
       <input type="hidden" name="codigo" value={codigo} />
@@ -46,7 +47,7 @@ export function FormDespacho({ codigo }: { codigo: string }) {
           />
           <button
             type="button"
-            className="text-brand hover:text-brand/80 mt-1 text-xs"
+            className="text-brand hover:text-brand/80 mt-1 cursor-pointer text-xs"
             onClick={() =>
               void cargarEnInput('dte_pdf', '/demo/dte-demo.pdf', 'dte-demo.pdf', 'application/pdf')
             }
@@ -57,7 +58,7 @@ export function FormDespacho({ codigo }: { codigo: string }) {
       </div>
       <button
         type="submit"
-        className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
+        className="bg-brand hover:bg-brand/90 cursor-pointer rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
       >
         Despachar camión (EN_TRANSITO)
       </button>
@@ -65,7 +66,7 @@ export function FormDespacho({ codigo }: { codigo: string }) {
   );
 }
 
-export function FormRecepcion({ codigo }: { codigo: string }) {
+export function FormRecepcion({ codigo, user }: { codigo: string; user?: PerfilUsuario }) {
   return (
     <form action={recepcionLoteAction} className="mt-4 space-y-4">
       <input type="hidden" name="codigo" value={codigo} />
@@ -83,7 +84,7 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
           />
           <button
             type="button"
-            className="text-brand hover:text-brand/80 mt-1 text-xs"
+            className="text-brand hover:text-brand/80 mt-1 cursor-pointer text-xs"
             onClick={() =>
               void cargarEnInput(
                 'csv_recepcion',
@@ -109,7 +110,7 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
           />
           <button
             type="button"
-            className="text-brand hover:text-brand/80 mt-1 text-xs"
+            className="text-brand hover:text-brand/80 mt-1 cursor-pointer text-xs"
             onClick={() =>
               void cargarEnInput(
                 'ticket_pdf',
@@ -131,12 +132,12 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
           id="buyer_wallet"
           name="buyer_wallet"
           className={claseInput}
-          defaultValue="GDEMO-FRIGORIFICO"
+          defaultValue={user?.wallet ?? 'GDEMO-FRIGORIFICO'}
         />
       </div>
       <button
         type="submit"
-        className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
+        className="bg-brand hover:bg-brand/90 cursor-pointer rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
       >
         Confirmar recepción y liquidar 30% final
       </button>
