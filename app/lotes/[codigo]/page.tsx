@@ -2,17 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EstadoBadge } from '@/components/estado-badge';
 import { MapaLote } from '@/components/mapa-lote';
-import { fondearLoteAction, reintentarGfwAction } from '@/lib/actions';
+import { reintentarGfwAction } from '@/lib/actions';
+import { FormFondeo } from './form-fondeo';
 import type { EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { getLoteCompleto } from '@/lib/queries';
 import { createAdminClient } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
-
-const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none';
-const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
 
 type GfwConsulta = {
   totalLossHa?: number;
@@ -155,39 +152,13 @@ export default async function LotePage({
             · {moneda} {desembolsos.hito2.toLocaleString('es-AR')} retenido (Mes 4 · 30%) · {moneda}{' '}
             {desembolsos.hito3.toLocaleString('es-AR')} retenido (recepción · 30%).
           </p>
-          <form action={fondearLoteAction} className="mt-4 grid gap-3 sm:grid-cols-3">
-            <input type="hidden" name="codigo" value={String(lote.codigo_lote)} />
-            <div>
-              <label className={claseLabel} htmlFor="buyer_nombre">
-                Comprador (razón social)
-              </label>
-              <input
-                id="buyer_nombre"
-                name="buyer_nombre"
-                className={claseInput}
-                defaultValue="Frigorífico Demo SA"
-              />
-            </div>
-            <div>
-              <label className={claseLabel} htmlFor="buyer_wallet">
-                Wallet Stellar del comprador
-              </label>
-              <input
-                id="buyer_wallet"
-                name="buyer_wallet"
-                className={claseInput}
-                defaultValue="GDEMO-FRIGORIFICO"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                type="submit"
-                className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-              >
-                Fondear y liberar 40%
-              </button>
-            </div>
-          </form>
+          <div className="mt-4">
+            <FormFondeo
+              codigoLote={String(lote.codigo_lote)}
+              monto={Number(lote.monto_total_financiacion ?? 0)}
+              productorWallet={lote.productor_wallet ?? undefined}
+            />
+          </div>
           <p className="mt-2 text-xs text-neutral-500">
             Auto-compra bloqueada (la wallet del comprador debe ser distinta a la del productor) y
             doble fondeo bloqueado (solo lotes DISPONIBLE).

@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { BotonFreighter } from '@/components/boton-freighter';
 import { despacharLoteAction, recepcionLoteAction } from '@/lib/actions';
 
 const claseInput =
@@ -66,6 +68,7 @@ export function FormDespacho({ codigo }: { codigo: string }) {
 }
 
 export function FormRecepcion({ codigo }: { codigo: string }) {
+  const [buyerWallet, setBuyerWallet] = useState('GDEMO-FRIGORIFICO');
   return (
     <form action={recepcionLoteAction} className="mt-4 space-y-4">
       <input type="hidden" name="codigo" value={codigo} />
@@ -131,8 +134,15 @@ export function FormRecepcion({ codigo }: { codigo: string }) {
           id="buyer_wallet"
           name="buyer_wallet"
           className={claseInput}
-          defaultValue="GDEMO-FRIGORIFICO"
+          value={buyerWallet}
+          onChange={(e) => setBuyerWallet(e.target.value)}
         />
+        <div className="mt-2">
+          <BotonFreighter
+            walletActual={buyerWallet.startsWith('G') && buyerWallet.length === 56 ? buyerWallet : ''}
+            onConectado={(w) => setBuyerWallet(w)}
+          />
+        </div>
       </div>
       <button
         type="submit"

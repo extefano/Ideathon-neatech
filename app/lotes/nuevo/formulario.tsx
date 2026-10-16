@@ -115,6 +115,24 @@ export function FormularioLote() {
     if (despues) await despues(file);
   }
 
+  async function generarCaravanasUnicasDemo() {
+    const prefijo = Date.now().toString().slice(-6);
+    const lineas = ['caravana_rfid,peso_kg'];
+    for (let i = 1; i <= 30; i++) {
+      const rfid = `032${prefijo}${String(i).padStart(6, '0')}`;
+      const peso = Math.round(195 + Math.random() * 15);
+      lineas.push(`${rfid},${peso}`);
+    }
+    const blob = new Blob([lineas.join('\n')], { type: 'text/csv' });
+    const file = new File([blob], `pesadas-demo-${prefijo}.csv`, { type: 'text/csv' });
+    if (csvRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      csvRef.current.files = dt.files;
+    }
+    await inspeccionarCsv(file);
+  }
+
   return (
     <form action={formAction} className="mt-8 space-y-8">
       {state.errors.length > 0 && (
@@ -156,14 +174,17 @@ export function FormularioLote() {
           </div>
           <div>
             <label className={claseLabel} htmlFor="productor_wallet">
-              Wallet Stellar (demo)
+              Wallet Stellar (G... opcional)
             </label>
             <input
               id="productor_wallet"
               name="productor_wallet"
               className={claseInput}
-              placeholder="GDEMO-PRODUCTOR"
+              placeholder="G... (por defecto usa la wallet admin)"
             />
+            <p className="mt-1 text-xs text-stone-500">
+              Si no contás con una wallet Stellar, se usará la wallet del sistema para registrar el lote.
+            </p>
           </div>
         </div>
 
@@ -320,21 +341,31 @@ export function FormularioLote() {
             className={claseInput}
             onChange={(event) => void onCsvChange(event)}
           />
-          <button
-            type="button"
-            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
-            onClick={() =>
-              void cargarArchivoDemo(
-                csvRef,
-                '/demo/pesadas-inicial.csv',
-                'pesadas-inicial.csv',
-                'text/csv',
-                inspeccionarCsv,
-              )
-            }
-          >
-            Usar CSV de demo (30 cabezas ~200 kg)
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+              onClick={() =>
+                void cargarArchivoDemo(
+                  csvRef,
+                  '/demo/pesadas-inicial.csv',
+                  'pesadas-inicial.csv',
+                  'text/csv',
+                  inspeccionarCsv,
+                )
+              }
+            >
+              Usar CSV de demo (30 cabezas ~200 kg)
+            </button>
+            <span className="text-neutral-600 text-xs">·</span>
+            <button
+              type="button"
+              className="mt-1 text-xs text-sky-400 hover:text-sky-300"
+              onClick={() => void generarCaravanasUnicasDemo()}
+            >
+              ✨ Generar caravanas únicas nuevas
+            </button>
+          </div>
           {csvInfo && (
             <div className="mt-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-xs">
               {csvInfo.errors.length > 0 ? (

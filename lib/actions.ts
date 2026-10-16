@@ -7,7 +7,13 @@ import { ADPV_MAX_KG_DIA, ADPV_MIN_KG_DIA, paso1Schema } from '@/lib/domain';
 import { calcularDesembolsos, calcularLiquidacionFinal } from '@/lib/escrow';
 import { consultarDeforestacion, hayDeforestacion } from '@/lib/gfw';
 import { parseAndValidatePolygon } from '@/lib/geo';
-import { TOKEN_SAC_TESTNET_USDC, getStellarClient } from '@/lib/stellar';
+import {
+  TOKEN_SAC_TESTNET_USDC,
+  getStellarClient,
+  transferirUsdcDemo,
+  verificarTxOnChain,
+} from '@/lib/stellar';
+import { argsFondeo, argsSanidad, argsCierre, esWalletStellar } from '@/lib/stellar-args';
 import { createAdminClient, sanitizarNombre, subirArchivo } from '@/lib/storage';
 
 export type FormState = { errors: string[] };
@@ -341,11 +347,31 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
   const monto = Number(lote.monto_total_financiacion ?? 0);
   const desembolsos = calcularDesembolsos(monto);
 
-  const tx = await getStellarClient().fundLotEscrow({
-    codigoLote: codigo,
-    buyerWallet,
-    amount: monto,
-  });
+  const txHashEnviado = String(formData.get('tx_hash') ?? '').trim();
+  let txHash: string;
+
+  if (txHashEnviado) {
+    if (process.env.STELLAR_MODE === 'real') {
+      try {
+        await verificarTxOnChain({
+          txHash: txHashEnviado,
+          wallet: buyerWallet,
+          metodo: 'fund_lot_escrow',
+          args: argsFondeo({ codigoLote: codigo, compradorWallet: buyerWallet, monto }),
+        });
+      } catch (err) {
+        volverConError(`Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    txHash = txHashEnviado;
+  } else {
+    const tx = await getStellarClient().fundLotEscrow({
+      codigoLote: codigo,
+      buyerWallet,
+      amount: monto,
+    });
+    txHash = tx.txHash;
+  }
 
   await admin.from('compradores').upsert(
     {
@@ -363,14 +389,14 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
       tipo: 'DEPOSIT_ESCROW',
       monto,
       moneda: lote.moneda,
-      tx_hash: tx.txHash,
+      tx_hash: txHash,
     },
     {
       lote_id: lote.id,
       tipo: 'RELEASE_MILESTONE_1',
       monto: desembolsos.hito1,
       moneda: lote.moneda,
-      tx_hash: tx.txHash,
+      tx_hash: txHash,
     },
   ]);
 
@@ -380,7 +406,7 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
       estado_publicacion: 'FINANCIADO_EN_ENGORDE',
       comprador_wallet: buyerWallet,
       funded_at: new Date().toISOString(),
-      soroban_fund_tx_hash: tx.txHash,
+      soroban_fund_tx_hash: txHash,
     })
     .eq('id', lote.id);
 
@@ -490,14 +516,41 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
     );
   }
 
-  const tx = await getStellarClient().verifySanitaryMilestone({
-    codigoLote: codigo,
-    vetWallet,
-    midtermAvgWeightKg: resumen.promedioKg,
-    adpvGramsPerDay: Math.round(adpv * 1000),
-    vaccinationActaHash: actaHash ?? '',
-    midtermRfidWeightsHash: csvHash,
-  });
+  const txHashEnviado = String(formData.get('tx_hash') ?? '').trim();
+  let txHash: string;
+
+  if (txHashEnviado) {
+    if (process.env.STELLAR_MODE === 'real') {
+      try {
+        await verificarTxOnChain({
+          txHash: txHashEnviado,
+          wallet: vetWallet,
+          metodo: 'verify_sanitary_milestone',
+          args: argsSanidad({
+            codigoLote: codigo,
+            vetWallet,
+            pesoMes4Kg: resumen.promedioKg,
+            adpvGramosDia: Math.round(adpv * 1000),
+            actaHash: actaHash ?? '',
+            csvMes4Hash: csvHash,
+          }),
+        });
+      } catch (err) {
+        volverConError(`Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    txHash = txHashEnviado;
+  } else {
+    const tx = await getStellarClient().verifySanitaryMilestone({
+      codigoLote: codigo,
+      vetWallet,
+      midtermAvgWeightKg: resumen.promedioKg,
+      adpvGramsPerDay: Math.round(adpv * 1000),
+      vaccinationActaHash: actaHash ?? '',
+      midtermRfidWeightsHash: csvHash,
+    });
+    txHash = tx.txHash;
+  }
 
   await admin.from('auditorias_veterinarias').insert({
     lote_id: lote.id,
@@ -513,7 +566,7 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
     conciliacion_ok: true,
     adpv_valido: true,
     observaciones,
-    soroban_seal2_tx_hash: tx.txHash,
+    soroban_seal2_tx_hash: txHash,
   });
 
   await admin.from('caravanas').upsert(
@@ -527,7 +580,7 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
     tipo: 'RELEASE_MILESTONE_2',
     monto: desembolsos.hito2,
     moneda: lote.moneda,
-    tx_hash: tx.txHash,
+    tx_hash: txHash,
   });
 
   await admin
@@ -536,7 +589,7 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
       seal_2_sanitary: true,
       peso_actual_promedio_kg: resumen.promedioKg,
       adpv_kg_dia: redondear(adpv),
-      soroban_seal2_tx_hash: tx.txHash,
+      soroban_seal2_tx_hash: txHash,
     })
     .eq('id', lote.id);
 
@@ -669,14 +722,41 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     .limit(1)
     .maybeSingle();
 
-  const tx = await getStellarClient().completeDeliveryAndSettle({
-    codigoLote: codigo,
-    buyerWallet: buyerWallet || String(lote.comprador_wallet ?? 'GDEMO-FRIGORIFICO'),
-    finalAvgWeightKg: resumen.promedioKg,
-    dtePdfHash: String(recepcionPrevia?.dte_hash ?? ''),
-    receptionHash: csvHash,
-    shortfallDeduction: liquidacion.deduccion,
-  });
+  const txHashEnviado = String(formData.get('tx_hash') ?? '').trim();
+  const effectiveBuyerWallet = buyerWallet || String(lote.comprador_wallet ?? 'GDEMO-FRIGORIFICO');
+  let txHash: string;
+
+  if (txHashEnviado) {
+    if (process.env.STELLAR_MODE === 'real') {
+      try {
+        await verificarTxOnChain({
+          txHash: txHashEnviado,
+          wallet: effectiveBuyerWallet,
+          metodo: 'complete_delivery_and_settle',
+          args: argsCierre({
+            codigoLote: codigo,
+            compradorWallet: effectiveBuyerWallet,
+            pesoFinalKg: resumen.promedioKg,
+            dteHash: String(recepcionPrevia?.dte_hash ?? ''),
+            recepcionHash: csvHash,
+          }),
+        });
+      } catch (err) {
+        volverConError(`Error verificando transacción on-chain: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    txHash = txHashEnviado;
+  } else {
+    const tx = await getStellarClient().completeDeliveryAndSettle({
+      codigoLote: codigo,
+      buyerWallet: effectiveBuyerWallet,
+      finalAvgWeightKg: resumen.promedioKg,
+      dtePdfHash: String(recepcionPrevia?.dte_hash ?? ''),
+      receptionHash: csvHash,
+      shortfallDeduction: liquidacion.deduccion,
+    });
+    txHash = tx.txHash;
+  }
 
   const datosRecepcion = {
     cabezas_recibidas: resumen.cantidad,
@@ -685,11 +765,11 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     kilos_objetivo: redondear(Number(lote.peso_objetivo_kg ?? 0) * resumen.cantidad),
     ajuste_usdc: liquidacion.deduccion,
     conciliacion_ok: true,
-    buyer_wallet: buyerWallet || String(lote.comprador_wallet ?? 'GDEMO-FRIGORIFICO'),
+    buyer_wallet: effectiveBuyerWallet,
     csv_recepcion_url: csvUrl,
     csv_recepcion_hash: csvHash,
     ticket_balanza_url: ticketUrl,
-    soroban_seal3_tx_hash: tx.txHash,
+    soroban_seal3_tx_hash: txHash,
   };
 
   if (recepcionPrevia?.id) {
@@ -709,7 +789,7 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     tipo: 'RELEASE_MILESTONE_3',
     monto: liquidacion.pagoProductor,
     moneda,
-    tx_hash: tx.txHash,
+    tx_hash: txHash,
   });
   if (liquidacion.deduccion > 0) {
     await admin.from('movimientos_escrow').insert({
@@ -717,7 +797,7 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
       tipo: 'REFUND_WEIGHT_SHORTFALL',
       monto: liquidacion.reembolsoComprador,
       moneda,
-      tx_hash: tx.txHash,
+      tx_hash: txHash,
     });
   }
 
@@ -727,9 +807,33 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
       estado_publicacion: 'CERRADO_CICLO',
       seal_3_reception: true,
       peso_final_promedio_kg: resumen.promedioKg,
-      soroban_seal3_tx_hash: tx.txHash,
+      soroban_seal3_tx_hash: txHash,
     })
     .eq('id', lote.id);
 
   redirect(`/lotes/${codigo}`);
 }
+
+/**
+ * Server action para la demo: fondea una cuenta de comprador con USDC en Testnet
+ * utilizando la liquidez del admin.
+ */
+export async function solicitarUsdcDemoAction(
+  destino: string,
+  monto: number,
+): Promise<{ ok: boolean; txHash?: string; error?: string }> {
+  try {
+    if (!esWalletStellar(destino)) {
+      return { ok: false, error: 'Dirección Stellar inválida' };
+    }
+    const montoSeguro = Math.min(Math.max(monto, 1), 25000);
+    const { txHash } = await transferirUsdcDemo(destino, montoSeguro);
+    return { ok: true, txHash };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
