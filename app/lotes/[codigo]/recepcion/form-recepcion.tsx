@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
+import { Aviso } from '@/components/ui/aviso';
+import { Boton } from '@/components/ui/boton';
 import { despacharLoteAction, recepcionLoteAction } from '@/lib/actions';
 import type { PerfilUsuario } from '@/lib/auth';
 import { esWalletStellar } from '@/lib/stellar-args';
@@ -9,8 +12,8 @@ import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
-const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
+  'w-full rounded-control min-h-11 border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none';
+const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-neutral-400 uppercase';
 
 async function cargarEnInput(inputId: string, url: string, nombre: string, tipo: string) {
   const input = document.getElementById(inputId);
@@ -23,9 +26,18 @@ async function cargarEnInput(inputId: string, url: string, nombre: string, tipo:
   input.files = dt.files;
 }
 
-export function FormDespacho({ codigo, user: _user }: { codigo: string; user?: PerfilUsuario }) {
+function BotonConEstado({ children, cargando }: { children: string; cargando: string }) {
+  const { pending } = useFormStatus();
   return (
-    <form action={despacharLoteAction} className="mt-4 space-y-4">
+    <Boton type="submit" cargando={pending}>
+      {pending ? cargando : children}
+    </Boton>
+  );
+}
+
+export function FormDespacho({ codigo }: { codigo: string; user?: PerfilUsuario }) {
+  return (
+    <form action={despacharLoteAction} className="space-y-4">
       <input type="hidden" name="codigo" value={codigo} />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -52,7 +64,7 @@ export function FormDespacho({ codigo, user: _user }: { codigo: string; user?: P
           />
           <button
             type="button"
-            className="text-brand hover:text-brand/80 mt-1 cursor-pointer text-xs"
+            className="text-brand mt-1 cursor-pointer text-xs hover:underline"
             onClick={() =>
               void cargarEnInput('dte_pdf', '/demo/dte-demo.pdf', 'dte-demo.pdf', 'application/pdf')
             }
@@ -61,12 +73,7 @@ export function FormDespacho({ codigo, user: _user }: { codigo: string; user?: P
           </button>
         </div>
       </div>
-      <button
-        type="submit"
-        className="bg-brand hover:bg-brand/90 cursor-pointer rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950"
-      >
-        Despachar camión (EN_TRANSITO)
-      </button>
+      <BotonConEstado cargando="Despachando…">Despachar camión (en tránsito)</BotonConEstado>
     </form>
   );
 }
@@ -153,11 +160,7 @@ export function FormRecepcion({
   };
 
   return (
-    <form
-      onSubmit={(e) => void handleSubmit(e)}
-      action={recepcionLoteAction}
-      className="mt-4 space-y-4"
-    >
+    <form onSubmit={(e) => void handleSubmit(e)} action={recepcionLoteAction} className="space-y-4">
       <input type="hidden" name="codigo" value={codigo} />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -173,7 +176,7 @@ export function FormRecepcion({
           />
           <button
             type="button"
-            className="text-brand hover:text-brand/80 mt-1 cursor-pointer text-xs"
+            className="text-brand mt-1 cursor-pointer text-xs hover:underline"
             onClick={() =>
               void cargarEnInput(
                 'csv_recepcion',
@@ -185,6 +188,9 @@ export function FormRecepcion({
           >
             Usar CSV de demo (30 cabezas ~460 kg)
           </button>
+          <p className="mt-1 text-xs text-neutral-500">
+            Si alguna caravana no coincide, verás el detalle al confirmar.
+          </p>
         </div>
         <div>
           <label className={claseLabel} htmlFor="ticket_pdf">
@@ -199,7 +205,7 @@ export function FormRecepcion({
           />
           <button
             type="button"
-            className="text-brand hover:text-brand/80 mt-1 cursor-pointer text-xs"
+            className="text-brand mt-1 cursor-pointer text-xs hover:underline"
             onClick={() =>
               void cargarEnInput(
                 'ticket_pdf',
@@ -224,37 +230,30 @@ export function FormRecepcion({
       </div>
 
       {esMismaWallet && (
-        <div
-          role="alert"
-          className="text-brand rounded border border-neutral-700 bg-neutral-900/90 p-2 text-xs"
-        >
-          ⚠️ <strong>Auto-compra bloqueada:</strong> La wallet del comprador no puede ser igual a la
-          del productor del lote.
-        </div>
+        <Aviso variante="alerta" titulo="Auto-compra bloqueada">
+          La wallet del comprador no puede ser igual a la del productor del lote.
+        </Aviso>
       )}
 
       {estadoTx && (
-        <div className="text-brand rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs">
+        <Aviso variante="info" titulo="Transacción Stellar Testnet">
           {estadoTx}
-        </div>
+        </Aviso>
       )}
 
       {errorTx && (
-        <div
-          role="alert"
-          className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300"
-        >
+        <Aviso variante="error" titulo="Error de transacción">
           {errorTx}
-        </div>
+        </Aviso>
       )}
 
-      <button
+      <Boton
         type="submit"
+        cargando={cargando}
         disabled={cargando || !esWalletReal || !esTestnet || esMismaWallet}
-        className="bg-brand hover:bg-brand/90 cursor-pointer rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950 disabled:opacity-50"
       >
-        {cargando ? 'Firmando en Freighter...' : 'Confirmar recepción y liquidar 30% final'}
-      </button>
+        {cargando ? 'Firmando en Freighter…' : 'Confirmar recepción y liberar 30 % final'}
+      </Boton>
     </form>
   );
 }

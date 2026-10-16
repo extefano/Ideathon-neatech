@@ -1,3 +1,4 @@
+import { etiquetaEstado, terminoCanonicoEstado } from '@/lib/estado-lote';
 import type { EstadoLote } from '@/lib/domain';
 
 const colores: Record<EstadoLote, string> = {
@@ -13,9 +14,10 @@ const colores: Record<EstadoLote, string> = {
 export function EstadoBadge({ estado }: { estado: EstadoLote }) {
   return (
     <span
+      title={terminoCanonicoEstado(estado)}
       className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${colores[estado]}`}
     >
-      {estado.replaceAll('_', ' ')}
+      {etiquetaEstado(estado)}
     </span>
   );
 }

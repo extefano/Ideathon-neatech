@@ -1,47 +1,182 @@
 import Link from 'next/link';
 import { LoteCard } from '@/components/lote-card';
+import { Aviso } from '@/components/ui/aviso';
 import { listarLotes, type LoteListItem } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MercadoPage() {
+type FiltrosMercado = {
+  provincia?: string;
+  categoria?: string;
+  raza?: string;
+  moneda?: string;
+};
+
+function unicos(lotes: LoteListItem[], clave: 'provincia' | 'categoria' | 'raza'): string[] {
+  const valores = new Set<string>();
+  for (const lote of lotes) {
+    const valor = lote[clave];
+    if (valor) valores.add(valor);
+  }
+  return [...valores].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+function CampoSelect({
+  etiqueta,
+  name,
+  valor,
+  opciones,
+}: {
+  etiqueta: string;
+  name: string;
+  valor: string;
+  opciones: string[];
+}) {
+  return (
+    <div className="space-y-1">
+      <label htmlFor={`filtro-${name}`} className="block text-xs font-semibold text-neutral-400">
+        {etiqueta}
+      </label>
+      <select
+        id={`filtro-${name}`}
+        name={name}
+        defaultValue={valor}
+        className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+      >
+        <option value="">Todas</option>
+        {opciones.map((opcion) => (
+          <option key={opcion} value={opcion}>
+            {opcion}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+export default async function MercadoPage({
+  searchParams,
+}: {
+  searchParams: Promise<FiltrosMercado>;
+}) {
+  const sp = await searchParams;
   let lotes: LoteListItem[] = [];
-  let error: string | null = null;
+  let huboError = false;
 
   try {
     lotes = await listarLotes({ estado: 'DISPONIBLE' });
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Error desconocido';
+  } catch (error) {
+    huboError = true;
+    console.error('Error listando lotes del mercado', error);
   }
 
+  const filtros = {
+    provincia: sp.provincia ?? '',
+    categoria: sp.categoria ?? '',
+    raza: sp.raza ?? '',
+    moneda: sp.moneda ?? '',
+  };
+
+  const filtrados = lotes.filter(
+    (lote) =>
+      (!filtros.provincia || lote.provincia === filtros.provincia) &&
+      (!filtros.categoria || lote.categoria === filtros.categoria) &&
+      (!filtros.raza || lote.raza === filtros.raza) &&
+      (!filtros.moneda || lote.moneda === filtros.moneda),
+  );
+
+  const hayFiltros = Object.values(filtros).some(Boolean);
+
   return (
-    <main className="mx-auto max-w-6xl p-8">
-      <Link href="/" className="hover:text-brand text-sm text-neutral-400">
+    <main className="mx-auto max-w-6xl space-y-8 p-8">
+      <Link href="/" className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400">
         ← Inicio
       </Link>
-      <header className="mt-4">
-        <h1 className="text-3xl font-bold">Marketplace</h1>
-        <p className="mt-2 text-neutral-400">
-          Lotes con Sello 1 (Origen Libre de Deforestación) verificados contra Global Forest Watch.
-          El comprador fondea el escrow y el contrato libera el 40% inicial al productor.
+
+      <header className="space-y-2">
+        <h1 className="text-3xl font-bold">Mercado de lotes</h1>
+        <p className="max-w-3xl text-neutral-400">
+          Lotes con origen verificado y libre de deforestación. Compará kilos, precio por kg y
+          uniformidad antes de financiar.
         </p>
       </header>
 
-      {error && (
-        <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
-          {error}
+      <Aviso variante="info" titulo="Cómo funciona la financiación">
+        El Comprador deposita el pago en garantía (escrow). El Productor cobra 40 % al inicio, 30 %
+        a mitad del engorde y 30 % en la entrega.
+      </Aviso>
+
+      <form method="get" className="rounded-tarjeta border-borde bg-panel border p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <CampoSelect
+            etiqueta="Provincia"
+            name="provincia"
+            valor={filtros.provincia}
+            opciones={unicos(lotes, 'provincia')}
+          />
+          <CampoSelect
+            etiqueta="Categoría"
+            name="categoria"
+            valor={filtros.categoria}
+            opciones={unicos(lotes, 'categoria')}
+          />
+          <CampoSelect
+            etiqueta="Raza"
+            name="raza"
+            valor={filtros.raza}
+            opciones={unicos(lotes, 'raza')}
+          />
+          <div className="space-y-1">
+            <label htmlFor="filtro-moneda" className="block text-xs font-semibold text-neutral-400">
+              Moneda
+            </label>
+            <select
+              id="filtro-moneda"
+              name="moneda"
+              defaultValue={filtros.moneda}
+              className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <option value="">Todas</option>
+              <option value="USDC">USDC</option>
+              <option value="EURC">EURC</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 min-h-11 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Aplicar filtros
+          </button>
+          {hayFiltros && (
+            <Link
+              href="/mercado"
+              className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400 underline focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Limpiar filtros
+            </Link>
+          )}
+        </div>
+      </form>
+
+      {huboError ? (
+        <Aviso variante="error" titulo="No pudimos cargar el mercado">
+          Volvé a intentar en unos segundos.
+        </Aviso>
+      ) : filtrados.length === 0 ? (
+        <Aviso variante="info" titulo="No hay lotes con estos filtros">
+          {hayFiltros
+            ? 'Probá quitar algún filtro para ver más lotes.'
+            : 'No hay lotes disponibles en este momento.'}
+        </Aviso>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtrados.map((lote) => (
+            <LoteCard key={lote.id} lote={lote} />
+          ))}
         </div>
       )}
-
-      {lotes.length === 0 && !error && (
-        <p className="mt-8 text-sm text-neutral-500">No hay lotes disponibles en este momento.</p>
-      )}
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {lotes.map((lote) => (
-          <LoteCard key={lote.id} lote={lote} />
-        ))}
-      </div>
     </main>
   );
 }

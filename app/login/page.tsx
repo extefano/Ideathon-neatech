@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
+import { Aviso } from '@/components/ui/aviso';
 import { getCurrentUser, logoutAction } from '@/lib/auth';
 import { LoginForm } from './login-form';
 
@@ -16,45 +17,51 @@ export default async function LoginPage({
   const redirectTo = sp.redirectTo || '/';
 
   return (
-    <main className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center p-4 sm:p-6">
+    <main className="flex min-h-[70vh] flex-col items-center justify-center p-4 sm:p-6">
       {user && (
-        <div className="mb-6 flex w-full max-w-md items-center justify-between rounded-xl border border-yellow-400/40 bg-yellow-400/10 p-4 text-xs text-yellow-300">
-          <div>
-            <span className="font-semibold">Sesión activa:</span> {user.nombre_completo} ({user.rol}
-            )
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/" className="font-bold underline hover:text-white">
-              Ir al inicio
-            </Link>
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="cursor-pointer text-neutral-400 underline hover:text-white"
+        <div className="mb-6 w-full max-w-md">
+          <Aviso variante="info" titulo={`Sesión activa como ${user.nombre_completo}`}>
+            <div className="flex flex-wrap items-center gap-3">
+              <span>
+                Rol: <strong>{user.rol}</strong>
+              </span>
+              <Link
+                href="/"
+                className="focus-visible:ring-foco font-bold underline focus-visible:ring-2 focus-visible:outline-none"
               >
-                Salir
-              </button>
-            </form>
-          </div>
+                Ir al inicio
+              </Link>
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  className="focus-visible:ring-foco cursor-pointer underline focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  Cerrar sesión
+                </button>
+              </form>
+            </div>
+          </Aviso>
         </div>
       )}
 
       {sp.error && (
-        <div className="mb-6 w-full max-w-md rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
-          {sp.error}
+        <div className="mb-6 w-full max-w-md">
+          <Aviso variante="error" titulo="No pudimos completar la operación">
+            {sp.error}
+          </Aviso>
         </div>
       )}
 
       {sp.msg && (
-        <div className="mb-6 w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-900 p-3 text-xs text-neutral-300">
-          {sp.msg}
+        <div className="mb-6 w-full max-w-md">
+          <Aviso variante="info">{sp.msg}</Aviso>
         </div>
       )}
 
       <Suspense
         fallback={
-          <div className="h-96 w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-8 text-center text-xs text-neutral-500">
-            Cargando...
+          <div className="rounded-tarjeta border-borde bg-panel h-96 w-full max-w-md border p-8 text-center text-xs text-neutral-500">
+            Cargando…
           </div>
         }
       >

@@ -47,7 +47,8 @@ App Next.js + Supabase para trazabilidad ganadera con sellos EUDR en Stellar (So
 - Local: `.env.local` (ya creado con las credenciales del proyecto, incluida `GFW_API_KEY`).
 - Flujo funcional de negocio documentado en `docs/flujo-completo.md`.
 - CI/CD: secrets `SUPABASE_*` y `VERCEL_*` en GitHub Actions.
-- Skills en `.agents/skills/`: mattpocock (`/tdd`, `/implement`, `/code-review`, `/handoff`), supabase, `teamwork-preview` (equipos multi-agente con verificación adversarial). Para orquestar workers en paralelo, usar las skills de orca (`orca-cli`, `orchestration`).
+- Skills en `.agents/skills/`: mattpocock (`/tdd`, `/implement`, `/code-review`, `/handoff`), supabase, `muunar-ui-campo` (criterios de UI de campo), `teamwork-preview` (equipos multi-agente con verificación adversarial). Para orquestar workers en paralelo, usar las skills de orca (`orca-cli`, `orchestration`).
+- Todo cambio de UI (pantallas, componentes, estilos, textos, animaciones) debe seguir la skill `muunar-ui-campo` (`.agents/skills/muunar-ui-campo/SKILL.md`).
 
 ## Agent skills
 
@@ -62,6 +63,10 @@ Vocabulario default de triage (`needs-triage`, `needs-info`, `ready-for-agent`, 
 ### Domain docs
 
 Single-context: `GLOSSARY.md` en la raíz + `docs/adr/`. Ver `docs/agents/domain.md`.
+
+### UI de campo
+
+Criterios de diseño, lenguaje, accesibilidad y animación para la UI de campo (Productor, Veterinario, Comprador). Ver `.agents/skills/muunar-ui-campo/SKILL.md`.
 
 ## Alcance del MVP (no negociable)
 

@@ -1,25 +1,25 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
+import { DocumentosHashes } from '@/components/documentos-hashes';
 import { EstadoBadge } from '@/components/estado-badge';
-import { MapaLote } from '@/components/mapa-lote';
+import { EvidenciaSatelital, type GfwConsulta } from '@/components/evidencia-satelital';
+import { Aviso } from '@/components/ui/aviso';
+import { Boton } from '@/components/ui/boton';
+import { Tabla } from '@/components/ui/tabla';
+import { Tarjeta } from '@/components/ui/tarjeta';
 import { reintentarGfwAction } from '@/lib/actions';
 import { getCurrentUser } from '@/lib/auth';
-import { FormFondeo } from './form-fondeo';
+import { construirDocumentos } from '@/lib/documentos-hashes';
 import type { EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
+import { resumirLote } from '@/lib/estado-lote';
 import { getLoteCompleto } from '@/lib/queries';
 import { esWalletStellar } from '@/lib/stellar-args';
 import { createAdminClient } from '@/lib/storage';
+import { FormFondeo } from './form-fondeo';
 
 export const dynamic = 'force-dynamic';
-
-type GfwConsulta = {
-  totalLossHa?: number;
-  checkedAt?: string;
-  criterio?: string;
-  byYear?: { year: number; lossHa: number }[];
-};
 
 async function urlFirmada(bucket: string, path: unknown, expires = 3600): Promise<string | null> {
   if (typeof path !== 'string' || path.length === 0) return null;
@@ -32,37 +32,6 @@ async function urlFirmada(bucket: string, path: unknown, expires = 3600): Promis
   }
 }
 
-function Chip({ activo, texto }: { activo: boolean; texto: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
-        activo
-          ? 'border-brand/40 bg-brand/10 text-brand'
-          : 'border-neutral-700 bg-neutral-900 text-neutral-500'
-      }`}
-    >
-      <span className={`h-2 w-2 rounded-full ${activo ? 'bg-brand' : 'bg-neutral-600'}`} />
-      {texto}
-    </span>
-  );
-}
-
-function HashLinea({ etiqueta, valor }: { etiqueta: string; valor: unknown }) {
-  const texto = typeof valor === 'string' && valor.length > 0 ? valor : null;
-  return (
-    <div className="flex items-baseline justify-between gap-3 border-b border-neutral-900 py-1.5 text-xs">
-      <span className="text-neutral-500">{etiqueta}</span>
-      {texto ? (
-        <span className="truncate font-mono text-neutral-300" title={texto}>
-          {texto.slice(0, 20)}…{texto.slice(-8)}
-        </span>
-      ) : (
-        <span className="text-neutral-600">—</span>
-      )}
-    </div>
-  );
-}
-
 function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
   if (typeof txHash !== 'string' || txHash.length === 0) return null;
   return (
@@ -70,10 +39,33 @@ function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="text-brand hover:text-brand/80 text-xs"
+      className="focus-visible:ring-foco text-brand text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
       {etiqueta} ↗
     </a>
+  );
+}
+
+function SelloItem({ nombre, activo, falta }: { nombre: string; activo: boolean; falta: string }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span
+        aria-hidden="true"
+        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+          activo ? 'border-brand text-brand' : 'border-neutral-600 text-neutral-500'
+        }`}
+      >
+        {activo ? '✓' : '·'}
+      </span>
+      <div>
+        <p className={`text-sm font-semibold ${activo ? 'text-neutral-100' : 'text-neutral-400'}`}>
+          {nombre}
+        </p>
+        <p className="text-xs text-neutral-500">
+          {activo ? 'Verificado y anclado en Stellar.' : `Falta: ${falta}`}
+        </p>
+      </div>
+    </li>
   );
 }
 
@@ -97,20 +89,57 @@ export default async function LotePage({
   const renspaUrl = await urlFirmada('documentos', lote.renspa_doc_url);
   const boletoUrl = await urlFirmada('documentos', lote.boleto_marca_url);
 
-  const liberado = (movimientos as { tipo: string; monto: number }[])
+  const movimientosTipados = movimientos as {
+    id: string;
+    tipo: string;
+    monto: number;
+    moneda: string;
+    tx_hash: string | null;
+  }[];
+  const liberado = movimientosTipados
     .filter((m) => m.tipo.startsWith('RELEASE_'))
     .reduce((a, m) => a + Number(m.monto), 0);
+  const liberados = new Set(movimientosTipados.map((m) => m.tipo));
 
-  const desembolsos = calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0));
+  const montos = calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0));
   const moneda = String(lote.moneda ?? 'USDC');
+  const resumen = resumirLote({
+    estado,
+    seal_2_sanitary: Boolean(lote.seal_2_sanitary),
+    codigo: String(lote.codigo_lote),
+  });
+
+  const pagos = [
+    {
+      hito: 'Al inicio (40 %)',
+      monto: montos.hito1,
+      liberado: liberados.has('RELEASE_MILESTONE_1'),
+    },
+    { hito: 'Mes 4 (30 %)', monto: montos.hito2, liberado: liberados.has('RELEASE_MILESTONE_2') },
+    {
+      hito: 'En la entrega (30 %)',
+      monto: montos.hito3,
+      liberado: liberados.has('RELEASE_MILESTONE_3'),
+    },
+  ];
+
+  const documentos = construirDocumentos({
+    renspaDocHash: lote.renspa_doc_hash,
+    rfidListHash: lote.rfid_list_hash,
+    eudrGeoHash: lote.eudr_geo_hash,
+    actaHash: auditorias[0]?.acta_hash,
+    dteHash: recepciones[0]?.dte_hash,
+  });
+
+  const sello2 = Boolean(lote.seal_2_sanitary);
 
   return (
-    <main className="mx-auto max-w-6xl p-8">
-      <Link href="/" className="hover:text-brand text-sm text-neutral-400">
+    <main className="mx-auto max-w-6xl space-y-6 p-8">
+      <Link href="/" className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400">
         ← Lotes
       </Link>
 
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <span className="font-mono text-sm text-neutral-400">{lote.codigo_lote}</span>
@@ -125,49 +154,56 @@ export default async function LotePage({
         {estado === 'CERRADO_CICLO' && (
           <Link
             href={`/pasaporte/${lote.codigo_lote}`}
-            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
+            className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 min-h-11 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Ver Pasaporte EUDR
+            Ver pasaporte EUDR
           </Link>
         )}
       </header>
 
       {sp.gfw === 'error' && (
-        <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
-          {sp.msg ?? 'Error consultando Global Forest Watch'}
-        </div>
+        <Aviso variante="error" titulo="No se pudo validar contra Global Forest Watch">
+          {sp.msg ?? 'Reintentá la validación desde esta pantalla.'}
+        </Aviso>
       )}
-
       {sp.error && (
-        <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+        <Aviso variante="error" titulo="Ocurrió un problema">
           {sp.error}
-        </div>
+        </Aviso>
       )}
 
+      <Tarjeta titulo="Resumen y próximos pasos" descripcion={resumen.descripcion}>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-neutral-300">
+            Estado canónico: <span className="text-neutral-100">{resumen.canonico}</span>
+          </span>
+          {resumen.accion && estado !== 'DISPONIBLE' && (
+            <Link
+              href={resumen.accion.href}
+              className="rounded-control focus-visible:ring-foco bg-brand min-h-11 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+            >
+              {resumen.accion.texto} →
+            </Link>
+          )}
+        </div>
+      </Tarjeta>
+
+      {/* Acciones de rol por estado */}
       {estado === 'DISPONIBLE' && (
-        <section className="border-brand/30 bg-brand/5 mt-6 rounded-lg border p-5">
-          <h2 className="text-lg font-semibold">Fondear escrow — Paso 2</h2>
-          <p className="mt-1 text-sm text-neutral-300">
-            Depósito de {moneda}{' '}
-            {Number(lote.monto_total_financiacion ?? 0).toLocaleString('es-AR')}:{' '}
-            <span className="text-brand">
-              {moneda} {desembolsos.hito1.toLocaleString('es-AR')} al productor (Hito 1 · 40%)
-            </span>{' '}
-            · {moneda} {desembolsos.hito2.toLocaleString('es-AR')} retenido (Mes 4 · 30%) · {moneda}{' '}
-            {desembolsos.hito3.toLocaleString('es-AR')} retenido (recepción · 30%).
-          </p>
+        <Tarjeta
+          titulo="Fondear el pago en garantía"
+          descripcion={`Depósito de ${moneda} ${Number(lote.monto_total_financiacion ?? 0).toLocaleString('es-AR')}. El Productor cobra ${moneda} ${montos.hito1.toLocaleString('es-AR')} ahora (40 %), ${moneda} ${montos.hito2.toLocaleString('es-AR')} a mitad del engorde (30 %) y ${moneda} ${montos.hito3.toLocaleString('es-AR')} en la entrega (30 %).`}
+        >
           {currentUser?.rol !== 'COMPRADOR' ? (
-            <div className="mt-4">
-              <BannerRolRequerido
-                rolRequerido="COMPRADOR"
-                titulo="El fondeo de escrow requiere cuenta de Comprador"
-                descripcion="Para comprometer fondos en el contrato escrow y financiar la tropa debés identificarte con un perfil de Comprador (Frigorífico o Inversor)."
-                userActual={currentUser}
-                redirectTo={`/lotes/${codigo}`}
-              />
-            </div>
+            <BannerRolRequerido
+              rolRequerido="COMPRADOR"
+              titulo="El fondeo requiere cuenta de Comprador"
+              descripcion="Para comprometer los fondos en garantía y financiar la tropa tenés que identificarte como Comprador."
+              userActual={currentUser}
+              redirectTo={`/lotes/${codigo}`}
+            />
           ) : (
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               <CredencialSesion user={currentUser} />
               <FormFondeo
                 codigoLote={String(lote.codigo_lote)}
@@ -178,192 +214,165 @@ export default async function LotePage({
               />
             </div>
           )}
-          <p className="mt-2 text-xs text-neutral-500">
-            Auto-compra bloqueada (la wallet del comprador debe ser distinta a la del productor) y
-            doble fondeo bloqueado (solo lotes DISPONIBLE).
-          </p>
-        </section>
+        </Tarjeta>
       )}
 
-      {estado === 'FINANCIADO_EN_ENGORDE' && !lote.seal_2_sanitary && (
-        <section className="border-brand/30 bg-brand/5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-5">
-          <div>
-            <h2 className="text-lg font-semibold">Auditoría del Mes 4 (Paso 3)</h2>
-            <p className="mt-1 text-sm text-neutral-300">
-              El veterinario acreditado carga el acta SIGSA y la balanza con RFID para validar el
-              ADPV (0,5–1,3 kg/día) y liberar el 30% del escrow.
-            </p>
-          </div>
+      {estado === 'FINANCIADO_EN_ENGORDE' && !sello2 && (
+        <Tarjeta
+          titulo="Auditoría del Mes 4 pendiente"
+          descripcion="La ejecuta el Veterinario acreditado: acta SIGSA, pesada RFID y validación del ADPV para liberar el 30 %."
+        >
           <Link
             href={`/lotes/${lote.codigo_lote}/auditoria`}
-            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
+            className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Ir a auditoría veterinaria
+            Ir a auditoría veterinaria →
           </Link>
-        </section>
+        </Tarjeta>
       )}
 
-      {estado === 'FINANCIADO_EN_ENGORDE' && lote.seal_2_sanitary && (
-        <section className="border-brand/30 bg-brand/5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-5">
-          <div>
-            <h2 className="text-lg font-semibold">Cierre de ciclo (Paso 4)</h2>
-            <p className="mt-1 text-sm text-neutral-300">
-              El productor despacha con DT-e y el frigorífico confirma la recepción en balanza
-              fiscal; se libera el 30% final con ajuste por kilos.
-            </p>
-          </div>
+      {estado === 'FINANCIADO_EN_ENGORDE' && sello2 && (
+        <Tarjeta
+          titulo="Listo para despacho y recepción"
+          descripcion="El Productor despacha con DT-e y el frigorífico confirma la recepción en balanza fiscal; se libera el 30 % final con ajuste por kilos."
+        >
           <Link
             href={`/lotes/${lote.codigo_lote}/recepcion`}
-            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
+            className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Ir a despacho y recepción
+            Ir a despacho y recepción →
           </Link>
-        </section>
+        </Tarjeta>
       )}
 
       {estado === 'EN_TRANSITO_A_FRIGORIFICO' && (
-        <section className="border-brand/30 bg-brand/5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-5">
-          <div>
-            <h2 className="text-lg font-semibold">Camión en tránsito</h2>
-            <p className="mt-1 text-sm text-neutral-300">
-              El frigorífico debe registrar el pesaje de recepción en balanza fiscal para cerrar el
-              ciclo.
-            </p>
-          </div>
+        <Tarjeta
+          titulo="Camión en tránsito"
+          descripcion="El frigorífico debe registrar el pesaje de recepción en balanza fiscal para cerrar el ciclo."
+        >
           <Link
             href={`/lotes/${lote.codigo_lote}/recepcion`}
-            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
+            className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Registrar recepción
+            Registrar recepción →
           </Link>
-        </section>
+        </Tarjeta>
       )}
 
       {estado === 'RECHAZADO_EUDR' && (
-        <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
-          <p className="font-semibold">
-            Lote rechazado por EUDR — se detectó pérdida de bosque posterior al 31/12/2020.
-          </p>
-          {gfw?.byYear && (
-            <ul className="mt-2 list-disc pl-5">
-              {gfw.byYear.map((anio) => (
-                <li key={anio.year}>
-                  {anio.year}: {anio.lossHa} ha
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <Aviso variante="error" titulo="Lote no conforme EUDR">
+          Se detectó pérdida de bosque posterior al 31/12/2020, por lo que el lote no es apto para
+          exportación EUDR.
+        </Aviso>
       )}
 
       {estado === 'PENDIENTE_VALIDACION' && (
-        <div className="border-brand/40 bg-brand/10 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border p-4 text-sm text-neutral-200">
-          <p>La validación EUDR quedó pendiente (error de red o sin reintento).</p>
-          <form action={reintentarGfwAction}>
+        <Aviso variante="alerta" titulo="Validación EUDR pendiente">
+          <p>Quedó pendiente por un error de red o falta de reintento.</p>
+          <form action={reintentarGfwAction} className="mt-3">
             <input type="hidden" name="codigo" value={String(lote.codigo_lote)} />
-            <button
-              type="submit"
-              className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
-            >
-              Reintentar validación EUDR
-            </button>
+            <Boton type="submit">Reintentar validación EUDR</Boton>
           </form>
-        </div>
+        </Aviso>
       )}
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Sellos en Soroban (modo demo testnet)</h2>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <Chip activo={Boolean(lote.seal_1_eudr)} texto="Sello 1 · Origen EUDR" />
-          <Chip activo={Boolean(lote.seal_2_sanitary)} texto="Sello 2 · Sanidad y engorde" />
-          <Chip activo={Boolean(lote.seal_3_reception)} texto="Sello 3 · Cierre y recepción" />
-        </div>
-        <div className="mt-2 flex gap-4">
-          <TxLink etiqueta="Tx Sello 1" txHash={lote.soroban_create_tx_hash} />
-          <TxLink etiqueta="Tx fondeo" txHash={lote.soroban_fund_tx_hash} />
-          <TxLink etiqueta="Tx Sello 2" txHash={lote.soroban_seal2_tx_hash} />
-          <TxLink etiqueta="Tx Sello 3" txHash={lote.soroban_seal3_tx_hash} />
-        </div>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Tarjeta titulo="Progreso de los 3 sellos">
+          <ul className="space-y-4">
+            <SelloItem
+              nombre="Sello 1 · Origen libre de deforestación"
+              activo={Boolean(lote.seal_1_eudr)}
+              falta="validación satelital EUDR y polígono"
+            />
+            <SelloItem
+              nombre="Sello 2 · Sanidad y engorde"
+              activo={sello2}
+              falta="auditoría del Mes 4 del Veterinario acreditado"
+            />
+            <SelloItem
+              nombre="Sello 3 · Cierre y recepción"
+              activo={Boolean(lote.seal_3_reception)}
+              falta="despacho DT-e y recepción en balanza fiscal"
+            />
+          </ul>
+        </Tarjeta>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-5">
-          <h2 className="text-lg font-semibold">Evidencia satelital (EUDR)</h2>
-          <div className="mt-3">
-            <MapaLote poligono={lote.poligono_geojson} />
-          </div>
-          {gfw ? (
-            <div className="mt-3 text-sm text-neutral-300">
-              <p>
-                Pérdida arbórea ≥ 2021:{' '}
-                <span className={gfw.totalLossHa === 0 ? 'text-brand' : 'text-red-400'}>
-                  {gfw.totalLossHa} ha
-                </span>
-              </p>
-              <p className="text-xs text-neutral-500">
-                {gfw.criterio} · consultado{' '}
-                {gfw.checkedAt ? new Date(gfw.checkedAt).toLocaleString('es-AR') : '—'}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-neutral-500">Sin consulta GFW registrada.</p>
-          )}
-        </section>
-
-        <section className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-5">
-          <h2 className="text-lg font-semibold">Hashes y documentos</h2>
-          <div className="mt-3">
-            <HashLinea etiqueta="renspa_doc_hash" valor={lote.renspa_doc_hash} />
-            <HashLinea etiqueta="rfid_list_hash" valor={lote.rfid_list_hash} />
-            <HashLinea etiqueta="eudr_geo_hash" valor={lote.eudr_geo_hash} />
-            <HashLinea etiqueta="ada_hash (Sello 2)" valor={auditorias[0]?.acta_hash} />
-            <HashLinea etiqueta="dte_pdf_hash" valor={recepciones[0]?.dte_hash} />
-          </div>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs">
-            {renspaUrl && (
-              <a
-                className="text-brand hover:text-brand/80"
-                href={renspaUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ver constancia RENSPA ↗
-              </a>
-            )}
-            {boletoUrl && (
-              <a
-                className="text-brand hover:text-brand/80"
-                href={boletoUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ver boleto de marca ↗
-              </a>
-            )}
-            {!renspaUrl && !boletoUrl && (
-              <span className="text-neutral-500">Documentos con acceso restringido.</span>
-            )}
-          </div>
-        </section>
+        <Tarjeta
+          titulo="Cronograma de pagos"
+          descripcion={`El Comprador deposita en garantía. Liberado hasta ahora: ${moneda} ${liberado.toLocaleString('es-AR')}.`}
+        >
+          <Tabla
+            columnas={[
+              { clave: 'hito', titulo: 'Hito' },
+              { clave: 'monto', titulo: `Monto (${moneda})`, numerica: true },
+              { clave: 'estado', titulo: 'Estado' },
+            ]}
+            filas={pagos.map((pago) => ({
+              hito: pago.hito,
+              monto: pago.monto.toLocaleString('es-AR'),
+              estado: pago.liberado ? 'Liberado' : 'Pendiente',
+            }))}
+          />
+        </Tarjeta>
       </div>
 
-      <section className="mt-6 rounded-lg border border-neutral-800 bg-neutral-950/60 p-5">
+      <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
+
+      <DocumentosHashes documentos={documentos} videoUrl={lote.video_url ?? null} />
+
+      <Tarjeta titulo="Detalles técnicos verificables">
         <details>
-          <summary className="cursor-pointer text-lg font-semibold">
-            Caravanas RFID ({caravanas.length})
+          <summary className="cursor-pointer text-sm font-semibold text-neutral-200">
+            Transacciones, caravanas y accesos técnicos
           </summary>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="text-neutral-500">
-                <tr>
-                  <th className="py-1.5 pr-4">RFID</th>
-                  <th className="py-1.5 pr-4">Peso inicial</th>
-                  <th className="py-1.5 pr-4">Peso mes 4</th>
-                  <th className="py-1.5 pr-4">Peso final</th>
-                </tr>
-              </thead>
-              <tbody className="font-mono">
-                {(
+          <div className="mt-4 space-y-5">
+            <div className="flex flex-wrap gap-4 text-xs">
+              <TxLink etiqueta="Tx Sello 1" txHash={lote.soroban_create_tx_hash} />
+              <TxLink etiqueta="Tx fondeo" txHash={lote.soroban_fund_tx_hash} />
+              <TxLink etiqueta="Tx Sello 2" txHash={lote.soroban_seal2_tx_hash} />
+              <TxLink etiqueta="Tx Sello 3" txHash={lote.soroban_seal3_tx_hash} />
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-xs">
+              {renspaUrl && (
+                <a
+                  className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                  href={renspaUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver constancia RENSPA ↗
+                </a>
+              )}
+              {boletoUrl && (
+                <a
+                  className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                  href={boletoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver boleto de marca ↗
+                </a>
+              )}
+              {!renspaUrl && !boletoUrl && (
+                <span className="text-neutral-500">Documentos con acceso restringido.</span>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-200">
+                Caravanas RFID ({caravanas.length})
+              </h3>
+              <Tabla
+                className="mt-2"
+                columnas={[
+                  { clave: 'rfid', titulo: 'RFID' },
+                  { clave: 'inicial', titulo: 'Peso inicial', numerica: true },
+                  { clave: 'mes4', titulo: 'Peso mes 4', numerica: true },
+                  { clave: 'final', titulo: 'Peso final', numerica: true },
+                ]}
+                vacio="Todavía no hay caravanas cargadas."
+                filas={(
                   caravanas as {
                     id: string;
                     rfid: string;
@@ -371,94 +380,65 @@ export default async function LotePage({
                     peso_mes4_kg: number | null;
                     peso_final_kg: number | null;
                   }[]
-                ).map((caravana) => (
-                  <tr key={caravana.id} className="border-t border-neutral-900">
-                    <td className="py-1.5 pr-4">{caravana.rfid}</td>
-                    <td className="py-1.5 pr-4">{caravana.peso_inicial_kg ?? '—'} kg</td>
-                    <td className="py-1.5 pr-4">{caravana.peso_mes4_kg ?? '—'}</td>
-                    <td className="py-1.5 pr-4">{caravana.peso_final_kg ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                ).map((caravana) => ({
+                  rfid: <span className="font-mono">{caravana.rfid}</span>,
+                  inicial:
+                    caravana.peso_inicial_kg != null ? `${caravana.peso_inicial_kg} kg` : '—',
+                  mes4: caravana.peso_mes4_kg != null ? `${caravana.peso_mes4_kg} kg` : '—',
+                  final: caravana.peso_final_kg != null ? `${caravana.peso_final_kg} kg` : '—',
+                }))}
+              />
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-200">Movimientos del escrow</h3>
+              <Tabla
+                className="mt-2"
+                columnas={[
+                  { clave: 'tipo', titulo: 'Movimiento' },
+                  { clave: 'monto', titulo: 'Monto', numerica: true },
+                  { clave: 'tx', titulo: 'Tx' },
+                ]}
+                vacio="Sin movimientos todavía (se fondea en el Paso 2)."
+                filas={movimientosTipados.map((movimiento) => ({
+                  tipo: movimiento.tipo,
+                  monto: `${movimiento.moneda} ${Number(movimiento.monto).toLocaleString('es-AR')}`,
+                  tx: movimiento.tx_hash ? (
+                    <TxLink etiqueta="ver" txHash={movimiento.tx_hash} />
+                  ) : (
+                    '—'
+                  ),
+                }))}
+              />
+            </div>
+
+            <div className="space-y-1 text-sm text-neutral-300">
+              <h3 className="text-sm font-semibold text-neutral-200">Productor y trazabilidad</h3>
+              <p>
+                Productor:{' '}
+                {productor?.nombre_razon_social ??
+                  (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                    ? String(lote.productor_wallet)
+                    : 'Productor registrado')}
+                {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
+              </p>
+              <p className="font-mono text-xs text-neutral-500">
+                {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                  ? String(lote.productor_wallet)
+                  : 'Wallet pendiente de vinculación en Freighter'}
+              </p>
+              <p className="text-xs text-neutral-500">
+                {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
+                {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
+              </p>
+              <p className="text-xs text-neutral-500">
+                Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
+                (Pasos 3 y 4)
+              </p>
+            </div>
           </div>
         </details>
-      </section>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-5">
-          <h2 className="text-lg font-semibold">Escrow</h2>
-          <p className="mt-2 text-sm text-neutral-300">
-            Monto total: {lote.moneda}{' '}
-            {Number(lote.monto_total_financiacion ?? 0).toLocaleString('es-AR')} · liberado:{' '}
-            {lote.moneda} {liberado.toLocaleString('es-AR')}
-          </p>
-          <table className="mt-3 w-full text-left text-xs">
-            <thead className="text-neutral-500">
-              <tr>
-                <th className="py-1.5 pr-4">Movimiento</th>
-                <th className="py-1.5 pr-4">Monto</th>
-                <th className="py-1.5 pr-4">Tx</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(
-                movimientos as {
-                  id: string;
-                  tipo: string;
-                  monto: number;
-                  moneda: string;
-                  tx_hash: string | null;
-                }[]
-              ).map((movimiento) => (
-                <tr key={movimiento.id} className="border-t border-neutral-900">
-                  <td className="py-1.5 pr-4">{movimiento.tipo}</td>
-                  <td className="py-1.5 pr-4 font-mono">
-                    {movimiento.moneda} {Number(movimiento.monto).toLocaleString('es-AR')}
-                  </td>
-                  <td className="py-1.5 pr-4">
-                    <TxLink etiqueta="ver" txHash={movimiento.tx_hash} />
-                  </td>
-                </tr>
-              ))}
-              {movimientos.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="py-2 text-neutral-500">
-                    Sin movimientos todavía (se fondea en el Paso 2).
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
-
-        <section className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-5">
-          <h2 className="text-lg font-semibold">Productor y trazabilidad</h2>
-          <div className="mt-2 space-y-1 text-sm text-neutral-300">
-            <p>
-              Productor:{' '}
-              {productor?.nombre_razon_social ??
-                (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
-                  ? String(lote.productor_wallet)
-                  : 'Productor registrado')}
-              {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
-            </p>
-            <p className="font-mono text-xs text-neutral-500">
-              {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
-                ? String(lote.productor_wallet)
-                : 'Wallet pendiente de vinculación en Freighter'}
-            </p>
-            <p className="text-xs text-neutral-500">
-              {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
-              {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
-            </p>
-            <p className="text-xs text-neutral-500">
-              Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
-              (Pasos 3 y 4)
-            </p>
-          </div>
-        </section>
-      </div>
+      </Tarjeta>
     </main>
   );
 }

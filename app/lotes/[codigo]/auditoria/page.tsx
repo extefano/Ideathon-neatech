@@ -1,10 +1,19 @@
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
+import { Aviso } from '@/components/ui/aviso';
+import { Pasos } from '@/components/ui/pasos';
+import { Tarjeta } from '@/components/ui/tarjeta';
 import { getCurrentUser } from '@/lib/auth';
 import { getLoteCompleto } from '@/lib/queries';
 import { FormAuditoria } from './form-auditoria';
 
 export const dynamic = 'force-dynamic';
+
+const PASOS_AUDITORIA = [
+  { titulo: 'Acta SIGSA', descripcion: 'Vacunación' },
+  { titulo: 'Pesada Mes 4', descripcion: 'CSV de balanza' },
+  { titulo: 'Resultado y firma', descripcion: 'ADPV y Sello 2' },
+];
 
 export default async function AuditoriaPage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
@@ -21,7 +30,10 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
   }
 
   const volver = (
-    <Link href={`/lotes/${codigo}`} className="text-sm text-neutral-400 hover:text-yellow-400">
+    <Link
+      href={`/lotes/${codigo}`}
+      className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400"
+    >
       ← Volver a la ficha
     </Link>
   );
@@ -30,9 +42,11 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
     return (
       <main className="mx-auto max-w-3xl p-8">
         {volver}
-        <div className="border-brand/40 bg-brand/10 mt-6 rounded-md border p-4 text-sm text-neutral-200">
-          Este lote no está habilitado para la auditoría del Mes 4 (requiere estar financiado y sin
-          Sello 2). Acceso exclusivo del veterinario acreditado.
+        <div className="mt-6">
+          <Aviso variante="alerta" titulo="Esta auditoría no está disponible">
+            El lote debe estar financiado y sin Sello 2. Este paso es exclusivo del Veterinario
+            acreditado.
+          </Aviso>
         </div>
       </main>
     );
@@ -48,30 +62,32 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
         <p className="mt-2 text-sm text-neutral-400">
           {lote.codigo_lote} · {lote.titulo} · peso inicial {lote.peso_promedio_kg} kg
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
-          Pantalla exclusiva del veterinario acreditado (el productor tiene prohibido cargar este
-          hito). Se concilian las mismas caravanas del Paso 1 y se valida el ADPV contra el rango
-          biológico INTA (0,5 a 1,3 kg/día).
-        </p>
       </div>
+
+      <Pasos pasos={PASOS_AUDITORIA} actual={0} />
 
       {!esVeterinario ? (
         <BannerRolRequerido
           rolRequerido="VETERINARIO"
           titulo="Auditoría exclusiva para Veterinarios acreditados"
-          descripcion="El protocolo sanitario del Mes 4 (acta SIGSA, pesada RFID y validación ADPV) debe ser ejecutado por un Veterinario matriculado. El productor y el comprador tienen expresamente prohibido este paso."
+          descripcion="El protocolo del Mes 4 (acta SIGSA, pesada RFID y validación del ADPV) lo ejecuta un Veterinario matriculado. El Productor y el Comprador no pueden cargar este paso."
           userActual={user}
           redirectTo={`/lotes/${codigo}/auditoria`}
         />
       ) : (
-        <>
-          <CredencialSesion user={user} />
-          <FormAuditoria
-            codigo={codigo}
-            user={user}
-            productorWallet={lote.productor_wallet ?? undefined}
-          />
-        </>
+        <Tarjeta
+          titulo="Completá la secuencia"
+          descripcion="Al firmar se calcula el ADPV contra el rango biológico INTA (0,5 a 1,3 kg/día) y se libera el 30 % del pago."
+        >
+          <div className="space-y-4">
+            <CredencialSesion user={user} />
+            <FormAuditoria
+              codigo={codigo}
+              user={user}
+              productorWallet={lote.productor_wallet ?? undefined}
+            />
+          </div>
+        </Tarjeta>
       )}
     </main>
   );
