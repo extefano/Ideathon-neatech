@@ -195,6 +195,24 @@ export default async function LotePage({
         </section>
       )}
 
+      {estado === 'FINANCIADO_EN_ENGORDE' && !lote.seal_2_sanitary && (
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-500/30 bg-sky-500/5 p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Auditoría del Mes 4 (Paso 3)</h2>
+            <p className="mt-1 text-sm text-neutral-300">
+              El veterinario acreditado carga el acta SIGSA y la balanza con RFID para validar el
+              ADPV (0,5–1,3 kg/día) y liberar el 30% del escrow.
+            </p>
+          </div>
+          <Link
+            href={`/lotes/${lote.codigo_lote}/auditoria`}
+            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500"
+          >
+            Ir a auditoría veterinaria
+          </Link>
+        </section>
+      )}
+
       {estado === 'RECHAZADO_EUDR' && (
         <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
           <p className="font-semibold">

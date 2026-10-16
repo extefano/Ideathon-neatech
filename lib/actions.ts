@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { eudrGeoHash, rfidListHash, sha256Hex } from '@/lib/crypto';
-import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
-import { paso1Schema } from '@/lib/domain';
+import { parsePesadasCsv, resumenPesadas, conciliarCaravanas } from '@/lib/csv';
+import { ADPV_MAX_KG_DIA, ADPV_MIN_KG_DIA, paso1Schema } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { consultarDeforestacion, hayDeforestacion } from '@/lib/gfw';
 import { parseAndValidatePolygon } from '@/lib/geo';
@@ -325,7 +325,7 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
     .maybeSingle();
   if (!lote) redirect('/');
 
-  const volverConError = (mensaje: string) =>
+  const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
 
   if (lote.estado_publicacion !== 'DISPONIBLE' || !lote.seal_1_eudr) {
@@ -381,6 +381,162 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
       comprador_wallet: buyerWallet,
       funded_at: new Date().toISOString(),
       soroban_fund_tx_hash: tx.txHash,
+    })
+    .eq('id', lote.id);
+
+  redirect(`/lotes/${codigo}`);
+}
+
+export async function registrarAuditoriaAction(formData: FormData): Promise<void> {
+  const codigo = String(formData.get('codigo') ?? '');
+  const vetNombre = String(formData.get('vet_nombre') ?? '').trim();
+  const matricula = String(formData.get('matricula') ?? '').trim();
+  const vetWallet = String(formData.get('vet_wallet') ?? '').trim() || 'GDEMO-VETERINARIO';
+  const observaciones = String(formData.get('observaciones') ?? '').trim();
+  const diasCiclo = Number(formData.get('dias_ciclo') ?? 120) || 120;
+
+  const admin = createAdminClient();
+  const { data: lote } = await admin
+    .from('lotes')
+    .select('*')
+    .eq('codigo_lote', codigo)
+    .maybeSingle();
+  if (!lote) redirect('/');
+
+  const volverConError: (mensaje: string) => never = (mensaje) =>
+    redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  if (
+    lote.estado_publicacion !== 'FINANCIADO_EN_ENGORDE' ||
+    !lote.seal_1_eudr ||
+    lote.seal_2_sanitary
+  ) {
+    volverConError('El lote no esta listo para la auditoria del Mes 4');
+  }
+
+  const archivoCsv = formData.get('csv_mes4');
+  if (!(archivoCsv instanceof File) || archivoCsv.size === 0) {
+    volverConError('Subi el CSV de la balanza del Mes 4');
+  }
+
+  const csvText = await archivoCsv.text();
+  const pesadas = parsePesadasCsv(csvText);
+  if (pesadas.errors.length > 0 || pesadas.rows.length === 0) {
+    volverConError(pesadas.errors.slice(0, 6).join(' | '));
+  }
+
+  const { data: caravanas } = await admin
+    .from('caravanas')
+    .select('rfid, peso_inicial_kg')
+    .eq('lote_id', lote.id);
+  const padron = (caravanas ?? []).map((c) => String(c.rfid));
+  const conciliacion = conciliarCaravanas(
+    padron,
+    pesadas.rows.map((r) => r.rfid),
+  );
+  if (!conciliacion.ok) {
+    volverConError(
+      `Conciliacion RFID fallo. Faltantes: ${conciliacion.faltantes.join(', ') || 'ninguna'}. Ajenas: ${conciliacion.ajenas.join(', ') || 'ninguna'}`,
+    );
+  }
+
+  const resumen = resumenPesadas(pesadas.rows);
+  const pesoInicial = Number(lote.peso_promedio_kg ?? 0);
+  const adpv = (resumen.promedioKg - pesoInicial) / diasCiclo;
+  const adpvValido = adpv >= ADPV_MIN_KG_DIA && adpv <= ADPV_MAX_KG_DIA;
+
+  const acta = await leerArchivo(formData, 'acta_pdf');
+  let actaUrl: string | null = null;
+  let actaHash: string | null = null;
+  if (acta) {
+    actaUrl = await subirArchivo({
+      bucket: 'documentos',
+      path: `${codigo}/acta-vacunacion-${sanitizarNombre(acta.nombre)}`,
+      file: acta.buffer,
+      contentType: mimeDocumento(acta.nombre),
+    });
+    actaHash = sha256Hex(acta.buffer);
+  }
+  const csvUrl = await subirArchivo({
+    bucket: 'planillas',
+    path: `${codigo}/pesadas-mes4.csv`,
+    file: Buffer.from(csvText, 'utf8'),
+    contentType: 'text/csv',
+  });
+  const csvHash = sha256Hex(Buffer.from(csvText, 'utf8'));
+
+  if (!adpvValido) {
+    await admin.from('auditorias_veterinarias').insert({
+      lote_id: lote.id,
+      vet_wallet: vetWallet,
+      vet_nombre: vetNombre,
+      matricula,
+      acta_url: actaUrl,
+      acta_hash: actaHash,
+      csv_mes4_url: csvUrl,
+      csv_mes4_hash: csvHash,
+      peso_promedio_mes4_kg: resumen.promedioKg,
+      adpv_kg_dia: redondear(adpv),
+      conciliacion_ok: true,
+      adpv_valido: false,
+      observaciones,
+    });
+    await admin
+      .from('lotes')
+      .update({ peso_actual_promedio_kg: resumen.promedioKg, adpv_kg_dia: redondear(adpv) })
+      .eq('id', lote.id);
+    volverConError(
+      `ALERTA_BIOLOGICA_OBSERVADA: ADPV ${redondear(adpv)} kg/dia fuera del rango biologico 0.5-1.3. Desembolso frenado.`,
+    );
+  }
+
+  const tx = await getStellarClient().verifySanitaryMilestone({
+    codigoLote: codigo,
+    vetWallet,
+    midtermAvgWeightKg: resumen.promedioKg,
+    adpvGramsPerDay: Math.round(adpv * 1000),
+    vaccinationActaHash: actaHash ?? '',
+    midtermRfidWeightsHash: csvHash,
+  });
+
+  await admin.from('auditorias_veterinarias').insert({
+    lote_id: lote.id,
+    vet_wallet: vetWallet,
+    vet_nombre: vetNombre,
+    matricula,
+    acta_url: actaUrl,
+    acta_hash: actaHash,
+    csv_mes4_url: csvUrl,
+    csv_mes4_hash: csvHash,
+    peso_promedio_mes4_kg: resumen.promedioKg,
+    adpv_kg_dia: redondear(adpv),
+    conciliacion_ok: true,
+    adpv_valido: true,
+    observaciones,
+    soroban_seal2_tx_hash: tx.txHash,
+  });
+
+  await admin.from('caravanas').upsert(
+    pesadas.rows.map((r) => ({ lote_id: lote.id, rfid: r.rfid, peso_mes4_kg: r.pesoKg })),
+    { onConflict: 'lote_id,rfid' },
+  );
+
+  const desembolsos = calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0));
+  await admin.from('movimientos_escrow').insert({
+    lote_id: lote.id,
+    tipo: 'RELEASE_MILESTONE_2',
+    monto: desembolsos.hito2,
+    moneda: lote.moneda,
+    tx_hash: tx.txHash,
+  });
+
+  await admin
+    .from('lotes')
+    .update({
+      seal_2_sanitary: true,
+      peso_actual_promedio_kg: resumen.promedioKg,
+      adpv_kg_dia: redondear(adpv),
+      soroban_seal2_tx_hash: tx.txHash,
     })
     .eq('id', lote.id);
 
