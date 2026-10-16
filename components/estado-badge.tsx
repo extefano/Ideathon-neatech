@@ -1,12 +1,12 @@
 import type { EstadoLote } from '@/lib/domain';
 
 const colores: Record<EstadoLote, string> = {
-  PENDIENTE_VALIDACION: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-  DISPONIBLE: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+  PENDIENTE_VALIDACION: 'border-neutral-700 bg-neutral-900 text-neutral-300',
+  DISPONIBLE: 'border-brand/40 bg-brand/10 text-brand',
   RECHAZADO_EUDR: 'border-red-500/30 bg-red-500/10 text-red-300',
-  FINANCIADO_EN_ENGORDE: 'border-sky-500/30 bg-sky-500/10 text-sky-300',
-  EN_TRANSITO_A_FRIGORIFICO: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
-  CERRADO_CICLO: 'border-violet-500/30 bg-violet-500/10 text-violet-300',
+  FINANCIADO_EN_ENGORDE: 'border-neutral-600 bg-neutral-800 text-white',
+  EN_TRANSITO_A_FRIGORIFICO: 'border-brand/40 bg-neutral-900 text-brand',
+  CERRADO_CICLO: 'border-brand bg-brand font-semibold text-neutral-950',
 };
 
 export function EstadoBadge({ estado }: { estado: EstadoLote }) {

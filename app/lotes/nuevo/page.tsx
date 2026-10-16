@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default function NuevoLotePage() {
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <Link href="/" className="text-sm text-neutral-400 hover:text-neutral-200">
+      <Link href="/" className="hover:text-brand text-sm text-neutral-400">
         ← Volver
       </Link>
       <h1 className="mt-4 text-3xl font-bold">Registrar lote — Paso 1</h1>

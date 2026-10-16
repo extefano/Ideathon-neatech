@@ -26,13 +26,13 @@ export default async function Home() {
         <nav className="flex gap-3">
           <Link
             href="/mercado"
-            className="rounded-md border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200 hover:border-emerald-500/60"
+            className="hover:border-brand/60 rounded-md border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-200"
           >
             Marketplace
           </Link>
           <Link
             href="/lotes/nuevo"
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            className="bg-brand hover:bg-brand/90 rounded-md px-4 py-2 text-sm font-semibold text-neutral-950"
           >
             Registrar lote (Paso 1)
           </Link>

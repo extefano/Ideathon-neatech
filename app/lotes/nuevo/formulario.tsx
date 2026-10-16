@@ -26,7 +26,7 @@ const MapaDibujo = dynamic(() => import('./mapa-dibujo'), {
 });
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-500 focus:outline-none';
+  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
 const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
 
 type CsvInfo = {
@@ -215,7 +215,7 @@ export function FormularioLote() {
             />
             <button
               type="button"
-              className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+              className="text-brand hover:text-brand/80 mt-1 text-xs"
               onClick={() =>
                 void cargarArchivoDemo(
                   renspaRef,
@@ -247,7 +247,7 @@ export function FormularioLote() {
             id="marcaLiquida"
             name="marcaLiquida"
             type="checkbox"
-            className="h-4 w-4 accent-emerald-500"
+            className="accent-brand h-4 w-4"
           />
           <label htmlFor="marcaLiquida" className="text-sm text-neutral-300">
             Marca líquida (todos los animales con la marca del vendedor)
@@ -276,7 +276,7 @@ export function FormularioLote() {
               disabled={dibujo.activo}
               className={`rounded border px-3 py-1.5 text-xs ${
                 dibujo.activo
-                  ? 'border-emerald-500 bg-emerald-600/20 font-semibold text-emerald-300'
+                  ? 'border-brand bg-brand/15 text-brand font-semibold'
                   : 'border-neutral-700 text-neutral-200 hover:border-neutral-500'
               }`}
               onClick={() => setDibujo(activarDibujo(puntosGuardados))}
@@ -286,7 +286,7 @@ export function FormularioLote() {
             <button
               type="button"
               disabled={!puedeGuardar(dibujo)}
-              className="rounded border border-emerald-600 bg-emerald-600/80 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600/80"
+              className="border-brand bg-brand hover:bg-brand/90 rounded border px-3 py-1.5 text-xs font-semibold text-neutral-950 disabled:opacity-40"
               onClick={() => {
                 const resultado = guardarDibujo(dibujo);
                 if (resultado.poligono) setPoligonoTexto(resultado.poligono);
@@ -337,7 +337,7 @@ export function FormularioLote() {
               Limpiar dibujo
             </button>
             {geo && (
-              <span className={geo.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
+              <span className={geo.ok ? 'text-brand text-xs' : 'text-xs text-red-400'}>
                 {geo.ok ? `Polígono válido — ${geo.superficieHa} ha` : geo.errors.join(' · ')}
               </span>
             )}
@@ -345,7 +345,7 @@ export function FormularioLote() {
           {dibujo.activo && (
             <p
               className={`mt-1 text-xs ${
-                dibujo.borrador.length >= MIN_VERTICES ? 'text-emerald-400' : 'text-amber-400'
+                dibujo.borrador.length >= MIN_VERTICES ? 'text-brand' : 'text-neutral-400'
               }`}
             >
               {dibujo.borrador.length >= MIN_VERTICES
@@ -378,7 +378,7 @@ export function FormularioLote() {
           />
           <button
             type="button"
-            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+            className="text-brand hover:text-brand/80 mt-1 text-xs"
             onClick={() =>
               void cargarArchivoDemo(
                 csvRef,
@@ -402,7 +402,7 @@ export function FormularioLote() {
               ) : (
                 <p className="text-neutral-300">
                   {csvInfo.rows} cabezas · promedio {csvInfo.promedio} kg · rango {csvInfo.min}–
-                  {csvInfo.max} kg · <span className="text-emerald-400">{csvInfo.uniformidad}</span>
+                  {csvInfo.max} kg · <span className="text-brand">{csvInfo.uniformidad}</span>
                 </p>
               )}
             </div>
@@ -600,7 +600,7 @@ export function FormularioLote() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950 disabled:opacity-50"
         >
           {pending ? 'Validando EUDR y registrando Sello 1…' : 'Enviar lote y validar EUDR'}
         </button>

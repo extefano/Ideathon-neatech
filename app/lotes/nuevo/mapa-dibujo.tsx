@@ -44,7 +44,7 @@ export default function MapaDibujo({
   const centro: LatLngExpression = puntos.length > 0 ? puntos[0] : [-29.19, -58.08];
   const positions: LatLngExpression[] = puntos;
   const estilo = {
-    color: '#34d399',
+    color: '#FDDA24',
     weight: 2,
     dashArray: activo ? '6 6' : undefined,
   };
@@ -52,7 +52,7 @@ export default function MapaDibujo({
   return (
     <div
       className={`relative h-80 overflow-hidden rounded-md border ${
-        activo ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-neutral-700'
+        activo ? 'border-brand ring-brand/40 ring-2' : 'border-neutral-700'
       }`}
     >
       <MapContainer center={centro} zoom={12} className="h-full w-full" scrollWheelZoom>
@@ -69,7 +69,7 @@ export default function MapaDibujo({
         )}
       </MapContainer>
       {activo && (
-        <span className="pointer-events-none absolute top-2 left-2 z-[1000] rounded bg-emerald-600/90 px-2 py-1 text-xs font-semibold text-white shadow">
+        <span className="bg-brand pointer-events-none absolute top-2 left-2 z-[1000] rounded px-2 py-1 text-xs font-semibold text-neutral-950 shadow">
           Modo dibujo — clic para agregar vértices
         </span>
       )}
