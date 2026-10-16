@@ -17,6 +17,7 @@ App Next.js + Supabase para trazabilidad ganadera con sellos EUDR en Stellar (So
 - `pnpm typecheck` — `tsc --noEmit`
 - `pnpm format:check` / `pnpm format` — Prettier
 - `pnpm build` — build de producción
+- Probar UI en local: `pnpm dev` + navegador embebido de Orca (skill `orca-cli`): `orca tab create --url http://localhost:3000`, `orca snapshot`, `orca screenshot`
 - `pnpm dlx supabase db push --db-url "$DATABASE_URL"` — aplicar migraciones al remoto (session pooler, funciona desde IPv4)
 - `pnpm dlx supabase migration new <nombre>` — crear migración nueva
 
