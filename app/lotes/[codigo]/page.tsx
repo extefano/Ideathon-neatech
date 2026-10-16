@@ -315,9 +315,16 @@ export default async function LotePage({
         </Tarjeta>
       </div>
 
-      <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
 
-      <DocumentosHashes documentos={documentos} videoUrl={lote.video_url ?? null} />
+        <DocumentosHashes
+          documentos={documentos}
+          videoUrl={lote.video_url ?? null}
+          renspaUrl={renspaUrl}
+          boletoUrl={boletoUrl}
+        />
+      </div>
 
       <Tarjeta titulo="Detalles técnicos verificables">
         <details>
