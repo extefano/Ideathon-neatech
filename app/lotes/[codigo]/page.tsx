@@ -316,129 +316,140 @@ export default async function LotePage({
         </Tarjeta>
       </div>
 
-      <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
 
-      <DocumentosHashes documentos={documentos} videoUrl={lote.video_url ?? null} />
+          <Tarjeta titulo="Detalles técnicos verificables">
+            <details>
+              <summary className="cursor-pointer text-sm font-semibold text-neutral-200">
+                Transacciones, caravanas y accesos técnicos
+              </summary>
+              <div className="mt-4 space-y-5">
+                <div className="flex flex-wrap gap-4 text-xs">
+                  <TxLink etiqueta="Tx Sello 1" txHash={lote.soroban_create_tx_hash} />
+                  <TxLink etiqueta="Tx fondeo" txHash={lote.soroban_fund_tx_hash} />
+                  <TxLink etiqueta="Tx Sello 2" txHash={lote.soroban_seal2_tx_hash} />
+                  <TxLink etiqueta="Tx Sello 3" txHash={lote.soroban_seal3_tx_hash} />
+                </div>
 
-      <Tarjeta titulo="Detalles técnicos verificables">
-        <details>
-          <summary className="cursor-pointer text-sm font-semibold text-neutral-200">
-            Transacciones, caravanas y accesos técnicos
-          </summary>
-          <div className="mt-4 space-y-5">
-            <div className="flex flex-wrap gap-4 text-xs">
-              <TxLink etiqueta="Tx Sello 1" txHash={lote.soroban_create_tx_hash} />
-              <TxLink etiqueta="Tx fondeo" txHash={lote.soroban_fund_tx_hash} />
-              <TxLink etiqueta="Tx Sello 2" txHash={lote.soroban_seal2_tx_hash} />
-              <TxLink etiqueta="Tx Sello 3" txHash={lote.soroban_seal3_tx_hash} />
-            </div>
+                <div className="flex flex-wrap gap-4 text-xs">
+                  {renspaUrl && (
+                    <a
+                      className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      href={renspaUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver constancia RENSPA ↗
+                    </a>
+                  )}
+                  {boletoUrl && (
+                    <a
+                      className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      href={boletoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver boleto de marca ↗
+                    </a>
+                  )}
+                  {!renspaUrl && !boletoUrl && (
+                    <span className="text-neutral-500">Documentos con acceso restringido.</span>
+                  )}
+                </div>
 
-            <div className="flex flex-wrap gap-4 text-xs">
-              {renspaUrl && (
-                <a
-                  className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                  href={renspaUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Ver constancia RENSPA ↗
-                </a>
-              )}
-              {boletoUrl && (
-                <a
-                  className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                  href={boletoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Ver boleto de marca ↗
-                </a>
-              )}
-              {!renspaUrl && !boletoUrl && (
-                <span className="text-neutral-500">Documentos con acceso restringido.</span>
-              )}
-            </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-neutral-200">
+                    Caravanas RFID ({caravanas.length})
+                  </h3>
+                  <Tabla
+                    className="mt-2"
+                    columnas={[
+                      { clave: 'rfid', titulo: 'RFID' },
+                      { clave: 'inicial', titulo: 'Peso inicial', numerica: true },
+                      { clave: 'mes4', titulo: 'Peso mes 4', numerica: true },
+                      { clave: 'final', titulo: 'Peso final', numerica: true },
+                    ]}
+                    vacio="Todavía no hay caravanas cargadas."
+                    filas={(
+                      caravanas as {
+                        id: string;
+                        rfid: string;
+                        peso_inicial_kg: number | null;
+                        peso_mes4_kg: number | null;
+                        peso_final_kg: number | null;
+                      }[]
+                    ).map((caravana) => ({
+                      rfid: <span className="font-mono">{caravana.rfid}</span>,
+                      inicial:
+                        caravana.peso_inicial_kg != null ? `${caravana.peso_inicial_kg} kg` : '—',
+                      mes4: caravana.peso_mes4_kg != null ? `${caravana.peso_mes4_kg} kg` : '—',
+                      final: caravana.peso_final_kg != null ? `${caravana.peso_final_kg} kg` : '—',
+                    }))}
+                  />
+                </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-200">
-                Caravanas RFID ({caravanas.length})
-              </h3>
-              <Tabla
-                className="mt-2"
-                columnas={[
-                  { clave: 'rfid', titulo: 'RFID' },
-                  { clave: 'inicial', titulo: 'Peso inicial', numerica: true },
-                  { clave: 'mes4', titulo: 'Peso mes 4', numerica: true },
-                  { clave: 'final', titulo: 'Peso final', numerica: true },
-                ]}
-                vacio="Todavía no hay caravanas cargadas."
-                filas={(
-                  caravanas as {
-                    id: string;
-                    rfid: string;
-                    peso_inicial_kg: number | null;
-                    peso_mes4_kg: number | null;
-                    peso_final_kg: number | null;
-                  }[]
-                ).map((caravana) => ({
-                  rfid: <span className="font-mono">{caravana.rfid}</span>,
-                  inicial:
-                    caravana.peso_inicial_kg != null ? `${caravana.peso_inicial_kg} kg` : '—',
-                  mes4: caravana.peso_mes4_kg != null ? `${caravana.peso_mes4_kg} kg` : '—',
-                  final: caravana.peso_final_kg != null ? `${caravana.peso_final_kg} kg` : '—',
-                }))}
-              />
-            </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-neutral-200">Movimientos del escrow</h3>
+                  <Tabla
+                    className="mt-2"
+                    columnas={[
+                      { clave: 'tipo', titulo: 'Movimiento' },
+                      { clave: 'monto', titulo: 'Monto', numerica: true },
+                      { clave: 'tx', titulo: 'Tx' },
+                    ]}
+                    vacio="Sin movimientos todavía (se fondea en el Paso 2)."
+                    filas={movimientosTipados.map((movimiento) => ({
+                      tipo: movimiento.tipo,
+                      monto: `${movimiento.moneda} ${Number(movimiento.monto).toLocaleString('es-AR')}`,
+                      tx: movimiento.tx_hash ? (
+                        <TxLink etiqueta="ver" txHash={movimiento.tx_hash} />
+                      ) : (
+                        '—'
+                      ),
+                    }))}
+                  />
+                </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-200">Movimientos del escrow</h3>
-              <Tabla
-                className="mt-2"
-                columnas={[
-                  { clave: 'tipo', titulo: 'Movimiento' },
-                  { clave: 'monto', titulo: 'Monto', numerica: true },
-                  { clave: 'tx', titulo: 'Tx' },
-                ]}
-                vacio="Sin movimientos todavía (se fondea en el Paso 2)."
-                filas={movimientosTipados.map((movimiento) => ({
-                  tipo: movimiento.tipo,
-                  monto: `${movimiento.moneda} ${Number(movimiento.monto).toLocaleString('es-AR')}`,
-                  tx: movimiento.tx_hash ? (
-                    <TxLink etiqueta="ver" txHash={movimiento.tx_hash} />
-                  ) : (
-                    '—'
-                  ),
-                }))}
-              />
-            </div>
+                <div className="space-y-1 text-sm text-neutral-300">
+                  <h3 className="text-sm font-semibold text-neutral-200">
+                    Productor y trazabilidad
+                  </h3>
+                  <p>
+                    Productor:{' '}
+                    {productor?.nombre_razon_social ??
+                      (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                        ? String(lote.productor_wallet)
+                        : 'Productor registrado')}
+                    {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
+                  </p>
+                  <p className="font-mono text-xs text-neutral-500">
+                    {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                      ? String(lote.productor_wallet)
+                      : 'Wallet pendiente de vinculación en Freighter'}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
+                    {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
+                    (Pasos 3 y 4)
+                  </p>
+                </div>
+              </div>
+            </details>
+          </Tarjeta>
+        </div>
 
-            <div className="space-y-1 text-sm text-neutral-300">
-              <h3 className="text-sm font-semibold text-neutral-200">Productor y trazabilidad</h3>
-              <p>
-                Productor:{' '}
-                {productor?.nombre_razon_social ??
-                  (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
-                    ? String(lote.productor_wallet)
-                    : 'Productor registrado')}
-                {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
-              </p>
-              <p className="font-mono text-xs text-neutral-500">
-                {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
-                  ? String(lote.productor_wallet)
-                  : 'Wallet pendiente de vinculación en Freighter'}
-              </p>
-              <p className="text-xs text-neutral-500">
-                {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
-                {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
-              </p>
-              <p className="text-xs text-neutral-500">
-                Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
-                (Pasos 3 y 4)
-              </p>
-            </div>
-          </div>
-        </details>
-      </Tarjeta>
+        <DocumentosHashes
+          documentos={documentos}
+          videoUrl={lote.video_url ?? null}
+          renspaUrl={renspaUrl}
+          boletoUrl={boletoUrl}
+        />
+      </div>
     </main>
   );
 }
