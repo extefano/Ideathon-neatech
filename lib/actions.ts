@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { eudrGeoHash, rfidListHash, sha256Hex } from '@/lib/crypto';
 import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
 import { paso1Schema } from '@/lib/domain';
+import { calcularDesembolsos } from '@/lib/escrow';
 import { consultarDeforestacion, hayDeforestacion } from '@/lib/gfw';
 import { parseAndValidatePolygon } from '@/lib/geo';
 import { TOKEN_SAC_TESTNET_USDC, getStellarClient } from '@/lib/stellar';
@@ -307,6 +308,81 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
   if (!resultado.ok) {
     redirect(`/lotes/${codigo}?gfw=error&msg=${encodeURIComponent(resultado.error)}`);
   }
+
+  redirect(`/lotes/${codigo}`);
+}
+
+export async function fondearLoteAction(formData: FormData): Promise<void> {
+  const codigo = String(formData.get('codigo') ?? '');
+  const buyerWallet = String(formData.get('buyer_wallet') ?? '').trim();
+  const buyerNombre = String(formData.get('buyer_nombre') ?? '').trim() || 'Frigorifico Demo SA';
+
+  const admin = createAdminClient();
+  const { data: lote } = await admin
+    .from('lotes')
+    .select('*')
+    .eq('codigo_lote', codigo)
+    .maybeSingle();
+  if (!lote) redirect('/');
+
+  const volverConError = (mensaje: string) =>
+    redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  if (lote.estado_publicacion !== 'DISPONIBLE' || !lote.seal_1_eudr) {
+    volverConError('El lote no esta disponible para fondear');
+  }
+  if (!buyerWallet) {
+    volverConError('Ingresa la wallet del comprador');
+  }
+  if (buyerWallet === lote.productor_wallet) {
+    volverConError('La wallet del comprador no puede ser la del productor (auto-compra bloqueada)');
+  }
+
+  const monto = Number(lote.monto_total_financiacion ?? 0);
+  const desembolsos = calcularDesembolsos(monto);
+
+  const tx = await getStellarClient().fundLotEscrow({
+    codigoLote: codigo,
+    buyerWallet,
+    amount: monto,
+  });
+
+  await admin.from('compradores').upsert(
+    {
+      wallet: buyerWallet,
+      razon_social: buyerNombre,
+      cuit: '30-00000000-0',
+      tipo_comprador: 'FRIGORIFICO_EXPORTADOR',
+    },
+    { onConflict: 'wallet' },
+  );
+
+  await admin.from('movimientos_escrow').insert([
+    {
+      lote_id: lote.id,
+      tipo: 'DEPOSIT_ESCROW',
+      monto,
+      moneda: lote.moneda,
+      tx_hash: tx.txHash,
+    },
+    {
+      lote_id: lote.id,
+      tipo: 'RELEASE_MILESTONE_1',
+      monto: desembolsos.hito1,
+      moneda: lote.moneda,
+      tx_hash: tx.txHash,
+    },
+  ]);
+
+  await admin
+    .from('lotes')
+    .update({
+      estado_publicacion: 'FINANCIADO_EN_ENGORDE',
+      comprador_wallet: buyerWallet,
+      funded_at: new Date().toISOString(),
+      soroban_fund_tx_hash: tx.txHash,
+    })
+    .eq('id', lote.id);
 
   redirect(`/lotes/${codigo}`);
 }
