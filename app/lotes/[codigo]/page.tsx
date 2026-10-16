@@ -166,6 +166,7 @@ export default async function LotePage({
                 titulo="El fondeo de escrow requiere cuenta de Comprador"
                 descripcion="Para comprometer fondos en el contrato escrow y financiar la tropa debés identificarte con un perfil de Comprador (Frigorífico o Inversor)."
                 userActual={currentUser}
+                redirectTo={`/lotes/${codigo}`}
               />
             </div>
           ) : (

@@ -19,6 +19,20 @@ export async function loginAction(
     return { errors: ['Completá tu correo electrónico y contraseña.'] };
   }
 
+  // Si se ingresa un correo de cuenta demo, garantizar que esté inicializada
+  const roles: RolUsuario[] = ['PRODUCTOR', 'VETERINARIO', 'COMPRADOR'];
+  for (const r of roles) {
+    const d = (await import('./auth')).DEMO_USERS[r];
+    const legacy = d.email.replace('@muunar.agro', '@neatech.agro');
+    if (
+      email.toLowerCase() === d.email.toLowerCase() ||
+      email.toLowerCase() === legacy.toLowerCase()
+    ) {
+      await ensureDemoUser(r);
+      break;
+    }
+  }
+
   const supabase = await createClient();
   await supabase.auth.signOut();
   const { error } = await supabase.auth.signInWithPassword({
@@ -43,6 +57,7 @@ export async function registerAction(
   const cuit = (formData.get('cuit') as string | null)?.trim() ?? '';
   const email = (formData.get('email') as string | null)?.trim() ?? '';
   const password = (formData.get('password') as string | null) ?? '';
+  const redirectTo = (formData.get('redirectTo') as string | null) ?? '/';
 
   const errors: string[] = [];
 
@@ -193,15 +208,20 @@ export async function registerAction(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/');
+  redirect(redirectTo.startsWith('/') ? redirectTo : '/');
 }
 
 export async function loginDemoAction(input: FormData | RolUsuario): Promise<void> {
   let rol: RolUsuario = 'PRODUCTOR';
+  let redirectTo = '/';
   if (typeof input === 'string') {
     rol = input;
   } else if (input instanceof FormData) {
     rol = (input.get('rol') as RolUsuario) || 'PRODUCTOR';
+    const formRedirect = input.get('redirectTo') as string | null;
+    if (formRedirect && formRedirect.startsWith('/')) {
+      redirectTo = formRedirect;
+    }
   }
 
   const creds = await ensureDemoUser(rol);
@@ -214,7 +234,7 @@ export async function loginDemoAction(input: FormData | RolUsuario): Promise<voi
   }
 
   revalidatePath('/', 'layout');
-  redirect('/');
+  redirect(redirectTo.startsWith('/') ? redirectTo : '/');
 }
 
 export async function logoutAction(): Promise<void> {

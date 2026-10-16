@@ -18,7 +18,7 @@ export default async function Home() {
     <main className="mx-auto max-w-6xl p-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold">Ideathon Neatech</h1>
+          <h1 className="text-4xl font-bold">Muunar</h1>
           <p className="mt-2 text-neutral-400">
             Trazabilidad ganadera EUDR con sellos en Stellar (Soroban) y escrow USDC.
           </p>

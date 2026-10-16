@@ -61,6 +61,7 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
           titulo="Auditoría exclusiva para Veterinarios acreditados"
           descripcion="El protocolo sanitario del Mes 4 (acta SIGSA, pesada RFID y validación ADPV) debe ser ejecutado por un Veterinario matriculado. El productor y el comprador tienen expresamente prohibido este paso."
           userActual={user}
+          redirectTo={`/lotes/${codigo}/auditoria`}
         />
       ) : (
         <>

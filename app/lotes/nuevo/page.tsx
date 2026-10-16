@@ -29,6 +29,7 @@ export default async function NuevoLotePage() {
           titulo="El alta de lotes requiere cuenta de Productor"
           descripcion="Para cargar origen, documentación, trazabilidad RFID y solicitar financiación debés identificarte como Productor en la plataforma."
           userActual={user}
+          redirectTo="/lotes/nuevo"
         />
       ) : (
         <>

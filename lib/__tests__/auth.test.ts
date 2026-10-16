@@ -13,7 +13,7 @@ function crearUsuarioMock(rol: RolUsuario, extra: Partial<PerfilUsuario> = {}): 
     productor_id: null,
     veterinario_id: null,
     comprador_id: null,
-    email: `${rol.toLowerCase()}@neatech.test`,
+    email: `${rol.toLowerCase()}@muunar.test`,
     ...extra,
   };
 }

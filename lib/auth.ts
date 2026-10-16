@@ -48,7 +48,7 @@ export const DEMO_USERS: Record<
   }
 > = {
   PRODUCTOR: {
-    email: 'demo.productor@neatech.agro',
+    email: 'demo.productor@muunar.agro',
     password: 'demo-productor-2026',
     nombre_completo: 'Cabaña Las Lilas SA',
     cuit: '30-50123456-9',
@@ -58,7 +58,7 @@ export const DEMO_USERS: Record<
     anos_operando: 12,
   },
   VETERINARIO: {
-    email: 'demo.veterinario@neatech.agro',
+    email: 'demo.veterinario@muunar.agro',
     password: 'demo-veterinario-2026',
     nombre_completo: 'Dr. Carlos Saavedra',
     cuit: '20-28491823-4',
@@ -68,7 +68,7 @@ export const DEMO_USERS: Record<
     acreditacion_senasa: 'SENASA-0412',
   },
   COMPRADOR: {
-    email: 'demo.comprador@neatech.agro',
+    email: 'demo.comprador@muunar.agro',
     password: 'demo-comprador-2026',
     nombre_completo: 'Frigorífico Rioplatense SA',
     cuit: '30-61234567-1',
@@ -137,7 +137,12 @@ export async function ensureDemoUser(rol: RolUsuario) {
   const admin = createAdminClient();
 
   const { data: usersData } = await admin.auth.admin.listUsers();
-  let user = usersData?.users.find((u) => u.email?.toLowerCase() === demo.email.toLowerCase());
+  const legacyEmail = demo.email.replace('@muunar.agro', '@neatech.agro');
+  let user = usersData?.users.find(
+    (u) =>
+      u.email?.toLowerCase() === demo.email.toLowerCase() ||
+      u.email?.toLowerCase() === legacyEmail.toLowerCase(),
+  );
 
   if (!user) {
     const { data: created, error } = await admin.auth.admin.createUser({
@@ -150,6 +155,16 @@ export async function ensureDemoUser(rol: RolUsuario) {
       throw new Error(`Error creando usuario demo ${rol}: ${error?.message}`);
     }
     user = created.user;
+  } else {
+    // Sincronizar email actual (@muunar.agro) y contraseña para que las credenciales siempre coincidan
+    const { data: updated } = await admin.auth.admin.updateUserById(user.id, {
+      email: demo.email,
+      password: demo.password,
+      email_confirm: true,
+    });
+    if (updated?.user) {
+      user = updated.user;
+    }
   }
 
   let productorId: string | null = null;
@@ -222,7 +237,7 @@ export async function ensureDemoUser(rol: RolUsuario) {
     { onConflict: 'id' },
   );
 
-  return { email: demo.email, password: demo.password };
+  return { email: user.email ?? demo.email, password: demo.password };
 }
 
 export { loginAction, registerAction, loginDemoAction, logoutAction } from './auth-actions';

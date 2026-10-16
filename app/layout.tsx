@@ -4,7 +4,7 @@ import { Navbar } from '@/components/navbar';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Ideathon Neatech',
+  title: 'Muunar',
   description: 'Trazabilidad ganadera EUDR con Stellar y Supabase',
 };
 

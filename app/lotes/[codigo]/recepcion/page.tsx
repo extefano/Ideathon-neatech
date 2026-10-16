@@ -58,6 +58,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
                 titulo="El despacho DT-e requiere cuenta de Productor"
                 descripcion="Solo el productor titular del establecimiento de origen puede emitir y adjuntar el DT-e de salida."
                 userActual={user}
+                redirectTo={`/lotes/${codigo}/recepcion`}
               />
             </div>
           ) : (
@@ -84,6 +85,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
                 titulo="La recepción en balanza requiere cuenta de Comprador"
                 descripcion="Solo el comprador o frigorífico de destino puede ingresar el pesaje de balanza fiscal y liquidar el cierre del ciclo."
                 userActual={user}
+                redirectTo={`/lotes/${codigo}/recepcion`}
               />
             </div>
           ) : (

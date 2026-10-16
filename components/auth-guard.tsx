@@ -24,11 +24,13 @@ export function BannerRolRequerido({
   titulo,
   descripcion,
   userActual,
+  redirectTo,
 }: {
   rolRequerido: RolUsuario;
   titulo?: string;
   descripcion?: string;
   userActual?: PerfilUsuario | null;
+  redirectTo?: string;
 }) {
   const nombreRol =
     rolRequerido === 'PRODUCTOR'
@@ -36,6 +38,11 @@ export function BannerRolRequerido({
       : rolRequerido === 'VETERINARIO'
         ? 'Veterinario'
         : 'Comprador';
+
+  const loginHref = redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : '/login';
+  const registerHref = redirectTo
+    ? `/login?tab=register&redirectTo=${encodeURIComponent(redirectTo)}`
+    : '/login?tab=register';
 
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/90 p-5 text-sm text-neutral-300 shadow-md">
@@ -53,12 +60,22 @@ export function BannerRolRequerido({
             </p>
           )}
         </div>
-        <Link
-          href="/login"
-          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 text-xs font-bold text-black transition-all hover:bg-yellow-300"
-        >
-          {userActual ? `Cambiar a cuenta de ${nombreRol} →` : `Iniciar sesión como ${nombreRol} →`}
-        </Link>
+        <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+          <Link
+            href={loginHref}
+            className="inline-flex items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 text-xs font-bold text-black transition-all hover:bg-yellow-300"
+          >
+            {userActual
+              ? `Cambiar a cuenta de ${nombreRol} →`
+              : `Iniciar sesión como ${nombreRol} →`}
+          </Link>
+          <Link
+            href={registerHref}
+            className="text-center text-xs text-neutral-400 underline transition-colors hover:text-yellow-400"
+          >
+            ¿No tenés cuenta? Registrarse aquí
+          </Link>
+        </div>
       </div>
     </div>
   );

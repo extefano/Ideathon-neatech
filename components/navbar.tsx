@@ -38,9 +38,9 @@ export async function Navbar() {
         <div className="flex items-center gap-6">
           <Link
             href="/"
-            className="flex items-center gap-2 text-base font-bold text-neutral-100 hover:text-white"
+            className="flex items-center gap-2 text-base font-black tracking-tight text-white transition-colors hover:text-yellow-400"
           >
-            <span className="font-black text-yellow-400">◆</span> NEATECH
+            MUUNAR
           </Link>
           <nav className="hidden items-center gap-4 text-sm text-neutral-400 sm:flex">
             <Link href="/" className="transition-colors hover:text-neutral-200">
@@ -96,7 +96,7 @@ export async function Navbar() {
                 href="/login?tab=register"
                 className="rounded bg-yellow-400 px-3 py-1.5 text-xs font-semibold text-black transition-colors hover:bg-yellow-300"
               >
-                Crear cuenta
+                Registrar
               </Link>
             </div>
           )}

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { getCurrentUser, logoutAction } from '@/lib/auth';
 import { LoginForm } from './login-form';
@@ -7,11 +8,12 @@ export const dynamic = 'force-dynamic';
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; error?: string; msg?: string }>;
+  searchParams: Promise<{ tab?: string; error?: string; msg?: string; redirectTo?: string }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
   const defaultTab = sp.tab === 'register' ? 'register' : 'login';
+  const redirectTo = sp.redirectTo || '/';
 
   return (
     <main className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center p-4 sm:p-6">
@@ -49,7 +51,19 @@ export default async function LoginPage({
         </div>
       )}
 
-      <LoginForm defaultTab={defaultTab} />
+      <Suspense
+        fallback={
+          <div className="h-96 w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-8 text-center text-xs text-neutral-500">
+            Cargando...
+          </div>
+        }
+      >
+        <LoginForm
+          key={`${defaultTab}-${redirectTo}`}
+          defaultTab={defaultTab}
+          redirectTo={redirectTo}
+        />
+      </Suspense>
     </main>
   );
 }

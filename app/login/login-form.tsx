@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { loginAction, loginDemoAction, registerAction } from '@/lib/auth-actions';
 import type { AuthFormState, RolUsuario } from '@/lib/auth';
 
@@ -12,31 +13,59 @@ const ROLES: {
   id: RolUsuario;
   titulo: string;
   subtitulo: string;
-  icono: string;
 }[] = [
   {
     id: 'PRODUCTOR',
     titulo: 'Productor',
     subtitulo: 'Cría / Recría',
-    icono: '🌾',
   },
   {
     id: 'VETERINARIO',
     titulo: 'Veterinario',
     subtitulo: 'Acred. SENASA',
-    icono: '🩺',
   },
   {
     id: 'COMPRADOR',
     titulo: 'Comprador',
     subtitulo: 'Frigoríf. / Inversor',
-    icono: '🥩',
   },
 ];
 
-export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 'register' }) {
-  const [tab, setTab] = useState<'login' | 'register'>(defaultTab);
+export function LoginForm({
+  defaultTab = 'login',
+  redirectTo = '/',
+}: {
+  defaultTab?: 'login' | 'register';
+  redirectTo?: string;
+}) {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const activeTab: 'login' | 'register' =
+    tabParam === 'register' ? 'register' : tabParam === 'login' ? 'login' : defaultTab;
+  const redirectTarget = searchParams.get('redirectTo') || redirectTo || '/';
+
+  const [tabOverride, setTabOverride] = useState<{
+    query: string | null;
+    tab: 'login' | 'register';
+  }>({
+    query: tabParam,
+    tab: activeTab,
+  });
+
+  const tab = tabOverride.query === tabParam ? tabOverride.tab : activeTab;
   const [rol, setRol] = useState<RolUsuario>('PRODUCTOR');
+
+  const handleTabChange = (newTab: 'login' | 'register') => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newTab === 'register') {
+      params.set('tab', 'register');
+    } else {
+      params.delete('tab');
+    }
+    const qs = params.toString();
+    window.history.replaceState(null, '', `/login${qs ? `?${qs}` : ''}`);
+    setTabOverride({ query: newTab === 'register' ? 'register' : null, tab: newTab });
+  };
 
   const [loginState, runLoginAction, loginPending] = useActionState<AuthFormState, FormData>(
     loginAction,
@@ -50,18 +79,16 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
 
   const labelBoton =
     rol === 'PRODUCTOR'
-      ? 'Crear cuenta como Productor →'
+      ? 'Registrar como Productor →'
       : rol === 'VETERINARIO'
-        ? 'Crear cuenta como Veterinario →'
-        : 'Crear cuenta como Comprador →';
+        ? 'Registrar como Veterinario →'
+        : 'Registrar como Comprador →';
 
   return (
     <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl sm:p-8">
       {/* Header */}
       <div className="text-center">
-        <span className="text-lg font-black tracking-tight text-neutral-100">
-          <span className="text-yellow-400">◆</span> NEATECH
-        </span>
+        <span className="text-xl font-black tracking-widest text-white">MUUNAR</span>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
           {tab === 'login' ? 'Iniciar sesión' : 'Creá tu cuenta'}
         </h1>
@@ -76,7 +103,7 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
       <div className="mt-6 grid grid-cols-2 rounded-lg border border-neutral-800 bg-neutral-900/60 p-1">
         <button
           type="button"
-          onClick={() => setTab('login')}
+          onClick={() => handleTabChange('login')}
           className={`cursor-pointer rounded-md py-2 text-xs font-semibold transition-all ${
             tab === 'login'
               ? 'bg-yellow-400 text-black shadow'
@@ -87,20 +114,22 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
         </button>
         <button
           type="button"
-          onClick={() => setTab('register')}
+          onClick={() => handleTabChange('register')}
           className={`cursor-pointer rounded-md py-2 text-xs font-semibold transition-all ${
             tab === 'register'
               ? 'bg-yellow-400 text-black shadow'
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Crear cuenta
+          Registrar
         </button>
       </div>
 
       {/* Formulario: Iniciar sesión */}
       {tab === 'login' && (
         <form action={runLoginAction} className="mt-6 space-y-4">
+          <input type="hidden" name="redirectTo" value={redirectTarget} />
+
           {loginState.errors.length > 0 && (
             <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
               <ul className="list-disc space-y-1 pl-4">
@@ -151,10 +180,11 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
         </form>
       )}
 
-      {/* Formulario: Crear cuenta */}
+      {/* Formulario: Registrar */}
       {tab === 'register' && (
         <form action={runRegisterAction} className="mt-6 space-y-5">
           <input type="hidden" name="rol" value={rol} />
+          <input type="hidden" name="redirectTo" value={redirectTarget} />
 
           {registerState.errors.length > 0 && (
             <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
@@ -183,15 +213,14 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
                         : 'border-neutral-800 bg-neutral-950/60 hover:border-neutral-700 hover:bg-neutral-900/60'
                     }`}
                   >
-                    <span className="text-xl">{item.icono}</span>
                     <span
-                      className={`mt-1 text-xs font-bold ${
+                      className={`text-xs font-bold ${
                         activo ? 'text-yellow-400' : 'text-neutral-200'
                       }`}
                     >
                       {item.titulo}
                     </span>
-                    <span className="text-[10px] text-neutral-500">{item.subtitulo}</span>
+                    <span className="mt-0.5 text-[10px] text-neutral-500">{item.subtitulo}</span>
                   </button>
                 );
               })}
@@ -346,7 +375,7 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
             disabled={registerPending}
             className="w-full cursor-pointer rounded-md bg-yellow-400 py-2.5 text-sm font-bold text-black shadow-md transition-all hover:bg-yellow-300 disabled:opacity-50"
           >
-            {registerPending ? 'Creando cuenta...' : labelBoton}
+            {registerPending ? 'Registrando...' : labelBoton}
           </button>
         </form>
       )}
@@ -360,6 +389,7 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
         <div className="mt-3 grid grid-cols-3 gap-2">
           <form action={loginDemoAction}>
             <input type="hidden" name="rol" value="PRODUCTOR" />
+            <input type="hidden" name="redirectTo" value={redirectTarget} />
             <button
               type="submit"
               className="w-full cursor-pointer rounded-lg border border-neutral-800 bg-neutral-900/80 p-2 text-center text-xs transition-colors hover:border-yellow-400 hover:bg-neutral-900"
@@ -371,6 +401,7 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
 
           <form action={loginDemoAction}>
             <input type="hidden" name="rol" value="VETERINARIO" />
+            <input type="hidden" name="redirectTo" value={redirectTarget} />
             <button
               type="submit"
               className="w-full cursor-pointer rounded-lg border border-neutral-800 bg-neutral-900/80 p-2 text-center text-xs transition-colors hover:border-yellow-400 hover:bg-neutral-900"
@@ -382,6 +413,7 @@ export function LoginForm({ defaultTab = 'login' }: { defaultTab?: 'login' | 're
 
           <form action={loginDemoAction}>
             <input type="hidden" name="rol" value="COMPRADOR" />
+            <input type="hidden" name="redirectTo" value={redirectTarget} />
             <button
               type="submit"
               className="w-full cursor-pointer rounded-lg border border-neutral-800 bg-neutral-900/80 p-2 text-center text-xs transition-colors hover:border-yellow-400 hover:bg-neutral-900"
