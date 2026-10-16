@@ -22,9 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -36,8 +34,5 @@ jobs:
         with:
           version: latest
 
-      - name: Link project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
-
       - name: Push migrations
-        run: supabase db push
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
