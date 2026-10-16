@@ -16,6 +16,7 @@ export default [
       '**/.vercel/**',
       '**/coverage/**',
       '**/.lighthouseci/**',
+      '.agents/**',
       'next-env.d.ts',
       'postcss.config.mjs',
       'vitest.config.ts',
