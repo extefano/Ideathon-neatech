@@ -42,7 +42,10 @@ export async function SiteHeader() {
             <span className="text-2xl font-bold tracking-tight text-neutral-950">Muunar</span>
           </Link>
 
-          <nav className="hidden items-center gap-2 sm:flex" aria-label="Navegación principal">
+          <nav
+            className="flex flex-wrap items-center gap-1 sm:gap-2"
+            aria-label="Navegación principal"
+          >
             <Link
               href="/mercado"
               className="focus-visible:ring-foco rounded-control px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none"
