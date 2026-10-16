@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { eudrGeoHash, rfidListHash, sha256Hex } from '@/lib/crypto';
 import { parsePesadasCsv, resumenPesadas, conciliarCaravanas } from '@/lib/csv';
 import { ADPV_MAX_KG_DIA, ADPV_MIN_KG_DIA, paso1Schema } from '@/lib/domain';
-import { calcularDesembolsos } from '@/lib/escrow';
+import { calcularDesembolsos, calcularLiquidacionFinal } from '@/lib/escrow';
 import { consultarDeforestacion, hayDeforestacion } from '@/lib/gfw';
 import { parseAndValidatePolygon } from '@/lib/geo';
 import { TOKEN_SAC_TESTNET_USDC, getStellarClient } from '@/lib/stellar';
@@ -537,6 +537,197 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
       peso_actual_promedio_kg: resumen.promedioKg,
       adpv_kg_dia: redondear(adpv),
       soroban_seal2_tx_hash: tx.txHash,
+    })
+    .eq('id', lote.id);
+
+  redirect(`/lotes/${codigo}`);
+}
+
+export async function despacharLoteAction(formData: FormData): Promise<void> {
+  const codigo = String(formData.get('codigo') ?? '');
+  const dteNro = String(formData.get('dte_nro') ?? '').trim();
+
+  const admin = createAdminClient();
+  const { data: lote } = await admin
+    .from('lotes')
+    .select('*')
+    .eq('codigo_lote', codigo)
+    .maybeSingle();
+  if (!lote) redirect('/');
+
+  const volverConError: (mensaje: string) => never = (mensaje) =>
+    redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  if (lote.estado_publicacion !== 'FINANCIADO_EN_ENGORDE' || !lote.seal_2_sanitary) {
+    volverConError('El lote requiere el Sello 2 (auditoria del Mes 4) antes del despacho');
+  }
+
+  const dte = await leerArchivo(formData, 'dte_pdf');
+  if (!dte) {
+    volverConError('Subi el PDF del DT-e emitido en SENASA/SIGSA');
+  }
+
+  const dteUrl = await subirArchivo({
+    bucket: 'documentos',
+    path: `${codigo}/dte-${sanitizarNombre(dte.nombre)}`,
+    file: dte.buffer,
+    contentType: mimeDocumento(dte.nombre),
+  });
+  const dteHash = sha256Hex(dte.buffer);
+
+  await admin.from('recepciones_frigorifico').insert({
+    lote_id: lote.id,
+    dte_nro: dteNro || `DTE-DEMO-${codigo}`,
+    dte_url: dteUrl,
+    dte_hash: dteHash,
+  });
+
+  await admin
+    .from('lotes')
+    .update({ estado_publicacion: 'EN_TRANSITO_A_FRIGORIFICO' })
+    .eq('id', lote.id);
+
+  redirect(`/lotes/${codigo}`);
+}
+
+export async function recepcionLoteAction(formData: FormData): Promise<void> {
+  const codigo = String(formData.get('codigo') ?? '');
+  const buyerWallet = String(formData.get('buyer_wallet') ?? '').trim();
+
+  const admin = createAdminClient();
+  const { data: lote } = await admin
+    .from('lotes')
+    .select('*')
+    .eq('codigo_lote', codigo)
+    .maybeSingle();
+  if (!lote) redirect('/');
+
+  const volverConError: (mensaje: string) => never = (mensaje) =>
+    redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  if (lote.estado_publicacion !== 'EN_TRANSITO_A_FRIGORIFICO') {
+    volverConError('El lote no esta en transito a frigorifico');
+  }
+
+  const archivoCsv = formData.get('csv_recepcion');
+  if (!(archivoCsv instanceof File) || archivoCsv.size === 0) {
+    volverConError('Subi el CSV de la balanza fiscal de recepcion');
+  }
+
+  const csvText = await archivoCsv.text();
+  const pesadas = parsePesadasCsv(csvText);
+  if (pesadas.errors.length > 0 || pesadas.rows.length === 0) {
+    volverConError(pesadas.errors.slice(0, 6).join(' | '));
+  }
+
+  const { data: caravanas } = await admin.from('caravanas').select('rfid').eq('lote_id', lote.id);
+  const padron = (caravanas ?? []).map((c) => String(c.rfid));
+  const conciliacion = conciliarCaravanas(
+    padron,
+    pesadas.rows.map((r) => r.rfid),
+  );
+  if (!conciliacion.ok) {
+    volverConError(
+      `Conciliacion final fallo. Faltantes: ${conciliacion.faltantes.join(', ') || 'ninguna'}. Ajenas: ${conciliacion.ajenas.join(', ') || 'ninguna'}`,
+    );
+  }
+
+  const resumen = resumenPesadas(pesadas.rows);
+  const montoTotal = Number(lote.monto_total_financiacion ?? 0);
+  const tramoFinal = calcularDesembolsos(montoTotal).hito3;
+  const liquidacion = calcularLiquidacionFinal({
+    montoTotal,
+    tramoFinal,
+    pesoObjetivoKg: Number(lote.peso_objetivo_kg ?? 0),
+    pesoFinalKg: resumen.promedioKg,
+  });
+
+  const csvUrl = await subirArchivo({
+    bucket: 'planillas',
+    path: `${codigo}/recepcion-balanza-fiscal.csv`,
+    file: Buffer.from(csvText, 'utf8'),
+    contentType: 'text/csv',
+  });
+  const csvHash = sha256Hex(Buffer.from(csvText, 'utf8'));
+
+  const ticket = await leerArchivo(formData, 'ticket_pdf');
+  let ticketUrl: string | null = null;
+  if (ticket) {
+    ticketUrl = await subirArchivo({
+      bucket: 'documentos',
+      path: `${codigo}/ticket-balanza-${sanitizarNombre(ticket.nombre)}`,
+      file: ticket.buffer,
+      contentType: mimeDocumento(ticket.nombre),
+    });
+  }
+
+  const { data: recepcionPrevia } = await admin
+    .from('recepciones_frigorifico')
+    .select('id, dte_hash')
+    .eq('lote_id', lote.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const tx = await getStellarClient().completeDeliveryAndSettle({
+    codigoLote: codigo,
+    buyerWallet: buyerWallet || String(lote.comprador_wallet ?? 'GDEMO-FRIGORIFICO'),
+    finalAvgWeightKg: resumen.promedioKg,
+    dtePdfHash: String(recepcionPrevia?.dte_hash ?? ''),
+    receptionHash: csvHash,
+    shortfallDeduction: liquidacion.deduccion,
+  });
+
+  const datosRecepcion = {
+    cabezas_recibidas: resumen.cantidad,
+    peso_final_promedio_kg: resumen.promedioKg,
+    kilos_recibidos: redondear(resumen.promedioKg * resumen.cantidad),
+    kilos_objetivo: redondear(Number(lote.peso_objetivo_kg ?? 0) * resumen.cantidad),
+    ajuste_usdc: liquidacion.deduccion,
+    conciliacion_ok: true,
+    buyer_wallet: buyerWallet || String(lote.comprador_wallet ?? 'GDEMO-FRIGORIFICO'),
+    csv_recepcion_url: csvUrl,
+    csv_recepcion_hash: csvHash,
+    ticket_balanza_url: ticketUrl,
+    soroban_seal3_tx_hash: tx.txHash,
+  };
+
+  if (recepcionPrevia?.id) {
+    await admin.from('recepciones_frigorifico').update(datosRecepcion).eq('id', recepcionPrevia.id);
+  } else {
+    await admin.from('recepciones_frigorifico').insert({ lote_id: lote.id, ...datosRecepcion });
+  }
+
+  await admin.from('caravanas').upsert(
+    pesadas.rows.map((r) => ({ lote_id: lote.id, rfid: r.rfid, peso_final_kg: r.pesoKg })),
+    { onConflict: 'lote_id,rfid' },
+  );
+
+  const moneda = String(lote.moneda ?? 'USDC');
+  await admin.from('movimientos_escrow').insert({
+    lote_id: lote.id,
+    tipo: 'RELEASE_MILESTONE_3',
+    monto: liquidacion.pagoProductor,
+    moneda,
+    tx_hash: tx.txHash,
+  });
+  if (liquidacion.deduccion > 0) {
+    await admin.from('movimientos_escrow').insert({
+      lote_id: lote.id,
+      tipo: 'REFUND_WEIGHT_SHORTFALL',
+      monto: liquidacion.reembolsoComprador,
+      moneda,
+      tx_hash: tx.txHash,
+    });
+  }
+
+  await admin
+    .from('lotes')
+    .update({
+      estado_publicacion: 'CERRADO_CICLO',
+      seal_3_reception: true,
+      peso_final_promedio_kg: resumen.promedioKg,
+      soroban_seal3_tx_hash: tx.txHash,
     })
     .eq('id', lote.id);
 

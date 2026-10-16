@@ -213,6 +213,42 @@ export default async function LotePage({
         </section>
       )}
 
+      {estado === 'FINANCIADO_EN_ENGORDE' && lote.seal_2_sanitary && (
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Cierre de ciclo (Paso 4)</h2>
+            <p className="mt-1 text-sm text-neutral-300">
+              El productor despacha con DT-e y el frigorífico confirma la recepción en balanza
+              fiscal; se libera el 30% final con ajuste por kilos.
+            </p>
+          </div>
+          <Link
+            href={`/lotes/${lote.codigo_lote}/recepcion`}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            Ir a despacho y recepción
+          </Link>
+        </section>
+      )}
+
+      {estado === 'EN_TRANSITO_A_FRIGORIFICO' && (
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Camión en tránsito</h2>
+            <p className="mt-1 text-sm text-neutral-300">
+              El frigorífico debe registrar el pesaje de recepción en balanza fiscal para cerrar el
+              ciclo.
+            </p>
+          </div>
+          <Link
+            href={`/lotes/${lote.codigo_lote}/recepcion`}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            Registrar recepción
+          </Link>
+        </section>
+      )}
+
       {estado === 'RECHAZADO_EUDR' && (
         <div className="mt-6 rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
           <p className="font-semibold">
