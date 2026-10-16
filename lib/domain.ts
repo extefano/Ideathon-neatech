@@ -76,7 +76,7 @@ export const ADPV_MAX_KG_DIA = 1.3;
 
 export const paso1Schema = z.object({
   renspa: z.string().regex(RENSPA_REGEX, 'Formato RENSPA inválido (XX.XXX.X.XXXXX/XX)'),
-  marcaLiquida: z.coerce.boolean(),
+  marcaLiquida: z.coerce.boolean().default(false),
   provincia: z.string().min(2, 'Provincia requerida'),
   localidad: z.string().min(2, 'Localidad requerida'),
   poligono: z.string().min(10, 'Cargá o dibujá el polígono del establecimiento'),
@@ -84,7 +84,10 @@ export const paso1Schema = z.object({
   categoria: z.enum(CATEGORIAS),
   raza: z.enum(RAZAS),
   tipoRodeo: z.enum(TIPOS_RODEO),
-  edadMeses: z.coerce.number().int().positive().optional(),
+  edadMeses: z.preprocess(
+    (valor) => (valor === '' || valor === null ? undefined : valor),
+    z.coerce.number().int().positive().optional(),
+  ),
   denticion: z.string().optional(),
   tratamientoNutricional: z.string().optional(),
   moneda: z.enum(MONEDAS),
