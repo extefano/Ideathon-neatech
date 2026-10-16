@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { MotionProvider } from '@/components/motion-provider';
 import { SiteHeader } from '@/components/site-header';
 import './globals.css';
 
@@ -34,8 +35,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
       <body className="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
-        <SiteHeader />
-        {children}
+        <MotionProvider>
+          <SiteHeader />
+          {children}
+        </MotionProvider>
       </body>
     </html>
   );
