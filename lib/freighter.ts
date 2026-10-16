@@ -11,36 +11,61 @@ import { STELLAR_NETWORK_PASSPHRASE } from '@/lib/stellar-config';
 
 // SOLO NAVEGADOR: wrapper de Freighter (wallet SEP-43). Las claves nunca salen de la extensión.
 
-export async function conectarFreighter(): Promise<string> {
+export type ConexionFreighter = {
+  address: string;
+  network: string;
+  networkPassphrase: string;
+  esTestnet: boolean;
+};
+
+export async function obtenerDetallesConexionFreighter(): Promise<ConexionFreighter> {
   const conexion = await isConnected();
   if (!conexion.isConnected) {
-    throw new Error('No se detectó la extensión Freighter. Instalala desde freighter.app');
+    throw new Error('No se detectó la extensión Freighter. Instalala desde Chrome Web Store.');
   }
 
   const acceso = await requestAccess();
   if (acceso.error) throw new Error(`Freighter rechazó el acceso: ${acceso.error.message}`);
 
-  const red = await getNetworkDetails();
-  if (!red.error && red.networkPassphrase !== STELLAR_NETWORK_PASSPHRASE) {
-    throw new Error(
-      `Freighter está en "${red.network}". Cambiá la red a Testnet desde la configuración de la extensión.`,
-    );
-  }
-
   const direccion = acceso.address || (await getAddress()).address;
   if (!direccion) throw new Error('Freighter no devolvió una dirección');
-  return direccion;
+
+  const red = await getNetworkDetails();
+  const network = red.error ? 'UNKNOWN' : red.network || 'TESTNET';
+  const networkPassphrase = red.error
+    ? STELLAR_NETWORK_PASSPHRASE
+    : red.networkPassphrase || STELLAR_NETWORK_PASSPHRASE;
+  const esTestnet =
+    network.toUpperCase() === 'TESTNET' || networkPassphrase === STELLAR_NETWORK_PASSPHRASE;
+
+  return {
+    address: direccion,
+    network,
+    networkPassphrase,
+    esTestnet,
+  };
 }
 
-/** `signTransaction` compatible con `contract.Client` (firma SEP-43). */
+export async function conectarFreighter(): Promise<string> {
+  const detalles = await obtenerDetallesConexionFreighter();
+  if (!detalles.esTestnet) {
+    throw new Error(
+      `Freighter está en "${detalles.network}". Cambiá la red a TESTNET desde la configuración de la extensión.`,
+    );
+  }
+  return detalles.address;
+}
+
+/** `signTransaction` compatible con `contract.Client` y pagos clásicos (firma SEP-43). */
 export async function firmarConFreighter(
   xdrTx: string,
-  opts?: { networkPassphrase?: string; address?: string },
+  opts?: { network?: string; networkPassphrase?: string; address?: string },
 ): Promise<{ signedTxXdr: string; signerAddress?: string }> {
   const res = await signTransaction(xdrTx, {
+    network: opts?.network ?? 'TESTNET',
     networkPassphrase: opts?.networkPassphrase ?? STELLAR_NETWORK_PASSPHRASE,
     address: opts?.address,
-  });
+  } as { networkPassphrase?: string; address?: string });
   if (res.error) {
     throw new Error(
       res.error.code === -4

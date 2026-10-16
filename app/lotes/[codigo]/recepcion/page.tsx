@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
 import { getCurrentUser } from '@/lib/auth';
+import { calcularDesembolsos } from '@/lib/escrow';
 import { getLoteCompleto } from '@/lib/queries';
 import { FormDespacho, FormRecepcion } from './form-recepcion';
 
@@ -91,7 +92,14 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
           ) : (
             <div className="mt-4 space-y-4">
               <CredencialSesion user={user} />
-              <FormRecepcion codigo={codigo} user={user} />
+              <FormRecepcion
+                codigo={codigo}
+                user={user}
+                productorWallet={lote.productor_wallet ?? undefined}
+                montoHito3Usdc={
+                  calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0)).hito3
+                }
+              />
             </div>
           )}
         </section>

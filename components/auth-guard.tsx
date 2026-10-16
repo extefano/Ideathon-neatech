@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import type { PerfilUsuario, RolUsuario } from '@/lib/auth';
+import { esWalletStellar } from '@/lib/stellar-args';
 
 export function CredencialSesion({ user }: { user: PerfilUsuario }) {
+  const walletValida = user.wallet && esWalletStellar(user.wallet) ? user.wallet : null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-3 py-2 text-xs text-neutral-300">
       <div className="flex items-center gap-2">
@@ -12,8 +14,10 @@ export function CredencialSesion({ user }: { user: PerfilUsuario }) {
           <span className="font-semibold text-yellow-400">{user.rol}</span>
         </span>
       </div>
-      {user.wallet && (
-        <span className="font-mono text-[11px] text-neutral-400">Wallet: {user.wallet}</span>
+      {walletValida && (
+        <span className="font-mono text-[11px] text-neutral-400">
+          Wallet: {walletValida.slice(0, 4)}…{walletValida.slice(-4)}
+        </span>
       )}
     </div>
   );

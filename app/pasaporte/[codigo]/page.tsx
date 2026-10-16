@@ -5,8 +5,14 @@ import QRCode from 'qrcode';
 import { MapaPasaporte } from '@/components/mapa-lote';
 import { VerificadorIntegridad } from '@/components/verificador-integridad';
 import { getLoteCompleto } from '@/lib/queries';
+import { esWalletStellar } from '@/lib/stellar-args';
 
 export const dynamic = 'force-dynamic';
+
+function mostrarWalletPublica(wallet: unknown): string {
+  if (typeof wallet === 'string' && esWalletStellar(wallet)) return wallet;
+  return 'Cuenta verificada (testnet)';
+}
 
 function TxLink({ txHash }: { txHash: unknown }) {
   if (typeof txHash !== 'string' || txHash.length === 0)
@@ -111,7 +117,9 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             <li>
               <span className="text-neutral-500">Productor de origen:</span>{' '}
               {productor?.nombre_razon_social ?? '—'} ·{' '}
-              <span className="font-mono text-xs">{lote.productor_wallet}</span>
+              <span className="font-mono text-xs">
+                {mostrarWalletPublica(lote.productor_wallet)}
+              </span>
             </li>
             <li>
               <span className="text-neutral-500">Oráculo ambiental (Paso 1):</span> backend de la
@@ -121,11 +129,15 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             <li>
               <span className="text-neutral-500">Veterinario acreditado (Paso 3):</span>{' '}
               {auditoria?.vet_nombre ?? '—'} · {auditoria?.matricula ?? '—'} ·{' '}
-              <span className="font-mono text-xs">{auditoria?.vet_wallet ?? '—'}</span>
+              <span className="font-mono text-xs">
+                {mostrarWalletPublica(auditoria?.vet_wallet)}
+              </span>
             </li>
             <li>
               <span className="text-neutral-500">Frigorífico exportador (Pasos 2 y 4):</span>{' '}
-              <span className="font-mono text-xs">{lote.comprador_wallet ?? '—'}</span>
+              <span className="font-mono text-xs">
+                {mostrarWalletPublica(lote.comprador_wallet)}
+              </span>
             </li>
           </ul>
         </div>

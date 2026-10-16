@@ -21,6 +21,8 @@ import {
 } from './dibujo';
 
 import type { PerfilUsuario } from '@/lib/auth';
+import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
+import { esWalletStellar } from '@/lib/stellar-args';
 
 const MapaDibujo = dynamic(() => import('./mapa-dibujo'), {
   ssr: false,
@@ -45,6 +47,12 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
     errors: [],
   });
 
+  const walletInicial = user?.wallet && esWalletStellar(user.wallet) ? user.wallet : '';
+  const [walletState, setWalletState] = useState<EstadoWalletConectada | null>(
+    walletInicial
+      ? { address: walletInicial, network: 'TESTNET', esTestnet: true, metodo: 'extension' }
+      : null,
+  );
   const [poligonoTexto, setPoligonoTexto] = useState('');
   const [dibujo, setDibujo] = useState<EstadoDibujo>(ESTADO_DIBUJO_INICIAL);
   const [csvInfo, setCsvInfo] = useState<CsvInfo | null>(null);
@@ -170,20 +178,12 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             />
           </div>
           <div>
-            <label className={claseLabel} htmlFor="productor_wallet">
-              Wallet Stellar (G... opcional)
-            </label>
-            <input
-              id="productor_wallet"
+            <ConnectWallet
               name="productor_wallet"
-              className={claseInput}
-              placeholder="G... (por defecto usa la wallet admin)"
-              defaultValue={user?.wallet ?? 'GDEMO-PRODUCTOR'}
+              label="Wallet Stellar del productor *"
+              initialAddress={walletInicial}
+              onChange={(w) => setWalletState(w)}
             />
-            <p className="mt-1 text-xs text-stone-500">
-              Si no contás con una wallet Stellar, se usará la wallet del sistema para registrar el
-              lote.
-            </p>
           </div>
         </div>
 
@@ -633,17 +633,17 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
         </div>
       </section>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || !walletState?.address || !walletState.esTestnet}
           className="bg-brand hover:bg-brand/90 rounded-md px-5 py-2.5 text-sm font-semibold text-neutral-950 disabled:opacity-50"
         >
           {pending ? 'Validando EUDR y registrando Sello 1…' : 'Enviar lote y validar EUDR'}
         </button>
         <p className="text-xs text-neutral-500">
-          Se consulta Global Forest Watch real y se calculan los hashes SHA-256 antes de registrar
-          el Sello 1 en el contrato (modo demo sobre Stellar testnet).
+          Conectá tu wallet Freighter en Stellar Testnet para asociar la identidad del productor al
+          lote y recibir los pagos USDC de cada hito.
         </p>
       </div>
     </form>

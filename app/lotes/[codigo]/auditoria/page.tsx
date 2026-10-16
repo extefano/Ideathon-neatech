@@ -66,7 +66,11 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
       ) : (
         <>
           <CredencialSesion user={user} />
-          <FormAuditoria codigo={codigo} user={user} />
+          <FormAuditoria
+            codigo={codigo}
+            user={user}
+            productorWallet={lote.productor_wallet ?? undefined}
+          />
         </>
       )}
     </main>
