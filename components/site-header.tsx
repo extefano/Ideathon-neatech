@@ -3,23 +3,11 @@ import Link from 'next/link';
 import { getCurrentUser, logoutAction, type RolUsuario } from '@/lib/auth';
 
 function BadgeRol({ rol }: { rol: RolUsuario }) {
-  if (rol === 'PRODUCTOR') {
-    return (
-      <span className="rounded bg-neutral-950 px-2 py-0.5 text-xs font-bold tracking-wider text-yellow-400 uppercase">
-        Productor
-      </span>
-    );
-  }
-  if (rol === 'VETERINARIO') {
-    return (
-      <span className="rounded border border-neutral-950 bg-neutral-950/10 px-2 py-0.5 text-xs font-bold tracking-wider text-neutral-950 uppercase">
-        Veterinario
-      </span>
-    );
-  }
+  const etiqueta =
+    rol === 'PRODUCTOR' ? 'Productor' : rol === 'VETERINARIO' ? 'Veterinario' : 'Comprador';
   return (
-    <span className="rounded bg-neutral-900 px-2 py-0.5 text-xs font-semibold tracking-wider text-white uppercase">
-      Comprador
+    <span className="text-brand rounded border border-neutral-950 bg-neutral-950 px-2 py-0.5 text-xs font-semibold tracking-wider uppercase">
+      {etiqueta}
     </span>
   );
 }
@@ -32,12 +20,17 @@ function iniciales(nombre: string): string {
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
+  const puedeRegistrar = !user || user.rol === 'PRODUCTOR';
 
   return (
     <header className="bg-brand border-b-4 border-neutral-950 text-neutral-950">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="Muunar — inicio">
+          <Link
+            href="/"
+            className="focus-visible:ring-foco flex items-center gap-2.5 rounded focus-visible:ring-2 focus-visible:outline-none"
+            aria-label="Muunar — inicio"
+          >
             <Image
               src="/brand/muunar-isotipo-blanco.svg"
               alt=""
@@ -46,22 +39,24 @@ export async function SiteHeader() {
               priority
               className="h-10 w-auto"
             />
-            <span className="text-2xl font-bold tracking-tight text-white">Muunar</span>
+            <span className="text-2xl font-bold tracking-tight text-neutral-950">Muunar</span>
           </Link>
 
-          <nav className="hidden items-center gap-2 sm:flex">
+          <nav className="hidden items-center gap-2 sm:flex" aria-label="Navegación principal">
             <Link
               href="/mercado"
-              className="rounded-md px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10"
+              className="focus-visible:ring-foco rounded-control px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none"
             >
-              Marketplace
+              Mercado
             </Link>
-            <Link
-              href="/lotes/nuevo"
-              className="rounded-md px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10"
-            >
-              Registrar lote
-            </Link>
+            {puedeRegistrar && (
+              <Link
+                href="/lotes/nuevo"
+                className="focus-visible:ring-foco rounded-control px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none"
+              >
+                Registrar lote
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -70,7 +65,7 @@ export async function SiteHeader() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-950 bg-neutral-950 text-xs font-semibold text-yellow-400"
+                  className="text-brand flex h-8 w-8 items-center justify-center rounded-full border border-neutral-950 bg-neutral-950 text-xs font-semibold"
                   title={user.nombre_completo}
                 >
                   {iniciales(user.nombre_completo)}
@@ -88,7 +83,7 @@ export async function SiteHeader() {
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="cursor-pointer rounded border border-neutral-950 bg-neutral-950/10 px-2.5 py-1 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-950 hover:text-white"
+                  className="focus-visible:ring-foco hover:text-brand cursor-pointer rounded border border-neutral-950 bg-transparent px-2.5 py-1 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
                 >
                   Cerrar sesión
                 </button>
@@ -98,13 +93,13 @@ export async function SiteHeader() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded border border-neutral-950 bg-transparent px-3 py-1.5 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-950/10"
+                className="focus-visible:ring-foco rounded border border-neutral-950 bg-transparent px-3 py-1.5 text-xs font-semibold text-neutral-950 transition-colors hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none"
               >
                 Iniciar sesión
               </Link>
               <Link
                 href="/login?tab=register"
-                className="rounded bg-neutral-950 px-3 py-1.5 text-xs font-semibold text-yellow-400 transition-colors hover:bg-neutral-900"
+                className="focus-visible:ring-foco text-brand rounded bg-neutral-950 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-neutral-900 focus-visible:ring-2 focus-visible:outline-none"
               >
                 Registrar
               </Link>
