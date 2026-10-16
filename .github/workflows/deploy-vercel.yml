@@ -15,6 +15,9 @@ permissions:
 jobs:
   deploy:
     name: Deploy Production
+    # Se activa solo cuando el secret VERCEL_TOKEN existe; hasta entonces queda skipped
+    # (conectar el repo en el dashboard de Vercel ya deploya por Git integration).
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
