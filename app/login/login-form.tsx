@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState, type FormEvent } from 'react';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
@@ -151,7 +152,13 @@ export function LoginForm({
   return (
     <div className="rounded-tarjeta border-borde bg-panel w-full max-w-md border p-6 shadow-2xl sm:p-8">
       <div className="text-center">
-        <span className="text-texto text-xl font-black tracking-widest">MUUNAR</span>
+        <Image
+          src="/brand/muunar-logo-negro.svg"
+          alt="Muunar"
+          width={565}
+          height={673}
+          className="mx-auto block h-20 w-auto"
+        />
         <h1 className="text-texto mt-1 text-2xl font-bold tracking-tight">
           {tab === 'login' ? 'Iniciar sesión' : 'Creá tu cuenta'}
         </h1>
