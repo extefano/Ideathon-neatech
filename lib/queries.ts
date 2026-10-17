@@ -85,12 +85,24 @@ export async function listarLotesDeProductor(opts: {
   if (filtros.length === 0) return [];
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from('lotes')
     .select(LOTE_LIST_COLUMNS)
     .or(filtros.join(','))
     .order('created_at', { ascending: false })
     .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .or(filtros.join(','))
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
   if (error) throw new Error(`Error listando lotes del productor: ${error.message}`);
   return mapearFilasLote(data);
 }
@@ -100,12 +112,24 @@ export async function listarComprasDeComprador(wallet?: string | null): Promise<
   if (!wallet) return [];
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from('lotes')
     .select(LOTE_LIST_COLUMNS)
     .eq('comprador_wallet', wallet)
     .order('funded_at', { ascending: false })
     .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('comprador_wallet', wallet)
+      .order('funded_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
   if (error) throw new Error(`Error listando compras del comprador: ${error.message}`);
   return mapearFilasLote(data);
 }
@@ -126,12 +150,24 @@ export async function listarLotesRevisadosPorVeterinario(
   const ids = [...new Set((auditorias ?? []).map((a) => a.lote_id as string))];
   if (ids.length === 0) return [];
 
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from('lotes')
     .select(LOTE_LIST_COLUMNS)
     .in('id', ids)
     .order('created_at', { ascending: false })
     .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .in('id', ids)
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
   if (error) throw new Error(`Error listando lotes revisados: ${error.message}`);
   return mapearFilasLote(data);
 }
@@ -139,13 +175,26 @@ export async function listarLotesRevisadosPorVeterinario(
 /** Lotes financiados que todavía esperan la auditoría del Mes 4 (Sello 2). */
 export async function listarLotesPendientesAuditoria(): Promise<LoteListItem[]> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from('lotes')
     .select(LOTE_LIST_COLUMNS)
     .eq('estado_publicacion', 'FINANCIADO_EN_ENGORDE')
     .eq('seal_2_sanitary', false)
     .order('created_at', { ascending: false })
     .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'FINANCIADO_EN_ENGORDE')
+      .eq('seal_2_sanitary', false)
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
   if (error) throw new Error(`Error listando lotes pendientes de auditoría: ${error.message}`);
   return mapearFilasLote(data);
 }
