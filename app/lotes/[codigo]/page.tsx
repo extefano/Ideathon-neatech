@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
+import { BannerRolRequerido } from '@/components/auth-guard';
 import {
   CertificacionesComerciales,
   type CertificacionConUrlResuelta,
@@ -10,7 +10,6 @@ import { ContactoProductor } from '@/components/contacto-productor';
 import { DocumentosHashes } from '@/components/documentos-hashes';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EvidenciaSatelital, type GfwConsulta } from '@/components/evidencia-satelital';
-import { ResumenHumedal } from '@/components/resumen-humedal';
 import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
 import { Tabla } from '@/components/ui/tabla';
@@ -20,8 +19,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { construirDocumentos } from '@/lib/documentos-hashes';
 import { normalizarCertificacionesComerciales, type EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
-import { resumirLote } from '@/lib/estado-lote';
-import type { EstadoHumedal, FuenteHumedal } from '@/lib/humedales';
 import { getLoteCompleto } from '@/lib/queries';
 import { esWalletStellar } from '@/lib/stellar-args';
 import { createAdminClient } from '@/lib/storage';
@@ -137,21 +134,22 @@ export default async function LotePage({
 
   const montos = calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0));
   const moneda = String(lote.moneda ?? 'USDC');
-  const resumen = resumirLote({
-    estado,
-    seal_2_sanitary: Boolean(lote.seal_2_sanitary),
-    codigo: String(lote.codigo_lote),
-  });
-
   const pagos = [
     {
-      hito: 'Al inicio (40 %)',
+      hito: 'Al inicio',
+      porcentaje: '40 %',
       monto: montos.hito1,
       liberado: liberados.has('RELEASE_MILESTONE_1'),
     },
-    { hito: 'Mes 4 (30 %)', monto: montos.hito2, liberado: liberados.has('RELEASE_MILESTONE_2') },
     {
-      hito: 'En la entrega (30 %)',
+      hito: 'Mes 4',
+      porcentaje: '30 %',
+      monto: montos.hito2,
+      liberado: liberados.has('RELEASE_MILESTONE_2'),
+    },
+    {
+      hito: 'En la entrega',
+      porcentaje: '30 %',
       monto: montos.hito3,
       liberado: liberados.has('RELEASE_MILESTONE_3'),
     },
@@ -166,8 +164,6 @@ export default async function LotePage({
   });
 
   const sello2 = Boolean(lote.seal_2_sanitary);
-  const estadoHumedal = (lote.estado_humedal as EstadoHumedal | null) ?? null;
-  const fuenteHumedal = (lote.fuente_humedal as FuenteHumedal | null) ?? null;
   const certificacionesNormalizadas = normalizarCertificacionesComerciales(
     lote.certificaciones_comerciales,
   );
@@ -177,38 +173,106 @@ export default async function LotePage({
       docUrlResuelta: await urlFirmada('documentos', cert.doc_url),
     })),
   );
-  const tituloLimpio = String(lote.titulo ?? 'Lote sin título').replace(/^\[DEMO\]\s*/i, '');
+  const tituloLimpio = String(lote.titulo ?? 'Lote sin título')
+    .replace(/^\[DEMO\]\s*/i, '')
+    .replace(/\s*[-–·]\s*\d+\s*kg\s*$/i, '');
+
+  const montoTotal = Number(lote.monto_total_financiacion ?? 0);
+  const pctHumedal =
+    lote.porcentaje_humedal != null && !Number.isNaN(Number(lote.porcentaje_humedal))
+      ? `${Number(lote.porcentaje_humedal).toLocaleString('es-AR', { maximumFractionDigits: 1 })} % humedal`
+      : null;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-8">
+    <main className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
       <Link
-        href="/"
-        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave inline-flex items-center gap-1 text-sm"
+        href="/mercado"
+        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
       >
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-        Lotes
+        Volver al mercado
       </Link>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <span className="text-texto-suave font-mono text-sm">{lote.codigo_lote}</span>
-            <EstadoBadge estado={estado} />
+      <header className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-texto-tenue font-mono text-xs font-medium tracking-wider">
+                {lote.codigo_lote}
+              </span>
+              <EstadoBadge estado={estado} />
+              {lote.tipo_operacion && (
+                <span className="border-borde bg-panel text-texto-suave rounded-full border px-2.5 py-0.5 text-xs">
+                  {lote.tipo_operacion}
+                </span>
+              )}
+            </div>
+            <h1 className="text-texto mt-1.5 text-2xl font-bold tracking-tight md:text-3xl">
+              {tituloLimpio}
+            </h1>
+            <p className="text-texto-suave mt-1 text-sm">
+              {lote.localidad}, {lote.provincia} · RENSPA{' '}
+              <span className="font-mono text-xs">{lote.renspa}</span>
+            </p>
           </div>
-          <h1 className="mt-2 text-3xl font-bold">{tituloLimpio}</h1>
-          <p className="text-texto-suave mt-1 text-sm">
-            RENSPA {lote.renspa} · {lote.localidad}, {lote.provincia} · {lote.superficie_ha} ha ·{' '}
-            {lote.tipo_operacion ?? '—'}
-          </p>
+          {estado === 'CERRADO_CICLO' && (
+            <Link
+              href={`/pasaporte/${lote.codigo_lote}`}
+              className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Ver pasaporte EUDR
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            </Link>
+          )}
         </div>
-        {estado === 'CERRADO_CICLO' && (
-          <Link
-            href={`/pasaporte/${lote.codigo_lote}`}
-            className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 min-h-11 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Ver pasaporte EUDR
-          </Link>
-        )}
+
+        {/* Tira de métricas principales */}
+        <div className="rounded-tarjeta border-borde divide-borde bg-panel grid grid-cols-2 divide-x divide-y border sm:grid-cols-4 sm:divide-y-0">
+          <div className="px-4 py-3">
+            <p className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
+              Financiación
+            </p>
+            <p className="text-texto mt-0.5 text-lg font-bold tabular-nums">
+              {moneda} {montoTotal.toLocaleString('es-AR')}
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
+              Cabezas
+            </p>
+            <p className="text-texto mt-0.5 text-lg font-bold tabular-nums">
+              {lote.cantidad_cabezas}{' '}
+              <span className="text-texto-suave text-xs font-normal">
+                · {lote.raza ?? lote.categoria}
+              </span>
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
+              Peso promedio
+            </p>
+            <p className="text-texto mt-0.5 text-lg font-bold tabular-nums">
+              {lote.peso_promedio_kg} kg
+              {lote.peso_objetivo_kg ? (
+                <span className="text-texto-suave text-xs font-normal">
+                  {' '}
+                  → {lote.peso_objetivo_kg} kg
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
+              Superficie
+            </p>
+            <p className="text-texto mt-0.5 text-lg font-bold tabular-nums">
+              {lote.superficie_ha} ha
+              {pctHumedal ? (
+                <span className="text-texto-suave text-xs font-normal"> · {pctHumedal}</span>
+              ) : null}
+            </p>
+          </div>
+        </div>
       </header>
 
       {sp.gfw === 'error' && (
@@ -222,48 +286,40 @@ export default async function LotePage({
         </Aviso>
       )}
 
-      <Tarjeta titulo="Resumen y próximos pasos" descripcion={resumen.descripcion}>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-texto-suave text-sm">
-            Estado canónico: <span className="text-texto">{resumen.canonico}</span>
-          </span>
-          {resumen.accion && estado !== 'DISPONIBLE' && (
-            <Link
-              href={resumen.accion.href}
-              className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
-            >
-              {resumen.accion.texto}
-              <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
-            </Link>
-          )}
-        </div>
-      </Tarjeta>
-
-      {/* Acciones de rol por estado */}
+      {/* Acción principal según el estado del lote (sin duplicar tarjeta de resumen) */}
       {estado === 'DISPONIBLE' && (
         <Tarjeta
           titulo="Fondear el pago en garantía"
-          descripcion={`Depósito de ${moneda} ${Number(lote.monto_total_financiacion ?? 0).toLocaleString('es-AR')}. El Productor cobra ${moneda} ${montos.hito1.toLocaleString('es-AR')} ahora (40 %), ${moneda} ${montos.hito2.toLocaleString('es-AR')} a mitad del engorde (30 %) y ${moneda} ${montos.hito3.toLocaleString('es-AR')} en la entrega (30 %).`}
+          descripcion={`Depositás ${moneda} ${montoTotal.toLocaleString('es-AR')} en garantía y se libera el 40 % inicial (${moneda} ${montos.hito1.toLocaleString('es-AR')}) al productor.`}
+          acciones={
+            currentUser?.rol === 'COMPRADOR' ? (
+              <span className="border-borde bg-panel-elevado text-texto-suave inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs">
+                <span className="text-texto font-medium">{currentUser.nombre_completo}</span>
+                {currentUser.cuit && (
+                  <span className="text-texto-tenue font-mono text-[11px]">
+                    · CUIT {currentUser.cuit}
+                  </span>
+                )}
+              </span>
+            ) : undefined
+          }
         >
           {currentUser?.rol !== 'COMPRADOR' ? (
             <BannerRolRequerido
               rolRequerido="COMPRADOR"
               titulo="El fondeo requiere cuenta de Comprador"
-              descripcion="Para comprometer los fondos en garantía y financiar la tropa tenés que identificarte como Comprador."
+              descripcion="Para comprometer los fondos en garantía y financiar este lote tenés que identificarte como Comprador."
               userActual={currentUser}
               redirectTo={`/lotes/${codigo}`}
             />
           ) : (
-            <div className="space-y-3">
-              <CredencialSesion user={currentUser} />
-              <FormFondeo
-                codigoLote={String(lote.codigo_lote)}
-                monto={Number(lote.monto_total_financiacion ?? 0)}
-                productorWallet={lote.productor_wallet ?? undefined}
-                buyerNombreInicial={currentUser.nombre_completo}
-                buyerWalletInicial={currentUser.wallet ?? undefined}
-              />
-            </div>
+            <FormFondeo
+              codigoLote={String(lote.codigo_lote)}
+              monto={montoTotal}
+              productorWallet={lote.productor_wallet ?? undefined}
+              buyerNombreInicial={currentUser.nombre_completo}
+              buyerWalletInicial={currentUser.wallet ?? undefined}
+            />
           )}
         </Tarjeta>
       )}
@@ -275,10 +331,10 @@ export default async function LotePage({
         >
           <Link
             href={`/lotes/${lote.codigo_lote}/auditoria`}
-            className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-control focus-visible:ring-foco bg-brand inline-flex items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
             Ir a auditoría veterinaria
-            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
+            <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
@@ -290,10 +346,10 @@ export default async function LotePage({
         >
           <Link
             href={`/lotes/${lote.codigo_lote}/recepcion`}
-            className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-control focus-visible:ring-foco bg-brand inline-flex items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
             Ir a despacho y recepción
-            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
+            <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
@@ -305,10 +361,10 @@ export default async function LotePage({
         >
           <Link
             href={`/lotes/${lote.codigo_lote}/recepcion`}
-            className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-control focus-visible:ring-foco bg-brand inline-flex items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
             Registrar recepción
-            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
+            <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
@@ -333,7 +389,7 @@ export default async function LotePage({
       <div className="grid gap-6 lg:grid-cols-2">
         <Tarjeta
           titulo="Sellos EUDR"
-          descripcion="Requisitos de cumplimiento aduanero y sanitario (EUDR + SENASA)."
+          descripcion="Cumplimiento aduanero y sanitario anclado en Stellar."
         >
           <ol className="mt-1">
             <SelloItem
@@ -360,20 +416,60 @@ export default async function LotePage({
 
         <Tarjeta
           titulo="Cronograma de pagos"
-          descripcion={`El Comprador deposita el pago en garantía. El Productor cobra 40 % al inicio, 30 % a mitad del engorde y 30 % en la entrega. Liberado hasta ahora: ${moneda} ${liberado.toLocaleString('es-AR')}.`}
+          descripcion="Liberación por hitos verificados en garantía."
+          acciones={
+            <span className="text-texto-suave font-mono text-xs">
+              Liberado:{' '}
+              <strong className="text-texto">
+                {moneda} {liberado.toLocaleString('es-AR')}
+              </strong>
+            </span>
+          }
         >
-          <Tabla
-            columnas={[
-              { clave: 'hito', titulo: 'Hito' },
-              { clave: 'monto', titulo: `Monto (${moneda})`, numerica: true },
-              { clave: 'estado', titulo: 'Estado' },
-            ]}
-            filas={pagos.map((pago) => ({
-              hito: pago.hito,
-              monto: pago.monto.toLocaleString('es-AR'),
-              estado: pago.liberado ? 'Liberado' : 'Pendiente',
-            }))}
-          />
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            {pagos.map((pago, idx) => (
+              <div
+                key={pago.hito}
+                className={`rounded-tarjeta flex flex-col justify-between border p-3.5 ${
+                  pago.liberado
+                    ? 'border-brand-fuerte/40 bg-brand/5'
+                    : 'border-borde bg-panel-elevado/35'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-texto-tenue font-mono text-[11px] font-semibold">
+                      Hito {idx + 1}
+                    </span>
+                    <span className="border-borde bg-panel text-texto-suave rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap">
+                      {pago.porcentaje.replace(/\s+/g, '')}
+                    </span>
+                  </div>
+                  <p className="text-texto mt-2.5 text-base font-bold tabular-nums">
+                    {moneda} {pago.monto.toLocaleString('es-AR')}
+                  </p>
+                  <p className="text-texto-suave mt-0.5 text-xs">{pago.hito}</p>
+                </div>
+
+                <div className="mt-3 pt-1">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${
+                      pago.liberado
+                        ? 'bg-brand font-semibold text-neutral-950'
+                        : 'border-borde bg-panel text-texto-tenue border'
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        pago.liberado ? 'bg-neutral-950' : 'bg-texto-tenue/70'
+                      }`}
+                    />
+                    {pago.liberado ? 'Liberado' : 'Pendiente'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </Tarjeta>
       </div>
 
@@ -387,21 +483,6 @@ export default async function LotePage({
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
-
-          {estadoHumedal && (
-            <Tarjeta
-              titulo="Ambiente del establecimiento"
-              descripcion="Proporción de humedal del campo: atributo informativo del lote, no forma parte del anclaje del Sello 1."
-            >
-              <ResumenHumedal
-                estado={estadoHumedal}
-                porcentajeHumedal={
-                  lote.porcentaje_humedal != null ? String(lote.porcentaje_humedal) : null
-                }
-                fuente={fuenteHumedal}
-              />
-            </Tarjeta>
-          )}
 
           <Tarjeta titulo="Detalles técnicos verificables">
             <details>

@@ -3,7 +3,6 @@
 import { Check, ExternalLink } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { BannerRolRequerido } from '@/components/auth-guard';
-import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
 import { CopiaHash } from '@/components/ui/copia-hash';
 import { Tarjeta } from '@/components/ui/tarjeta';
@@ -89,39 +88,19 @@ export function CertificacionesComerciales({
   return (
     <Tarjeta
       titulo="Certificaciones comerciales y valor agregado"
-      descripcion="Diferenciales de mercado para compradores e importadores (UE / Mercosur). No reemplazan los 3 sellos obligatorios de acceso aduanero (EUDR + SENASA)."
-      acciones={
-        <span className="border-borde-fuerte bg-panel-elevado text-texto rounded border px-2.5 py-1 font-mono text-xs">
-          Eje 2 · Voluntario UE / Mercosur
-        </span>
-      }
+      descripcion="Diferenciales de mercado para compradores e importadores. No reemplazan los 3 sellos obligatorios de acceso aduanero."
     >
       <div className="space-y-4">
-        <div className="rounded-tarjeta border-borde bg-panel-elevado/60 text-texto-suave border p-3.5 text-xs">
-          <p className="text-texto font-semibold">
-            Separación entre acceso aduanero (Eje 1) y valor comercial en góndola (Eje 2)
-          </p>
-          <p className="text-texto-suave mt-1 leading-relaxed">
-            El <strong>Eje 1 (Obligatorio)</strong> resuelve la identidad animal (Caravana RFID), el
-            movimiento sanitario oficial (<code className="font-mono">RENSPA</code> y{' '}
-            <code className="font-mono">DT-e</code> de SENASA) y el mapa libre de deforestación post
-            31/12/2020 (GFW). El <strong>Eje 2 (Voluntario)</strong> suma mediciones privadas e
-            independientes —como el inventario biológico de huella GEI y plan de mitigación de{' '}
-            <strong>Sinergia Medio Ambiente</strong> (ISO 14064 / ISO 14067),{' '}
-            <strong>Bienestar Animal (Welfair / ITW)</strong> y{' '}
-            <strong>Libre de Antibióticos y Hormonas</strong>— que actúan como filtros de compra y
-            habilitan sobreprecio comercial.
-          </p>
-        </div>
-
         {certificaciones.length === 0 ? (
-          <Aviso variante="info" titulo="Sin certificaciones comerciales voluntarias declaradas">
-            Este lote cuenta con su trazabilidad obligatoria EUDR (Eje 1), pero todavía no tiene
-            certificados voluntarios del Eje 2 asociados (Huella GEI · Sinergia Medio Ambiente,
-            Bienestar Animal o Libre de Antibióticos).
-          </Aviso>
+          <p className="text-texto-suave text-sm">
+            Este lote cuenta con su trazabilidad obligatoria EUDR, sin certificaciones voluntarias
+            adicionales declaradas por ahora.
+          </p>
         ) : (
-          <ul className="space-y-3" aria-label="Certificaciones comerciales del lote">
+          <ul
+            className="grid gap-3 md:grid-cols-2"
+            aria-label="Certificaciones comerciales del lote"
+          >
             {certificaciones.map((cert) => {
               const def = obtenerDefinicionCertificacion(cert.codigo);
               const urlFinal = cert.docUrlResuelta ?? cert.doc_url ?? null;
@@ -130,58 +109,50 @@ export function CertificacionesComerciales({
                 cert.codigo === 'HUELLA_CARBONO_SINERGIA' ? 'Ver informe PDF' : 'Ver certificado';
 
               return (
-                <li key={cert.codigo} className="rounded-tarjeta border-borde bg-panel border p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
+                <li
+                  key={cert.codigo}
+                  className="rounded-tarjeta border-borde bg-panel-elevado/35 flex flex-col justify-between gap-3 border p-4"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="border-brand-fuerte/50 bg-brand/10 text-brand-fuerte inline-flex h-5 w-5 items-center justify-center rounded-full border">
-                          <Check aria-hidden="true" strokeWidth={3} className="h-3 w-3" />
-                        </span>
                         <h3 className="text-texto text-sm font-semibold">{cert.nombre}</h3>
-                        <span className="border-borde-fuerte bg-panel-elevado text-texto-suave rounded border px-2 py-0.5 font-mono text-[10px]">
+                        <span className="border-borde-fuerte bg-panel text-texto-suave rounded-full border px-2 py-0.5 text-[11px] font-medium">
                           {def.etiquetaTarjeta}
                         </span>
                       </div>
 
-                      <p className="text-texto text-xs">
-                        <span className="text-texto-suave">Norma:</span> {cert.norma} ·{' '}
-                        <span className="text-texto-suave">Emisor / Auditor:</span> {cert.emisor}
-                        {fechaTexto ? ` · Emitido: ${fechaTexto}` : ''}
-                      </p>
-
-                      {cert.observaciones && (
-                        <p className="text-texto-suave text-xs">
-                          <span className="text-texto font-medium">Detalle:</span>{' '}
-                          {cert.observaciones}
-                        </p>
+                      {urlFinal && (
+                        <a
+                          href={urlFinal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="focus-visible:ring-foco text-brand-fuerte inline-flex shrink-0 items-center gap-1 text-xs font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                        >
+                          {etiquetaEnlace}
+                          <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+                        </a>
                       )}
-
-                      <p className="text-texto-tenue text-[11px]">{def.rolTecnico}</p>
                     </div>
 
-                    {urlFinal && (
-                      <a
-                        href={urlFinal}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="focus-visible:ring-foco text-brand-fuerte inline-flex shrink-0 items-center gap-1 text-xs font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                      >
-                        {etiquetaEnlace}
-                        <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
-                      </a>
+                    <p className="text-texto-suave text-xs">
+                      {cert.norma} · {cert.emisor}
+                      {fechaTexto ? ` · ${fechaTexto}` : ''}
+                    </p>
+
+                    {cert.observaciones && (
+                      <p className="text-texto-tenue text-xs leading-relaxed">
+                        {cert.observaciones}
+                      </p>
                     )}
                   </div>
 
-                  <div className="border-borde mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-2.5 text-xs">
-                    <span className="text-texto-suave">
-                      Respaldo documental (huella SHA-256 verificable):
-                    </span>
+                  <div className="border-borde flex flex-wrap items-center justify-between gap-2 border-t pt-2.5 text-xs">
+                    <span className="text-texto-tenue">Hash SHA-256:</span>
                     {cert.doc_hash ? (
                       <CopiaHash valor={cert.doc_hash} />
                     ) : (
-                      <span className="text-texto-tenue font-mono text-xs">
-                        Declaración registrada · PDF pendiente de adjuntar
-                      </span>
+                      <span className="text-texto-tenue font-mono text-xs">PDF pendiente</span>
                     )}
                   </div>
                 </li>
@@ -191,9 +162,9 @@ export function CertificacionesComerciales({
         )}
 
         {permitirEdicion && (
-          <details className="rounded-tarjeta border-borde bg-panel-elevado/40 border p-4">
-            <summary className="text-texto cursor-pointer text-sm font-semibold">
-              Agregar o actualizar respaldo documental de certificación (Productor / Veterinario)
+          <details className="rounded-tarjeta border-borde bg-panel-elevado/30 border px-4 py-3">
+            <summary className="text-texto-suave hover:text-texto cursor-pointer text-xs font-semibold transition-colors">
+              + Declarar o actualizar certificación comercial (Productor / Veterinario)
             </summary>
 
             <div className="mt-4">
@@ -217,7 +188,7 @@ export function CertificacionesComerciales({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className={claseLabel} htmlFor="codigo_certificacion">
-                        Certificación comercial (Eje 2) *
+                        Certificación comercial *
                       </label>
                       <select
                         id="codigo_certificacion"

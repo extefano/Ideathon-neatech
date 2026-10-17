@@ -157,7 +157,7 @@ export function ConnectWallet({
   };
 
   return (
-    <div className="space-y-2" data-testid="connect-wallet">
+    <div data-testid="connect-wallet">
       {label && (
         <span className="text-texto-suave mb-1 block text-xs font-medium tracking-wide uppercase">
           {label}
@@ -174,24 +174,24 @@ export function ConnectWallet({
       )}
 
       {direccion ? (
-        <div className="border-borde-fuerte bg-panel space-y-2 rounded-md border p-3 text-xs">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+        <div className="space-y-2">
+          <div className="rounded-control border-borde-fuerte bg-panel flex h-10 items-center justify-between gap-2 border px-3 text-xs">
+            <div className="flex min-w-0 items-center gap-2">
               <span
-                className={`h-2.5 w-2.5 rounded-full ${esTestnet ? 'bg-brand' : 'bg-red-500'}`}
+                className={`h-2 w-2 shrink-0 rounded-full ${esTestnet ? 'bg-brand' : 'bg-red-500'}`}
               />
-              <span className="text-texto font-mono font-semibold" title={direccion}>
+              <span className="text-texto truncate font-mono font-semibold" title={direccion}>
                 {acortarWallet(direccion)}
               </span>
-              <span className="bg-panel-elevado text-texto-suave rounded px-1.5 py-0.5 text-[10px] font-medium uppercase">
-                {metodo === 'walletconnect' ? 'Freighter Mobile (WC v2)' : `Freighter · ${red}`}
+              <span className="bg-panel-elevado text-texto-suave shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase">
+                {metodo === 'walletconnect' ? 'WC v2' : red}
               </span>
             </div>
 
             <button
               type="button"
               onClick={() => void handleDesconectar()}
-              className="border-borde-fuerte text-texto-suave cursor-pointer rounded border px-2.5 py-1 text-xs transition-colors hover:border-red-600/50 hover:text-red-700"
+              className="border-borde-fuerte text-texto-suave shrink-0 cursor-pointer rounded border px-2 py-0.5 text-[11px] font-medium transition-colors hover:border-red-600/50 hover:text-red-700"
             >
               Desconectar
             </button>

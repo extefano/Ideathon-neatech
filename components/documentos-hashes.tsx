@@ -271,19 +271,29 @@ export function DocumentosHashes({
         </div>
       </div>
 
-      {/* 2. Cuerpo de documentos y hashes */}
+      {/* 2. Cuerpo de documentos y hashes en filas compactas */}
       <div className="p-5">
-        <div className="border-borde flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-white">Documentos y hashes</h2>
+            <h2 className="text-texto text-lg font-semibold">Documentos y hashes</h2>
             <p className="text-texto-suave mt-0.5 text-xs">
-              Cada documento queda sellado con una huella digital que no se puede alterar.
+              Respaldo documental con huella digital SHA-256 inmutable.
             </p>
           </div>
-          <span className="text-texto-tenue font-mono text-xs">SHA-256 · Soroban</span>
+          {boletoUrl && (
+            <a
+              href={boletoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Ver boleto de marca
+              <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+            </a>
+          )}
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="divide-borde border-borde rounded-tarjeta bg-panel-elevado/25 mt-4 divide-y border">
           {documentos.map((doc) => {
             const hashValor =
               typeof doc.hash === 'string' && doc.hash.trim().length > 0 ? doc.hash : null;
@@ -292,59 +302,54 @@ export function DocumentosHashes({
             return (
               <div
                 key={doc.id}
-                className="rounded-tarjeta border-borde bg-panel hover:border-borde-fuerte border p-3.5 transition-colors"
+                className="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-texto text-sm font-medium">{doc.nombre}</span>
-                      <span className="border-borde bg-panel text-texto-suave rounded border px-1.5 py-0.5 font-mono text-[10px]">
-                        {doc.sello}
-                      </span>
-                    </div>
-                    <p className="text-texto-suave mt-1 text-xs">{doc.descripcion}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-texto text-xs font-semibold">{doc.nombre}</span>
+                    <span className="border-borde bg-panel text-texto-tenue rounded border px-1.5 py-0.5 font-mono text-[10px]">
+                      {doc.sello}
+                    </span>
+                    {doc.docUrl && (
+                      <a
+                        href={doc.docUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
+                      >
+                        {doc.docLabel ?? 'Ver documento'}
+                        <ExternalLink aria-hidden="true" className="h-3 w-3" />
+                      </a>
+                    )}
                   </div>
-
-                  {doc.docUrl && (
-                    <a
-                      href={doc.docUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
-                    >
-                      {doc.docLabel ?? 'Ver documento'}
-                      <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
-                    </a>
-                  )}
+                  <p className="text-texto-tenue mt-0.5 text-[11px]">{doc.descripcion}</p>
                 </div>
 
-                {/* Fila del hash o estado pendiente */}
-                <div className="border-borde mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t pt-2.5 text-xs">
+                {/* Hash o estado pendiente a la derecha */}
+                <div className="flex shrink-0 items-center gap-2 text-xs">
                   {hashValor ? (
                     <>
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <span className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
-                          Hash:
-                        </span>
-                        <code className="text-texto-suave truncate font-mono" title={hashValor}>
-                          {truncarHash(hashValor)}
-                        </code>
-                      </div>
+                      <code
+                        className="text-texto-suave bg-panel border-borde rounded border px-2 py-0.5 font-mono text-[11px]"
+                        title={hashValor}
+                      >
+                        {truncarHash(hashValor)}
+                      </code>
 
                       <button
                         type="button"
                         onClick={() => void copiarAlPortapapeles(doc.id, hashValor)}
-                        className={`rounded-control focus-visible:ring-foco inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+                        className={`rounded-control focus-visible:ring-foco inline-flex items-center gap-1 border px-2 py-1 font-mono text-[11px] transition-colors focus-visible:ring-2 focus-visible:outline-none ${
                           esCopiado
                             ? 'border-brand-fuerte/40 bg-brand/10 text-brand-fuerte'
-                            : 'border-borde-fuerte bg-panel-elevado text-texto-suave hover:border-texto-tenue hover:text-texto'
+                            : 'border-borde-fuerte bg-panel text-texto-suave hover:border-texto-tenue hover:text-texto'
                         }`}
                         title="Copiar hash SHA-256 al portapapeles"
                       >
                         {esCopiado ? (
                           <>
                             <Check aria-hidden="true" strokeWidth={3} className="h-3 w-3" />
-                            <span>¡Copiado!</span>
+                            <span>Copiado</span>
                           </>
                         ) : (
                           <>
@@ -355,47 +360,27 @@ export function DocumentosHashes({
                       </button>
                     </>
                   ) : (
-                    <div className="text-texto-tenue flex items-center gap-1.5">
+                    <span className="text-texto-tenue inline-flex items-center gap-1.5 font-mono text-[11px]">
                       <span className="bg-texto-tenue inline-block h-1.5 w-1.5 rounded-full" />
-                      <span className="font-mono text-xs">{doc.pendienteTexto}</span>
-                    </div>
+                      {doc.pendienteTexto}
+                    </span>
                   )}
                 </div>
               </div>
             );
           })}
-
-          {boletoUrl && (
-            <div className="rounded-tarjeta border-borde bg-panel flex items-center justify-between border p-3 text-xs">
-              <span className="text-texto-suave">Boleto de marca oficial (diseño y señal)</span>
-              <a
-                href={boletoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 font-medium focus-visible:ring-2 focus-visible:outline-none"
-              >
-                Ver boleto de marca
-                <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          )}
         </div>
 
-        {/* 3. Cuadro explicativo de inmutabilidad on-chain */}
-        <div className="rounded-tarjeta border-brand-fuerte/30 bg-brand/5 text-texto-suave mt-5 border p-4 text-xs">
-          <div className="flex items-start gap-2.5">
-            <ShieldCheck aria-hidden="true" className="text-brand-fuerte mt-0.5 h-4 w-4 shrink-0" />
-            <div className="space-y-1">
-              <p className="font-semibold text-white">Garantía criptográfica on-chain</p>
-              <p className="text-texto-suave leading-relaxed">
-                Cada documento y polígono cuenta con una huella digital criptográfica (hash SHA-256)
-                anclada en la blockchain de Stellar/Soroban. Esto garantiza que ningún dato pueda
-                ser alterado ni adulterado posteriormente ante auditorías sanitarias o compradores
-                internacionales.
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Nota compacta al pie */}
+        <p className="text-texto-tenue mt-3 flex items-center gap-1.5 text-[11px]">
+          <ShieldCheck aria-hidden="true" className="text-brand-fuerte h-3.5 w-3.5 shrink-0" />
+          <span>
+            <strong className="text-texto-suave font-medium">
+              Garantía criptográfica on-chain:
+            </strong>{' '}
+            Hashes SHA-256 anclados en la blockchain de Stellar/Soroban.
+          </span>
+        </p>
       </div>
     </section>
   );

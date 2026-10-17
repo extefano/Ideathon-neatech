@@ -17,9 +17,9 @@ import {
 export const dynamic = 'force-dynamic';
 
 const botonPrimario =
-  'rounded-control focus-visible:ring-foco text-neutral-950 inline-flex min-h-11 items-center rounded bg-brand px-4 py-2 text-sm font-semibold hover:bg-brand/90 focus-visible:ring-2 focus-visible:outline-none';
+  'rounded-control focus-visible:ring-foco text-neutral-950 inline-flex items-center justify-center rounded-md bg-brand px-3 py-1.5 text-xs font-semibold hover:bg-brand/90 transition-colors focus-visible:ring-2 focus-visible:outline-none';
 const botonSecundario =
-  'rounded-control focus-visible:ring-foco text-texto border-borde-fuerte bg-panel inline-flex min-h-11 items-center rounded border px-4 py-2 text-sm font-semibold hover:border-texto-tenue hover:bg-panel-elevado focus-visible:ring-2 focus-visible:outline-none';
+  'rounded-control focus-visible:ring-foco text-texto border-borde-fuerte bg-panel inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium hover:border-texto-tenue hover:bg-panel-elevado transition-colors focus-visible:ring-2 focus-visible:outline-none';
 
 async function cargar<T>(fn: () => Promise<T[]>): Promise<{ datos: T[]; error: boolean }> {
   try {
@@ -44,26 +44,26 @@ async function VistaProductor({ user }: { user: PerfilUsuario }) {
   );
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Tus lotes</h1>
-        <p className="text-texto-suave max-w-3xl">
-          Cargá lotes nuevos y seguí el estado de cada uno: origen libre de deforestación (Eje 1 ·
-          EUDR), engorde, cierre y sus certificaciones comerciales voluntarias (Eje 2 · Valor
-          agregado). Cuando un lote queda disponible, aparece en el mercado para que un comprador lo
-          financie.
-        </p>
-      </header>
+    <main className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-texto text-2xl font-bold tracking-tight md:text-3xl">Tus lotes</h1>
+          <p className="text-texto-suave max-w-2xl text-sm">
+            Registrá lotes nuevos y seguí su validación satelital, auditoría sanitaria y cierre de
+            ciclo.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href="/lotes/nuevo" className={botonPrimario}>
-          Registrar lote
-          <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
-        </Link>
-        <Link href="/mercado" className={botonSecundario}>
-          Ver el mercado
-        </Link>
-      </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link href="/mercado" className={botonSecundario}>
+            Ver mercado
+          </Link>
+          <Link href="/lotes/nuevo" className={botonPrimario}>
+            Registrar lote
+            <ArrowRight aria-hidden="true" className="ml-1.5 h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </header>
 
       {error ? (
         <ErrorCarga />
@@ -87,13 +87,17 @@ async function VistaVeterinario({ user }: { user: PerfilUsuario }) {
   ]);
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Tus revisiones</h1>
-        <p className="text-texto-suave max-w-3xl">
-          Revisá la auditoría del Mes 4 —acta SIGSA, pesada RFID y validación del ADPV— de los lotes
-          ya financiados. Abajo quedan los que todavía esperan tu firma y los que ya revisaste.
-        </p>
+    <main className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-texto text-2xl font-bold tracking-tight md:text-3xl">
+            Tus revisiones
+          </h1>
+          <p className="text-texto-suave max-w-2xl text-sm">
+            Certificá la auditoría del Mes 4 (acta SIGSA, pesada RFID y ganancia de peso) en lotes
+            financiados.
+          </p>
+        </div>
       </header>
 
       {pendientes.error || revisados.error ? (
@@ -126,21 +130,21 @@ async function VistaComprador({ user }: { user: PerfilUsuario }) {
   const { datos: compras, error } = await cargar(() => listarComprasDeComprador(user.wallet));
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Tus compras</h1>
-        <p className="text-texto-suave max-w-3xl">
-          Lotes que financiaste y su avance (40 % al inicio, 30 % a mitad del engorde y 30 % en la
-          entrega). Para fondear un lote nuevo, entrá al mercado.
-        </p>
-      </header>
+    <main className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-texto text-2xl font-bold tracking-tight md:text-3xl">Tus compras</h1>
+          <p className="text-texto-suave max-w-2xl text-sm">
+            Seguimiento de los lotes que financiaste, su avance sanitario y certificados de
+            exportación.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-3">
         <Link href="/mercado" className={botonPrimario}>
           Ir al mercado
-          <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
+          <ArrowRight aria-hidden="true" className="ml-1.5 h-3.5 w-3.5" />
         </Link>
-      </div>
+      </header>
 
       {error ? (
         <ErrorCarga />
@@ -167,21 +171,22 @@ async function VistaFrigorifico({ user: _user }: { user: PerfilUsuario }) {
   const hayError = enTransito.error || listosDespacho.error || recepcionados.error;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Panel de recepciones</h1>
-        <p className="text-texto-suave max-w-3xl">
-          Bandeja de operaciones para planta faenadora: recepcioná en balanza fiscal los lotes en
-          tránsito, conciliá las caravanas RFID y emití el Sello 3 para cerrar el ciclo productivo y
-          liberar la liquidación final del escrow.
-        </p>
-      </header>
+    <main className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-texto text-2xl font-bold tracking-tight md:text-3xl">
+            Panel de recepciones
+          </h1>
+          <p className="text-texto-suave max-w-2xl text-sm">
+            Registrá en balanza fiscal los lotes en tránsito, conciliá caravanas RFID y emití el
+            Sello 3 de cierre.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-3">
         <Link href="/mercado" className={botonSecundario}>
-          Ver mercado ganadero
+          Ver mercado
         </Link>
-      </div>
+      </header>
 
       {hayError ? (
         <ErrorCarga />

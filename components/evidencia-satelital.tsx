@@ -145,53 +145,28 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
           </Aviso>
         )}
 
-        {/* Bloque pedagógico sutil con icono explicativo */}
-        <div className="rounded-tarjeta border-borde bg-panel-elevado text-texto-suave flex items-start gap-2.5 border p-3 text-xs">
-          <svg
-            className="text-brand-fuerte mt-0.5 h-4 w-4 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p className="leading-relaxed">
-            <strong className="text-texto-suave">Corte reglamentario EUDR (31/12/2020):</strong> El
-            Reglamento de la Unión Europea sobre deforestación (EUDR) prohíbe la comercialización y
-            exportación de ganado proveniente de parcelas con deforestación posterior al 31 de
-            diciembre de 2020.
-          </p>
-        </div>
-
-        {/* Metadatos y fuente comprensibles */}
-        {tieneGfw && (
-          <dl className="text-texto-suave space-y-1 text-xs">
-            <div>
-              <dt className="text-texto-tenue inline">Fuente satelital: </dt>
-              <dd className="inline">Global Forest Watch (Universidad de Maryland / Hansen)</dd>
-            </div>
-            {fechaAuditoria && (
-              <div>
-                <dt className="text-texto-tenue inline">Auditoría: </dt>
-                <dd className="inline">Verificado satelitalmente el {fechaAuditoria}</dd>
-              </div>
+        {/* Pie compacto con metadatos y detalle técnico */}
+        <div className="border-borde text-texto-suave space-y-2 border-t pt-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <span>
+              <strong className="text-texto font-medium">
+                Corte reglamentario EUDR (31/12/2020):
+              </strong>{' '}
+              Reglamento de la Unión Europea sobre deforestación.
+            </span>
+            {tieneGfw && (
+              <span className="text-texto-tenue">
+                Global Forest Watch (Universidad de Maryland / Hansen)
+                {fechaAuditoria ? ` · Verificado satelitalmente el ${fechaAuditoria}` : ''}
+              </span>
             )}
-          </dl>
-        )}
+          </div>
 
-        {/* Acordeón colapsable para inspectores / detalle técnico */}
-        {tieneGfw && (
-          <details className="group rounded-tarjeta border-borde bg-panel border text-xs">
-            <summary className="text-texto-suave hover:text-texto flex cursor-pointer items-center justify-between p-2.5 transition select-none">
-              <span className="flex items-center gap-1.5 font-medium">
+          {tieneGfw && (
+            <details className="group pt-0.5 text-xs">
+              <summary className="text-texto-tenue hover:text-texto inline-flex cursor-pointer items-center gap-1 font-medium transition select-none">
                 <svg
-                  className="text-texto-tenue h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-90"
+                  className="h-3 w-3 transition-transform duration-200 group-open:rotate-90"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -201,31 +176,26 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
                 Ver detalle técnico de auditoría
-              </span>
-              <span className="text-texto-tenue text-[10px] tracking-wider uppercase">
-                GFW API v2
-              </span>
-            </summary>
-            <div className="border-borde text-texto-suave space-y-1.5 border-t px-3 py-2.5 font-mono text-[11px]">
-              <div className="flex justify-between gap-2">
-                <span className="text-texto-tenue">dataset:</span>
-                <span className="text-texto-suave">umd_tree_cover_loss (Hansen / UMD)</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-texto-tenue">criterio_api:</span>
-                <span className="text-texto-suave">
-                  {gfw?.criterio ?? 'umd_tree_cover_loss >= 2021'}
-                </span>
-              </div>
-              {gfw?.checkedAt && (
+              </summary>
+              <div className="rounded-control border-borde bg-panel-elevado/50 text-texto-suave mt-2 space-y-1 border px-3 py-2 font-mono text-[11px]">
                 <div className="flex justify-between gap-2">
-                  <span className="text-texto-tenue">checked_at_iso:</span>
-                  <span className="text-texto-suave">{gfw.checkedAt}</span>
+                  <span className="text-texto-tenue">dataset:</span>
+                  <span>umd_tree_cover_loss (Hansen / UMD)</span>
                 </div>
-              )}
-            </div>
-          </details>
-        )}
+                <div className="flex justify-between gap-2">
+                  <span className="text-texto-tenue">criterio_api:</span>
+                  <span>{gfw?.criterio ?? 'umd_tree_cover_loss >= 2021'}</span>
+                </div>
+                {gfw?.checkedAt && (
+                  <div className="flex justify-between gap-2">
+                    <span className="text-texto-tenue">checked_at_iso:</span>
+                    <span>{gfw.checkedAt}</span>
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
+        </div>
       </div>
     </Tarjeta>
   );

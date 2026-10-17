@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplet, Info, Plus, TriangleAlert } from 'lucide-react';
+import { Droplet, Plus, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { signTransaction as signWithFreighter } from '@stellar/freighter-api';
 import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
@@ -13,7 +13,7 @@ import { ejecutarPagoUsdcTestnet, esErrorRedirectNext } from '@/lib/stellar/paym
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
-  'w-full rounded-md border border-borde-fuerte bg-panel px-3 py-2 text-sm text-texto focus:border-brand-fuerte focus:outline-none';
+  'w-full h-10 rounded-control border border-borde-fuerte bg-panel px-3 text-sm text-texto focus:border-brand-fuerte focus:outline-none';
 const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-texto-suave';
 
 export function FormFondeo({
@@ -191,17 +191,9 @@ export function FormFondeo({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="border-borde bg-panel-elevado text-texto-suave rounded-md border p-3 text-xs">
-        <Info aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
-        <strong>Nota de transparencia:</strong> El esquema de escrow 40/30/30 opera en modo demo
-        hasta el despliegue del contrato Soroban definitivo; cada hito ejecuta un{' '}
-        <strong>pago clásico USDC real en Stellar Testnet</strong> firmado con tu wallet Freighter y
-        registrado con su <code>tx_hash</code> verificable en Stellar Expert.
-      </div>
-
+    <div className="space-y-3">
       {esWalletReal && esTestnet && (
-        <div className="border-borde bg-panel rounded-lg border p-4 text-xs">
+        <div className="border-borde bg-panel hidden rounded-lg border p-4 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="text-texto-suave font-semibold">
@@ -273,7 +265,7 @@ export function FormFondeo({
       <form
         onSubmit={(e) => void handleSubmit(e)}
         action={fondearLoteAction}
-        className="mt-4 grid gap-4 sm:grid-cols-3"
+        className="grid items-start gap-4 sm:grid-cols-3"
       >
         <input type="hidden" name="codigo" value={codigoLote} />
         <div>
@@ -297,13 +289,13 @@ export function FormFondeo({
             onChange={(w) => setWalletState(w)}
           />
         </div>
-        <div className="flex items-end">
+        <div className="sm:pt-5">
           <button
             type="submit"
             disabled={
               cargando || !esWalletReal || !esTestnet || esMismaWallet || tieneTrustline === false
             }
-            className="bg-brand hover:bg-brand/90 w-full rounded-md px-4 py-2 text-sm font-semibold text-neutral-950 disabled:opacity-50"
+            className="rounded-control bg-brand hover:bg-brand/90 inline-flex h-10 w-full cursor-pointer items-center justify-center px-4 text-sm font-semibold text-neutral-950 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cargando ? 'Firmando con Freighter...' : 'Fondear y liberar 40%'}
           </button>
