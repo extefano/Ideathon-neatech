@@ -82,6 +82,48 @@ jobs:
       - name: Run Vitest
         run: pnpm test
 
+  db-test:
+    name: DB Migration Test (postgres:17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .nvmrc
+      - name: Instalar pnpm
+        run: |
+          version=$(node -p 'require("./package.json").packageManager.split("@")[1]')
+          npm install --global "pnpm@$version"
+          pnpm --version
+      - run: pnpm install --frozen-lockfile
+      # Aplica las migraciones + la migración demo generada sobre un postgres:17 aislado
+      # y verifica idempotencia, filtros de marketplace, limpieza y reset (#45).
+      - name: Test de integración de migraciones
+        run: pnpm test:db
+
   format:
     name: Format
     runs-on: ubuntu-latest
