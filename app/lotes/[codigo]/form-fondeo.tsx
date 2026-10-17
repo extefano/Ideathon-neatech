@@ -1,5 +1,6 @@
 'use client';
 
+import { Droplet, Info, Plus, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { signTransaction as signWithFreighter } from '@stellar/freighter-api';
 import { ConnectWallet, type EstadoWalletConectada } from '@/components/connect-wallet';
@@ -192,7 +193,8 @@ export function FormFondeo({
   return (
     <div className="space-y-4">
       <div className="border-borde bg-panel-elevado text-texto-suave rounded-md border p-3 text-xs">
-        ℹ️ <strong>Nota de transparencia:</strong> El esquema de escrow 40/30/30 opera en modo demo
+        <Info aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
+        <strong>Nota de transparencia:</strong> El esquema de escrow 40/30/30 opera en modo demo
         hasta el despliegue del contrato Soroban definitivo; cada hito ejecuta un{' '}
         <strong>pago clásico USDC real en Stellar Testnet</strong> firmado con tu wallet Freighter y
         registrado con su <code>tx_hash</code> verificable en Stellar Expert.
@@ -222,9 +224,16 @@ export function FormFondeo({
                   type="button"
                   onClick={() => void handleActivarTrustline()}
                   disabled={creandoTrustline}
-                  className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado rounded border px-3 py-1 font-semibold disabled:opacity-50"
+                  className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado inline-flex items-center gap-1 rounded border px-3 py-1 font-semibold disabled:opacity-50"
                 >
-                  {creandoTrustline ? 'Abriendo en Freighter...' : '➕ Habilitar Trustline USDC'}
+                  {creandoTrustline ? (
+                    'Abriendo en Freighter...'
+                  ) : (
+                    <>
+                      <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+                      Habilitar Trustline USDC
+                    </>
+                  )}
                 </button>
               )}
 
@@ -233,9 +242,16 @@ export function FormFondeo({
                   type="button"
                   onClick={() => void handleSolicitarUsdc()}
                   disabled={pidiendoUsdc}
-                  className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado rounded border px-3 py-1 font-semibold disabled:opacity-50"
+                  className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado inline-flex items-center gap-1 rounded border px-3 py-1 font-semibold disabled:opacity-50"
                 >
-                  {pidiendoUsdc ? 'Enviando...' : `💧 Recibir 50 USDC de prueba`}
+                  {pidiendoUsdc ? (
+                    'Enviando...'
+                  ) : (
+                    <>
+                      <Droplet aria-hidden="true" className="h-3.5 w-3.5" />
+                      Recibir 50 USDC de prueba
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -246,9 +262,9 @@ export function FormFondeo({
               role="alert"
               className="text-brand-fuerte border-borde-fuerte bg-panel mt-3 rounded border p-2"
             >
-              ⚠️ <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del
-              productor del lote. Debés usar una cuenta distinta en Freighter para actuar como
-              comprador.
+              <TriangleAlert aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
+              <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del productor
+              del lote. Debés usar una cuenta distinta en Freighter para actuar como comprador.
             </div>
           )}
         </div>

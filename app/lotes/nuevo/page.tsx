@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
 import { getCurrentUser } from '@/lib/auth';
@@ -12,8 +13,12 @@ export default async function NuevoLotePage() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
-        <Link href="/" className="text-texto-suave hover:text-brand-fuerte text-sm">
-          ← Volver
+        <Link
+          href="/"
+          className="text-texto-suave hover:text-brand-fuerte inline-flex items-center gap-1 text-sm"
+        >
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+          Volver
         </Link>
         <h1 className="mt-4 text-3xl font-bold">Registrar lote — Paso 1</h1>
         <p className="text-texto-suave mt-2 max-w-3xl">

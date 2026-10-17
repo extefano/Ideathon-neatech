@@ -59,6 +59,7 @@
     "@supabase/supabase-js": "^2.117.3",
     "@walletconnect/universal-provider": "^2.26.0",
     "leaflet": "^1.9.4",
+    "lucide-react": "^1.57.0",
     "motion": "^14.3.0",
     "next": "^16.4.1",
     "qrcode": "^1.5.4",

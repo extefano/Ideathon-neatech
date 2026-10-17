@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Aviso } from '@/components/ui/aviso';
 import type { PerfilUsuario, RolUsuario } from '@/lib/auth';
@@ -67,14 +68,16 @@ export function BannerRolRequerido({
             href={loginHref}
             className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center justify-center px-4 py-2 text-xs font-bold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Cambiar a cuenta de {nombreRol} →
+            Cambiar a cuenta de {nombreRol}
+            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
           </Link>
         ) : (
           <Link
             href={loginHref}
             className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center justify-center px-4 py-2 text-xs font-bold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Iniciar sesión como {nombreRol} →
+            Iniciar sesión como {nombreRol}
+            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
           </Link>
         )}
         <Link

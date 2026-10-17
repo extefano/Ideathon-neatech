@@ -34,7 +34,7 @@ describe('EvidenciaSatelital', () => {
     );
 
     // Badge y veredicto
-    expect(html).toContain('✓ Conforme EUDR · Libre de deforestación');
+    expect(html).toContain('Conforme EUDR · Libre de deforestación');
     expect(html).toContain('0,00 ha');
     expect(html).toContain(
       'La parcela analizada no presenta pérdida de bosque nativo desde la fecha de corte reglamentaria.',
@@ -70,7 +70,7 @@ describe('EvidenciaSatelital', () => {
     );
 
     // Badge y veredicto
-    expect(html).toContain('✕ No conforme EUDR · Pérdida arbórea detectada');
+    expect(html).toContain('No conforme EUDR · Pérdida arbórea detectada');
     expect(html).toContain('10,56 ha');
     expect(html).toContain('no es apto para exportación EUDR');
 

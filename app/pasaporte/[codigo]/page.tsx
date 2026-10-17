@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -53,9 +54,10 @@ function TxLink({ txHash }: { txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="focus-visible:ring-foco text-brand-fuerte font-mono text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-foco text-brand-fuerte inline-flex items-center gap-1 font-mono text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
-      {txHash.slice(0, 12)}… ↗
+      {txHash.slice(0, 12)}…
+      <ExternalLink aria-hidden="true" className="h-3 w-3" />
     </a>
   );
 }

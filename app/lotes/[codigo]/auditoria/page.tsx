@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
 import { Aviso } from '@/components/ui/aviso';
@@ -32,9 +33,10 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
   const volver = (
     <Link
       href={`/lotes/${codigo}`}
-      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave inline-flex items-center gap-1 text-sm"
     >
-      ← Volver a la ficha
+      <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+      Volver a la ficha
     </Link>
   );
 

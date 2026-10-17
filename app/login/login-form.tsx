@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useActionState, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -285,7 +286,14 @@ export function LoginForm({
           />
 
           <Boton type="submit" cargando={loginPending} className="w-full">
-            {loginPending ? 'Iniciando sesión…' : 'Iniciar sesión →'}
+            {loginPending ? (
+              'Iniciando sesión…'
+            ) : (
+              <>
+                Iniciar sesión
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </>
+            )}
           </Boton>
         </form>
       )}
@@ -429,9 +437,14 @@ export function LoginForm({
           </fieldset>
 
           <Boton type="submit" cargando={registerPending} className="w-full">
-            {registerPending
-              ? 'Registrando…'
-              : `Registrar como ${ROLES.find((r) => r.id === rol)?.titulo} →`}
+            {registerPending ? (
+              'Registrando…'
+            ) : (
+              <>
+                Registrar como {ROLES.find((r) => r.id === rol)?.titulo}
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </>
+            )}
           </Boton>
         </form>
       )}

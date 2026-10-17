@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useActionState, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Aviso } from '@/components/ui/aviso';
@@ -843,8 +844,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
                           Usar PDF demo ({cert.demoPdfNombre})
                         </button>
                         {usaDemo && (
-                          <span className="text-texto-suave text-xs">
-                            ✓ Se adjuntará {cert.demoPdfNombre} con su hash SHA-256
+                          <span className="text-texto-suave inline-flex items-center gap-1 text-xs">
+                            <Check aria-hidden="true" strokeWidth={3} className="h-3.5 w-3.5" />
+                            Se adjuntará {cert.demoPdfNombre} con su hash SHA-256
                           </span>
                         )}
                       </div>
@@ -984,12 +986,14 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
 
       <div className="border-borde flex flex-wrap items-center justify-between gap-3 border-t pt-4">
         <Boton type="button" variante="secundario" onClick={retroceder} disabled={etapa === 0}>
-          ← Atrás
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+          Atrás
         </Boton>
 
         {etapa < 3 ? (
           <Boton type="button" onClick={avanzar}>
-            Siguiente →
+            Siguiente
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </Boton>
         ) : (
           <div className="flex flex-wrap items-center gap-3">

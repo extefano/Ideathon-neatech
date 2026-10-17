@@ -1,5 +1,6 @@
 'use client';
 
+import { ExternalLink, Smartphone, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { isConnected } from '@stellar/freighter-api';
 import QRCode from 'qrcode';
@@ -201,9 +202,10 @@ export function ConnectWallet({
               role="alert"
               className="border-brand-fuerte/40 bg-brand/10 text-brand-fuerte rounded border p-2.5 text-xs"
             >
-              ⚠️ <strong>Red incorrecta ({red}):</strong> Freighter no está en{' '}
-              <strong>TESTNET</strong>. Cambiá la red a Testnet en tu wallet y volvé a conectar; la
-              firma está bloqueada hasta estar en Testnet.
+              <TriangleAlert aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
+              <strong>Red incorrecta ({red}):</strong> Freighter no está en <strong>TESTNET</strong>
+              . Cambiá la red a Testnet en tu wallet y volvé a conectar; la firma está bloqueada
+              hasta estar en Testnet.
             </div>
           )}
         </div>
@@ -228,17 +230,23 @@ export function ConnectWallet({
                   rel="noreferrer"
                   className="bg-brand hover:bg-brand/90 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold text-neutral-950"
                 >
-                  Instalar Freighter en Chrome Web Store ↗
+                  Instalar Freighter en Chrome Web Store
+                  <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
                 </a>
                 <button
                   type="button"
                   onClick={() => void handleConectarMobile()}
                   disabled={conectandoMobile}
-                  className="border-borde-fuerte bg-panel text-texto hover:border-texto-tenue cursor-pointer rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                  className="border-borde-fuerte bg-panel text-texto hover:border-texto-tenue inline-flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
                 >
-                  {conectandoMobile
-                    ? 'Generando QR WalletConnect...'
-                    : '📱 Conectar Freighter Mobile (WalletConnect v2)'}
+                  {conectandoMobile ? (
+                    'Generando QR WalletConnect...'
+                  ) : (
+                    <>
+                      <Smartphone aria-hidden="true" className="h-3.5 w-3.5" />
+                      Conectar Freighter Mobile (WalletConnect v2)
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -262,7 +270,14 @@ export function ConnectWallet({
                 disabled={conectandoMobile}
                 className="border-borde bg-panel text-texto-suave hover:border-borde-fuerte inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-2 text-xs disabled:opacity-50"
               >
-                {conectandoMobile ? 'Abriendo QR…' : '📱 Freighter Mobile (QR)'}
+                {conectandoMobile ? (
+                  'Abriendo QR…'
+                ) : (
+                  <>
+                    <Smartphone aria-hidden="true" className="h-3.5 w-3.5" />
+                    Freighter Mobile (QR)
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -281,9 +296,10 @@ export function ConnectWallet({
                   <div className="flex flex-wrap gap-2 pt-1">
                     <a
                       href={`freighter://wc?uri=${encodeURIComponent(wcUri)}`}
-                      className="bg-brand hover:bg-brand/90 rounded px-3 py-1.5 font-semibold text-neutral-950"
+                      className="bg-brand hover:bg-brand/90 inline-flex items-center gap-1.5 rounded px-3 py-1.5 font-semibold text-neutral-950"
                     >
-                      Abrir en Freighter Mobile ↗
+                      Abrir en Freighter Mobile
+                      <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
                     </a>
                     <button
                       type="button"

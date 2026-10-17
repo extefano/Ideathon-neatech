@@ -1,3 +1,4 @@
+import { ArrowLeft, ArrowRight, Check, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
@@ -5,6 +6,7 @@ import {
   CertificacionesComerciales,
   type CertificacionConUrlResuelta,
 } from '@/components/certificaciones-comerciales';
+import { ContactoProductor } from '@/components/contacto-productor';
 import { DocumentosHashes } from '@/components/documentos-hashes';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EvidenciaSatelital, type GfwConsulta } from '@/components/evidencia-satelital';
@@ -46,9 +48,10 @@ function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="focus-visible:ring-foco text-brand-fuerte text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-foco text-brand-fuerte inline-flex items-center gap-1 text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
-      {etiqueta} ↗
+      {etiqueta}
+      <ExternalLink aria-hidden="true" className="h-3 w-3" />
     </a>
   );
 }
@@ -62,7 +65,7 @@ function SelloItem({ nombre, activo, falta }: { nombre: string; activo: boolean;
           activo ? 'border-brand-fuerte text-brand-fuerte' : 'border-borde-fuerte text-texto-tenue'
         }`}
       >
-        {activo ? '✓' : '·'}
+        {activo ? <Check strokeWidth={3} className="h-3.5 w-3.5" /> : '·'}
       </span>
       <div>
         <p className={`text-sm font-semibold ${activo ? 'text-texto' : 'text-texto-suave'}`}>
@@ -153,9 +156,10 @@ export default async function LotePage({
     <main className="mx-auto max-w-6xl space-y-6 p-8">
       <Link
         href="/"
-        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave inline-flex items-center gap-1 text-sm"
       >
-        ← Lotes
+        <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+        Lotes
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -199,9 +203,10 @@ export default async function LotePage({
           {resumen.accion && estado !== 'DISPONIBLE' && (
             <Link
               href={resumen.accion.href}
-              className="rounded-control focus-visible:ring-foco bg-brand min-h-11 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
             >
-              {resumen.accion.texto} →
+              {resumen.accion.texto}
+              <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
             </Link>
           )}
         </div>
@@ -245,7 +250,8 @@ export default async function LotePage({
             href={`/lotes/${lote.codigo_lote}/auditoria`}
             className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Ir a auditoría veterinaria →
+            Ir a auditoría veterinaria
+            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
@@ -259,7 +265,8 @@ export default async function LotePage({
             href={`/lotes/${lote.codigo_lote}/recepcion`}
             className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Ir a despacho y recepción →
+            Ir a despacho y recepción
+            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
@@ -273,7 +280,8 @@ export default async function LotePage({
             href={`/lotes/${lote.codigo_lote}/recepcion`}
             className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Registrar recepción →
+            Registrar recepción
+            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
@@ -321,7 +329,7 @@ export default async function LotePage({
 
         <Tarjeta
           titulo="Cronograma de pagos"
-          descripcion={`El Comprador deposita en garantía. Liberado hasta ahora: ${moneda} ${liberado.toLocaleString('es-AR')}.`}
+          descripcion={`El Comprador deposita el pago en garantía. El Productor cobra 40 % al inicio, 30 % a mitad del engorde y 30 % en la entrega. Liberado hasta ahora: ${moneda} ${liberado.toLocaleString('es-AR')}.`}
         >
           <Tabla
             columnas={[
@@ -365,22 +373,24 @@ export default async function LotePage({
                 <div className="flex flex-wrap gap-4 text-xs">
                   {renspaUrl && (
                     <a
-                      className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte inline-flex items-center gap-1 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       href={renspaUrl}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Ver constancia RENSPA ↗
+                      Ver constancia RENSPA
+                      <ExternalLink aria-hidden="true" className="h-3 w-3" />
                     </a>
                   )}
                   {boletoUrl && (
                     <a
-                      className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte inline-flex items-center gap-1 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       href={boletoUrl}
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Ver boleto de marca ↗
+                      Ver boleto de marca
+                      <ExternalLink aria-hidden="true" className="h-3 w-3" />
                     </a>
                   )}
                   {!renspaUrl && !boletoUrl && (
@@ -443,14 +453,17 @@ export default async function LotePage({
 
                 <div className="text-texto-suave space-y-1 text-sm">
                   <h3 className="text-texto text-sm font-semibold">Productor y trazabilidad</h3>
-                  <p>
-                    Productor:{' '}
-                    {productor?.nombre_razon_social ??
-                      (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
-                        ? String(lote.productor_wallet)
-                        : 'Productor registrado')}
-                    {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p>
+                      Productor:{' '}
+                      {productor?.nombre_razon_social ??
+                        (lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
+                          ? String(lote.productor_wallet)
+                          : 'Productor registrado')}
+                      {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
+                    </p>
+                    <ContactoProductor />
+                  </div>
                   <p className="text-texto-tenue font-mono text-xs">
                     {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
                       ? String(lote.productor_wallet)

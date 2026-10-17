@@ -1,5 +1,6 @@
 'use client';
 
+import { Check, ExternalLink } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { BannerRolRequerido } from '@/components/auth-guard';
 import { Aviso } from '@/components/ui/aviso';
@@ -126,20 +127,15 @@ export function CertificacionesComerciales({
               const urlFinal = cert.docUrlResuelta ?? cert.doc_url ?? null;
               const fechaTexto = formatearFecha(cert.fecha_emision);
               const etiquetaEnlace =
-                cert.codigo === 'HUELLA_CARBONO_SINERGIA'
-                  ? 'Ver informe PDF ↗'
-                  : 'Ver certificado ↗';
+                cert.codigo === 'HUELLA_CARBONO_SINERGIA' ? 'Ver informe PDF' : 'Ver certificado';
 
               return (
                 <li key={cert.codigo} className="rounded-tarjeta border-borde bg-panel border p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          aria-hidden="true"
-                          className="border-brand-fuerte/50 bg-brand/10 text-brand-fuerte inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold"
-                        >
-                          ✓
+                        <span className="border-brand-fuerte/50 bg-brand/10 text-brand-fuerte inline-flex h-5 w-5 items-center justify-center rounded-full border">
+                          <Check aria-hidden="true" strokeWidth={3} className="h-3 w-3" />
                         </span>
                         <h3 className="text-texto text-sm font-semibold">{cert.nombre}</h3>
                         <span className="border-borde-fuerte bg-panel-elevado text-texto-suave rounded border px-2 py-0.5 font-mono text-[10px]">
@@ -168,9 +164,10 @@ export function CertificacionesComerciales({
                         href={urlFinal}
                         target="_blank"
                         rel="noreferrer"
-                        className="focus-visible:ring-foco text-brand-fuerte shrink-0 text-xs font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                        className="focus-visible:ring-foco text-brand-fuerte inline-flex shrink-0 items-center gap-1 text-xs font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       >
                         {etiquetaEnlace}
+                        <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
                       </a>
                     )}
                   </div>
@@ -310,8 +307,9 @@ export function CertificacionesComerciales({
                         Usar PDF demo ({defSeleccionada.demoPdfNombre})
                       </button>
                       {usarDemoPdf && (
-                        <span className="text-texto-suave text-xs">
-                          ✓ PDF demo listo ({defSeleccionada.demoPdfNombre})
+                        <span className="text-texto-suave inline-flex items-center gap-1 text-xs">
+                          <Check aria-hidden="true" strokeWidth={3} className="h-3.5 w-3.5" />
+                          PDF demo listo ({defSeleccionada.demoPdfNombre})
                         </span>
                       )}
                     </div>

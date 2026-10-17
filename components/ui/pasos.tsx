@@ -1,3 +1,5 @@
+import { Check } from 'lucide-react';
+
 export type Paso = {
   titulo: string;
   descripcion?: string;
@@ -33,7 +35,11 @@ export function Pasos({
               aria-hidden="true"
               className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-xs font-bold"
             >
-              {estado === 'completada' ? '✓' : indice + 1}
+              {estado === 'completada' ? (
+                <Check aria-hidden="true" strokeWidth={3} className="h-3.5 w-3.5" />
+              ) : (
+                indice + 1
+              )}
             </span>
             <span className="font-semibold">{paso.titulo}</span>
             {paso.descripcion && (

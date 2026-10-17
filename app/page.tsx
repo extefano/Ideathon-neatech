@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { SeccionLotes } from '@/components/seccion-lotes';
@@ -53,7 +54,8 @@ async function VistaProductor({ user }: { user: PerfilUsuario }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/lotes/nuevo" className={botonPrimario}>
-          Registrar lote →
+          Registrar lote
+          <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
         </Link>
         <Link href="/mercado" className={botonSecundario}>
           Ver el mercado
@@ -132,7 +134,8 @@ async function VistaComprador({ user }: { user: PerfilUsuario }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/mercado" className={botonPrimario}>
-          Ir al mercado →
+          Ir al mercado
+          <ArrowRight aria-hidden="true" className="ml-1.5 h-4 w-4" />
         </Link>
       </div>
 

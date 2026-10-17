@@ -1,3 +1,4 @@
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
 import { Aviso } from '@/components/ui/aviso';
@@ -33,9 +34,10 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
   const volver = (
     <Link
       href={`/lotes/${codigo}`}
-      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave inline-flex items-center gap-1 text-sm"
     >
-      ← Volver a la ficha
+      <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+      Volver a la ficha
     </Link>
   );
 
@@ -124,7 +126,8 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
             href={`/pasaporte/${lote.codigo_lote}`}
             className="rounded-control focus-visible:ring-foco bg-brand mt-3 inline-flex min-h-11 items-center px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
           >
-            Ver pasaporte EUDR →
+            Ver pasaporte EUDR
+            <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
           </Link>
         </Tarjeta>
       )}
