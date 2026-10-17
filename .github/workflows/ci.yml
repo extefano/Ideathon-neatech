@@ -82,6 +82,61 @@ jobs:
       - name: Run Vitest
         run: pnpm test
 
+  db-test:
+    name: DB Migration Test (postgis 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        # Imagen con PostGIS: las migraciones de humedales requieren la extensión.
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .nvmrc
+      - name: Instalar pnpm
+        run: |
+          version=$(node -p 'require("./package.json").packageManager.split("@")[1]')
+          npm install --global "pnpm@$version"
+          pnpm --version
+      - run: pnpm install --frozen-lockfile
+      # La imagen postgis trae la extensión instalada en `public` (junto a
+      # topology y tiger geocoder), mientras que las migraciones de humedales la
+      # referencian como `extensions.*`: se reinstala ahí antes de migrar.
+      - name: Preparar PostGIS en el schema extensions
+        run: |
+          psql -v ON_ERROR_STOP=1 -tA -w -c "
+            create schema if not exists extensions;
+            drop extension if exists postgis_topology;
+            drop extension if exists postgis_tiger_geocoder;
+            drop extension if exists postgis;
+            create extension postgis with schema extensions;
+          "
+      # Aplica las migraciones + la migración demo generada sobre un postgis 17 aislado
+      # y verifica idempotencia, filtros de marketplace, limpieza y reset (#45).
+      - name: Test de integración de migraciones
+        run: pnpm test:db
+
   format:
     name: Format
     runs-on: ubuntu-latest
@@ -120,6 +175,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Run pnpm audit (prod, high)
         run: pnpm audit --prod --audit-level high
+
+  contracts:
+    name: Contracts (cargo test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Run contract tests
+        working-directory: contracts
+        run: cargo test
 
   build:
     name: Build

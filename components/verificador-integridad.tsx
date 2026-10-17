@@ -4,7 +4,31 @@ import { useState, type ChangeEvent, type DragEvent } from 'react';
 import { Aviso } from '@/components/ui/aviso';
 import { Tarjeta } from '@/components/ui/tarjeta';
 
-type HashEsperado = { etiqueta: string; hash: string };
+export type HashEsperado = { etiqueta: string; hash: string };
+
+/** Compara contra las huellas publicadas del lote (no contra la cadena). */
+export function compararConHashes(hashes: HashEsperado[], hash: string): string | null {
+  const normal = hash.toLowerCase();
+  return hashes.find((esperado) => esperado.hash.toLowerCase() === normal)?.etiqueta ?? null;
+}
+
+export function textoComparacion(match: string | null): {
+  variante: 'exito' | 'error';
+  titulo: string;
+  detalle: string;
+} {
+  return match
+    ? {
+        variante: 'exito',
+        titulo: 'Documento íntegro',
+        detalle: `Coincide con “${match}”, una de las huellas publicadas del lote.`,
+      }
+    : {
+        variante: 'error',
+        titulo: 'El documento no coincide',
+        detalle: 'No coincide con ninguna de las huellas publicadas del lote.',
+      };
+}
 
 function bufferAHex(buffer: ArrayBuffer): string {
   return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -20,8 +44,7 @@ export function VerificadorIntegridad({ hashes }: { hashes: HashEsperado[] }) {
   async function verificar(file: File) {
     const buffer = await file.arrayBuffer();
     const hash = bufferAHex(await crypto.subtle.digest('SHA-256', buffer));
-    const encontrado = hashes.find((h) => h.hash.toLowerCase() === hash) ?? null;
-    setResultado({ archivo: file.name, hash, match: encontrado?.etiqueta ?? null });
+    setResultado({ archivo: file.name, hash, match: compararConHashes(hashes, hash) });
   }
 
   function alSeleccionarArchivo(event: ChangeEvent<HTMLInputElement>) {
@@ -35,10 +58,12 @@ export function VerificadorIntegridad({ hashes }: { hashes: HashEsperado[] }) {
     if (file) void verificar(file);
   }
 
+  const aviso = resultado ? textoComparacion(resultado.match) : null;
+
   return (
     <Tarjeta
       titulo="Verificá un documento"
-      descripcion="Arrastrá el PDF o la imagen para comprobar que no fue alterado."
+      descripcion="Arrastrá el PDF o la imagen para comprobar que coincide con la huella publicada del lote."
     >
       <label
         htmlFor="verificador-archivo"
@@ -58,20 +83,14 @@ export function VerificadorIntegridad({ hashes }: { hashes: HashEsperado[] }) {
         />
       </label>
 
-      {resultado && (
+      {resultado && aviso && (
         <div className="mt-4 space-y-2 text-xs">
           <p className="text-texto-suave font-mono break-all">
             {resultado.archivo}: {resultado.hash}
           </p>
-          {resultado.match ? (
-            <Aviso variante="exito" titulo="Documento íntegro">
-              Coincide con “{resultado.match}” registrado en el contrato.
-            </Aviso>
-          ) : (
-            <Aviso variante="error" titulo="El documento no coincide">
-              No coincide con ninguno de los hashes registrados en el contrato.
-            </Aviso>
-          )}
+          <Aviso variante={aviso.variante} titulo={aviso.titulo}>
+            {aviso.detalle}
+          </Aviso>
         </div>
       )}
     </Tarjeta>

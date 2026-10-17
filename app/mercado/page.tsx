@@ -8,6 +8,12 @@ import {
   type CodigoCertificacionComercial,
 } from '@/lib/domain';
 import { listarLotes, type LoteListItem } from '@/lib/queries';
+import {
+  hayFiltrosHumedal,
+  hayFiltrosMercado,
+  parsearFiltrosHumedal,
+  parsearFiltrosMercado,
+} from './filtros';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +22,9 @@ type FiltrosMercado = {
   categoria?: string;
   raza?: string;
   moneda?: string;
+  humMin?: string;
+  humMax?: string;
+  humSinDato?: string;
   certificacion?: string;
 };
 
@@ -26,6 +35,12 @@ function unicos(lotes: LoteListItem[], clave: 'provincia' | 'categoria' | 'raza'
     if (valor) valores.add(valor);
   }
   return [...valores].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+/** Mantiene visible la opción elegida aunque no esté entre las facetas. */
+function conValorActual(opciones: string[], actual?: string): string[] {
+  if (!actual || opciones.includes(actual)) return opciones;
+  return [...opciones, actual].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
 function CampoSelect({
@@ -67,11 +82,34 @@ export default async function MercadoPage({
   searchParams: Promise<FiltrosMercado>;
 }) {
   const sp = await searchParams;
+  const humedal = parsearFiltrosHumedal(sp);
+  const filtros = parsearFiltrosMercado(sp);
+  const filtroHumedalValido = humedal.errores.length === 0 && hayFiltrosHumedal(humedal);
+  const hayFiltros =
+    hayFiltrosMercado(filtros) || hayFiltrosHumedal(humedal) || Boolean(sp.certificacion);
+
   let lotes: LoteListItem[] = [];
+  let disponibles: LoteListItem[] = [];
   let huboError = false;
 
   try {
-    lotes = await listarLotes({ estado: 'DISPONIBLE' });
+    // Las opciones de los selects (facetas) salen de una consulta sin filtros
+    // sobre la misma ventana de 60 lotes disponibles: elegir un filtro no debe
+    // ocultar las demás opciones.
+    disponibles = await listarLotes({ estado: 'DISPONIBLE' });
+
+    // Los cinco filtros (incluido humedal) se aplican en la consulta, antes
+    // del límite de 60. Ya no se filtran resultados en memoria.
+    lotes =
+      hayFiltrosMercado(filtros) || filtroHumedalValido
+        ? await listarLotes({
+            estado: 'DISPONIBLE',
+            ...filtros,
+            humedal: filtroHumedalValido
+              ? { min: humedal.min, max: humedal.max, soloSinDato: humedal.sinDato }
+              : undefined,
+          })
+        : disponibles;
   } catch (error) {
     huboError = true;
     console.error('Error listando lotes del mercado', error);
@@ -80,26 +118,7 @@ export default async function MercadoPage({
   const certFiltro: CodigoCertificacionComercial | '' =
     sp.certificacion && esCodigoCertificacionComercial(sp.certificacion) ? sp.certificacion : '';
 
-  const filtros = {
-    provincia: sp.provincia ?? '',
-    categoria: sp.categoria ?? '',
-    raza: sp.raza ?? '',
-    moneda: sp.moneda ?? '',
-    certificacion: certFiltro,
-  };
-
-  const lotesPorAtributo = lotes.filter(
-    (lote) =>
-      (!filtros.provincia || lote.provincia === filtros.provincia) &&
-      (!filtros.categoria || lote.categoria === filtros.categoria) &&
-      (!filtros.raza || lote.raza === filtros.raza) &&
-      (!filtros.moneda || lote.moneda === filtros.moneda),
-  );
-  const filtrados = certFiltro
-    ? filtrarLotesPorCertificacion(lotesPorAtributo, certFiltro)
-    : lotesPorAtributo;
-
-  const hayFiltros = Object.values(filtros).some(Boolean);
+  const filtrados = certFiltro ? filtrarLotesPorCertificacion(lotes, certFiltro) : lotes;
 
   return (
     <main className="mx-auto max-w-6xl space-y-8 p-8">
@@ -111,40 +130,84 @@ export default async function MercadoPage({
         </p>
       </header>
 
+      {humedal.errores.length > 0 && (
+        <Aviso variante="error" titulo="Revisá los filtros de humedal">
+          <ul className="list-disc space-y-1 pl-4">
+            {humedal.errores.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </Aviso>
+      )}
+
       <form method="get" className="rounded-tarjeta border-borde bg-panel border p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <CampoSelect
             etiqueta="Provincia"
             name="provincia"
-            valor={filtros.provincia}
-            opciones={unicos(lotes, 'provincia')}
+            valor={filtros.provincia ?? ''}
+            opciones={conValorActual(unicos(disponibles, 'provincia'), filtros.provincia)}
           />
           <CampoSelect
             etiqueta="Categoría"
             name="categoria"
-            valor={filtros.categoria}
-            opciones={unicos(lotes, 'categoria')}
+            valor={filtros.categoria ?? ''}
+            opciones={conValorActual(unicos(disponibles, 'categoria'), filtros.categoria)}
           />
           <CampoSelect
             etiqueta="Raza"
             name="raza"
-            valor={filtros.raza}
-            opciones={unicos(lotes, 'raza')}
+            valor={filtros.raza ?? ''}
+            opciones={conValorActual(unicos(disponibles, 'raza'), filtros.raza)}
+          />
+          <CampoSelect
+            etiqueta="Moneda"
+            name="moneda"
+            valor={filtros.moneda ?? ''}
+            opciones={conValorActual(['USDC', 'EURC'], filtros.moneda)}
           />
           <div className="space-y-1">
-            <label htmlFor="filtro-moneda" className="text-texto-suave block text-xs font-semibold">
-              Moneda
+            <label htmlFor="filtro-humMin" className="text-texto-suave block text-xs font-semibold">
+              Humedal mínimo (%)
             </label>
-            <select
-              id="filtro-moneda"
-              name="moneda"
-              defaultValue={filtros.moneda}
+            <input
+              id="filtro-humMin"
+              name="humMin"
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              defaultValue={humedal.min ?? ''}
               className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
-            >
-              <option value="">Todas</option>
-              <option value="USDC">USDC</option>
-              <option value="EURC">EURC</option>
-            </select>
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="filtro-humMax" className="text-texto-suave block text-xs font-semibold">
+              Humedal máximo (%)
+            </label>
+            <input
+              id="filtro-humMax"
+              name="humMax"
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              defaultValue={humedal.max ?? ''}
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+            />
+          </div>
+          <div className="flex min-h-11 items-center gap-2 pb-2">
+            <input
+              id="filtro-humSinDato"
+              name="humSinDato"
+              type="checkbox"
+              value="1"
+              defaultChecked={humedal.sinDato}
+              className="accent-brand h-4 w-4"
+            />
+            <label htmlFor="filtro-humSinDato" className="text-texto text-sm">
+              Solo lotes sin dato de humedal
+            </label>
           </div>
           <div className="space-y-1">
             <label
@@ -156,7 +219,7 @@ export default async function MercadoPage({
             <select
               id="filtro-certificacion"
               name="certificacion"
-              defaultValue={filtros.certificacion}
+              defaultValue={certFiltro}
               className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
             >
               <option value="">Todas las preferencias</option>
@@ -200,7 +263,7 @@ export default async function MercadoPage({
         <section aria-label="Listado de lotes" className="space-y-4">
           <h2 className="text-lg font-semibold">
             Lotes ({filtrados.length}
-            {hayFiltros ? ` de ${lotes.length}` : ''})
+            {hayFiltros ? ` de ${disponibles.length}` : ''})
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtrados.map((lote) => (

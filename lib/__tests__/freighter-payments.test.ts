@@ -13,6 +13,7 @@ import {
   construirXdrPagoUsdcDesdeCuenta,
   ejecutarPagoUsdcTestnet,
   enviarXdrFirmadoAHorizon,
+  esErrorRedirectNext,
   firmarXdrConFreighterDesktop,
   traducirErrorPagoStellar,
 } from '@/lib/stellar/payments';
@@ -352,7 +353,7 @@ function listarArchivosUi(dir: string): string[] {
   return resultado;
 }
 
-describe('Criterio de aceptación — Cero GDEMO-* en la UI', () => {
+describe('Criterio de aceptación — Cero GDEMO-* en la UI y manejo de NEXT_REDIRECT', () => {
   it('ningún componente o página en app/ ni components/ contiene defaults o strings GDEMO-*', () => {
     const archivos = [
       ...listarArchivosUi(join(process.cwd(), 'app')),
@@ -362,6 +363,29 @@ describe('Criterio de aceptación — Cero GDEMO-* en la UI', () => {
     for (const archivo of archivos) {
       const contenido = readFileSync(archivo, 'utf8');
       expect(contenido, `Se encontró GDEMO-* en ${archivo}`).not.toMatch(/GDEMO-/);
+    }
+  });
+
+  it('detecta redirecciones de Next.js (NEXT_REDIRECT por message o digest) y las ignora en fondeo, auditoría y recepción', () => {
+    expect(esErrorRedirectNext(new Error('NEXT_REDIRECT'))).toBe(true);
+    expect(
+      esErrorRedirectNext(
+        Object.assign(new Error('Redirect'), {
+          digest: 'NEXT_REDIRECT;push;/lotes/LOTE-DEMO-0039;303;',
+        }),
+      ),
+    ).toBe(true);
+    expect(esErrorRedirectNext(new Error('Rechazaste la firma'))).toBe(false);
+
+    const formulariosConAction = [
+      join(process.cwd(), 'app', 'lotes', '[codigo]', 'form-fondeo.tsx'),
+      join(process.cwd(), 'app', 'lotes', '[codigo]', 'auditoria', 'form-auditoria.tsx'),
+      join(process.cwd(), 'app', 'lotes', '[codigo]', 'recepcion', 'form-recepcion.tsx'),
+    ];
+
+    for (const ruta of formulariosConAction) {
+      const contenido = readFileSync(ruta, 'utf8');
+      expect(contenido, `Falta esErrorRedirectNext en ${ruta}`).toContain('esErrorRedirectNext');
     }
   });
 });

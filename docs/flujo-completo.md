@@ -26,9 +26,10 @@ Recibe los datos y archivos, los guarda y crea una solicitud **pendiente de vali
 
 1. El backend envía el polígono del campo a una fuente compatible de datos ambientales.
 2. Consulta la información disponible sobre pérdida de cobertura forestal desde la fecha definida por el proyecto.
-3. Guarda el resultado, la fecha de consulta, la fuente y los criterios utilizados.
+3. Calcula el porcentaje de humedal del establecimiento contra una capa oficial versionada (INH/MapBiomas) y lo deja disponible para el comprador.
+4. Guarda el resultado, la fecha de consulta, la fuente y los criterios utilizados.
 
-**Resultado:** el lote recibe una evaluación ambiental que podrá revisar el comprador.
+**Resultado:** el lote recibe una evaluación ambiental que podrá revisar el comprador. El porcentaje de humedales se informa como dato estructural: si la capa no cubre el campo o el cálculo no está disponible, se muestra **"sin dato"** (jamás un cero inventado).
 
 > **Importante:** una consulta sin alertas no demuestra por sí sola el cumplimiento de toda la normativa ambiental.
 

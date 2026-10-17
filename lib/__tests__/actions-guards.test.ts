@@ -63,7 +63,49 @@ function crearAdminMock(respuestas: Record<string, RespuestaMock>) {
     cadenas[tabla] ??= crearCadena(respuestas[tabla] ?? { data: null, error: null });
     return cadenas[tabla];
   });
-  const admin = { from } as unknown as ReturnType<typeof createAdminClient>;
+  const rpc = vi.fn(async (nombre: string): Promise<RespuestaMock> => {
+    if (nombre === 'validar_poligono_lote') {
+      return {
+        data: {
+          ok: true,
+          errores: [],
+          poligono: JSON.parse(POLIGONO_VALIDO),
+          superficieTotalHaTexto: '55.4945',
+        },
+        error: null,
+      };
+    }
+    if (nombre === 'calcular_interseccion_humedal') {
+      return {
+        data: [
+          {
+            estado: 'VERIFICADO',
+            motivo: null,
+            poligono_normalizado: JSON.parse(POLIGONO_VALIDO),
+            superficie_total_ha: 55.4945,
+            superficie_total_ha_texto: '55.4945',
+            superficie_humedal_ha: 0,
+            porcentaje_humedal: 0,
+            porcentaje_humedal_texto: '0.000000',
+            cobertura_pct: 100,
+            fuente_humedal: null,
+            detalle_capas: [],
+            metodo: {
+              version: '1',
+              motor: 'postgis',
+              sridEntrada: 4326,
+              sridCalculo: 6933,
+              modelo: 'test',
+            },
+            calculado_en: '2026-10-17T05:00:00.000Z',
+          },
+        ],
+        error: null,
+      };
+    }
+    return { data: null, error: { message: `rpc inesperado: ${nombre}` } };
+  });
+  const admin = { from, rpc } as unknown as ReturnType<typeof createAdminClient>;
   return { admin, cadenas };
 }
 
@@ -170,6 +212,7 @@ describe('crearLoteAction (identidad desde la sesión)', () => {
       caravanas: { data: [], error: null },
       productores: { data: { id: 'prod-sesion' }, error: null },
       lotes: { data: { id: 'lote-1', codigo_lote: 'LOTE-TEST-1' }, error: null },
+      verificaciones_humedal: { data: { id: 'ver-1' }, error: null },
     });
     vi.mocked(createAdminClient).mockReturnValue(admin);
 

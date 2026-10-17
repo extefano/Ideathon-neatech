@@ -9,7 +9,7 @@ import { argsFondeo, esWalletStellar } from '@/lib/stellar-args';
 import { STELLAR_CONTRACT_ID } from '@/lib/stellar-config';
 import { fondearLoteAction, solicitarUsdcDemoAction } from '@/lib/actions';
 import { crearTrustlineUsdcConFreighter, verificarEstadoCuentaUsdc } from '@/lib/freighter';
-import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
+import { ejecutarPagoUsdcTestnet, esErrorRedirectNext } from '@/lib/stellar/payments';
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
@@ -180,7 +180,7 @@ export function FormFondeo({
 
       await fondearLoteAction(formData);
     } catch (err) {
-      if (err instanceof Error && err.message.includes('NEXT_REDIRECT')) {
+      if (esErrorRedirectNext(err)) {
         // Redirección exitosa de Next.js, no es un error
         return;
       }

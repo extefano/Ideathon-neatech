@@ -7,7 +7,10 @@ import { getCurrentUser, type PerfilUsuario } from '@/lib/auth';
 import {
   listarComprasDeComprador,
   listarLotesDeProductor,
+  listarLotesEnTransitoFrigorifico,
+  listarLotesListosDespachoFrigorifico,
   listarLotesPendientesAuditoria,
+  listarLotesRecepcionadosFrigorifico,
   listarLotesRevisadosPorVeterinario,
 } from '@/lib/queries';
 
@@ -154,11 +157,72 @@ async function VistaComprador({ user }: { user: PerfilUsuario }) {
   );
 }
 
+async function VistaFrigorifico({ user: _user }: { user: PerfilUsuario }) {
+  const [enTransito, listosDespacho, recepcionados] = await Promise.all([
+    cargar(listarLotesEnTransitoFrigorifico),
+    cargar(listarLotesListosDespachoFrigorifico),
+    cargar(listarLotesRecepcionadosFrigorifico),
+  ]);
+
+  const hayError = enTransito.error || listosDespacho.error || recepcionados.error;
+
+  return (
+    <main className="mx-auto max-w-6xl space-y-8 p-8">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-bold">Panel de recepciones</h1>
+        <p className="text-texto-suave max-w-3xl">
+          Bandeja de operaciones para planta faenadora: recepcioná en balanza fiscal los lotes en
+          tránsito, conciliá las caravanas RFID y emití el Sello 3 para cerrar el ciclo productivo y
+          liberar la liquidación final del escrow.
+        </p>
+      </header>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href="/mercado" className={botonSecundario}>
+          Ver mercado ganadero
+        </Link>
+      </div>
+
+      {hayError ? (
+        <ErrorCarga />
+      ) : (
+        <>
+          <SeccionLotes
+            titulo={`Lotes en tránsito a planta (${enTransito.datos.length})`}
+            descripcion="Con despacho DT-e emitido en origen. Listos para cargar pesada de balanza fiscal y emitir Sello 3."
+            lotes={enTransito.datos}
+            perspectiva="FRIGORIFICO"
+            vacioTitulo="No hay lotes en tránsito"
+            vacioTexto="Cuando un productor despache hacienda con DT-e, va a figurar acá para su recepción."
+          />
+          <SeccionLotes
+            titulo={`Próximos a despacho (${listosDespacho.datos.length})`}
+            descripcion="Lotes en engorde con auditoría sanitaria (Sello 2) aprobada, a la espera del DT-e del productor."
+            lotes={listosDespacho.datos}
+            perspectiva="FRIGORIFICO"
+            vacioTitulo="No hay lotes próximos a despacho"
+            vacioTexto="Los lotes que finalicen la auditoría del Mes 4 van a listarse acá antes de su traslado."
+          />
+          <SeccionLotes
+            titulo={`Recepciones cerradas (${recepcionados.datos.length})`}
+            descripcion="Lotes faenados con Sello 3 emitido y pasaporte EUDR disponible."
+            lotes={recepcionados.datos}
+            perspectiva="FRIGORIFICO"
+            vacioTitulo="Todavía no se cerraron recepciones"
+            vacioTexto="Las recepciones que confirmes en balanza fiscal con Sello 3 van a quedar registradas acá."
+          />
+        </>
+      )}
+    </main>
+  );
+}
+
 export default async function Home() {
   const user = await getCurrentUser();
   if (!user) redirect('/mercado');
 
   if (user.rol === 'PRODUCTOR') return <VistaProductor user={user} />;
   if (user.rol === 'VETERINARIO') return <VistaVeterinario user={user} />;
+  if (user.rol === 'FRIGORIFICO') return <VistaFrigorifico user={user} />;
   return <VistaComprador user={user} />;
 }

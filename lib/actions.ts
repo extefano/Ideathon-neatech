@@ -8,7 +8,7 @@ import {
   identidadProductor,
   type PerfilUsuario,
 } from '@/lib/auth';
-import { eudrGeoHash, rfidListHash, sha256Hex } from '@/lib/crypto';
+import { rfidListHash, sha256Hex } from '@/lib/crypto';
 import { parsePesadasCsv, resumenPesadas, conciliarCaravanas } from '@/lib/csv';
 import {
   ADPV_MAX_KG_DIA,
@@ -21,15 +21,31 @@ import {
   type CertificacionComercialLote,
 } from '@/lib/domain';
 import { calcularDesembolsos, calcularLiquidacionFinal } from '@/lib/escrow';
-import { consultarDeforestacion, hayDeforestacion } from '@/lib/gfw';
+import { consultarDeforestacion } from '@/lib/gfw';
 import { parseAndValidatePolygon } from '@/lib/geo';
 import {
+  resolverVerificacionHumedal,
+  type VerificacionHumedalGuardada,
+} from '@/lib/humedales-servidor';
+import {
+  decidirReplay,
+  ejecutarOrigen,
+  huellaCreacion,
+  verificarTitularidadLote,
+  type EscrituraLote,
+  type InputOrigen,
+  type OrigenEstado,
+  type ResultadoOrigen,
+} from '@/lib/origen';
+import {
   TOKEN_SAC_TESTNET_USDC,
+  contextoAnclajeStellar,
   getStellarClient,
   transferirUsdcDemo,
   verificarTxOnChain,
 } from '@/lib/stellar';
 import { argsFondeo, argsSanidad, argsCierre, esWalletStellar } from '@/lib/stellar-args';
+import { leerLoteOnChain } from '@/lib/stellar-read';
 import { createAdminClient, sanitizarNombre, subirArchivo } from '@/lib/storage';
 
 export type FormState = { errors: string[] };
@@ -53,77 +69,49 @@ function mimeDocumento(nombre: string): string {
   return 'application/pdf';
 }
 
-async function intentarValidacionGfw(input: {
-  loteId: string;
-  codigoLote: string;
-  poligono: unknown;
-  productorWallet: string;
-  renspaDocHash: string;
-  rfidHash: string;
-  headCount: number;
-  initialAvgWeightKg: number;
-  targetWeightKg: number;
-  financingAmount: number;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const apiKey = process.env.GFW_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: 'GFW_API_KEY no configurada en el entorno del servidor' };
-  }
-
+/**
+ * Arma el núcleo de origen (`lib/origen.ts`) con las dependencias reales:
+ * GFW, cliente Stellar y escrituras sobre `lotes` vía service_role.
+ */
+async function ejecutarOrigenDelLote(input: InputOrigen): Promise<ResultadoOrigen> {
   const admin = createAdminClient();
 
-  let gfw;
-  try {
-    gfw = await consultarDeforestacion({ geometry: input.poligono, apiKey });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'error desconocido';
-    return { ok: false, error: `Global Forest Watch no respondió: ${msg}` };
-  }
+  const escribirLote = async ({ loteId, patch }: EscrituraLote) => {
+    const { error } = await admin.from('lotes').update(patch).eq('id', loteId);
+    return { error: error ? { message: error.message, code: error.code } : null };
+  };
 
-  const eudrHash = eudrGeoHash({ poligono: input.poligono, gfw, checkedAt: gfw.checkedAt });
-
-  if (hayDeforestacion(gfw)) {
-    const { error: updateError } = await admin
-      .from('lotes')
-      .update({ gfw_consulta: gfw, eudr_geo_hash: eudrHash, estado_publicacion: 'RECHAZADO_EUDR' })
-      .eq('id', input.loteId);
-    if (updateError) {
-      return {
-        ok: false,
-        error: `No se pudo registrar la validación EUDR: ${updateError.message}`,
-      };
-    }
-    return { ok: true };
-  }
-
-  const tx = await getStellarClient().createAndVerifyOrigin({
-    codigoLote: input.codigoLote,
-    producerWallet: input.productorWallet,
-    renspaDocHash: input.renspaDocHash,
-    rfidListHash: input.rfidHash,
-    eudrGeoHash: eudrHash,
-    headCount: input.headCount,
-    initialAvgWeightKg: input.initialAvgWeightKg,
-    targetWeightKg: input.targetWeightKg,
-    financingAmount: input.financingAmount,
-    tokenSacAddress: TOKEN_SAC_TESTNET_USDC,
-  });
-
-  const { error: updateError } = await admin
-    .from('lotes')
-    .update({
-      gfw_consulta: gfw,
-      eudr_geo_hash: eudrHash,
-      seal_1_eudr: true,
-      soroban_create_tx_hash: tx.txHash,
-      estado_publicacion: 'DISPONIBLE',
-    })
-    .eq('id', input.loteId);
-  if (updateError) {
-    return { ok: false, error: `No se pudo anclar el Sello 1: ${updateError.message}` };
-  }
-
-  return { ok: true };
+  return ejecutarOrigen(
+    {
+      consultarGfw: async ({ poligono }) => {
+        const apiKey = process.env.GFW_API_KEY;
+        if (!apiKey) {
+          throw new Error('GFW_API_KEY no configurada en el entorno del servidor');
+        }
+        return consultarDeforestacion({ geometry: poligono, apiKey });
+      },
+      enviarOrigen: async (envio) => {
+        const tx = await getStellarClient().createAndVerifyOrigin({
+          codigoLote: envio.codigoLote,
+          producerWallet: envio.productorWallet,
+          renspaDocHash: envio.renspaDocHash,
+          rfidListHash: envio.rfidListHash,
+          eudrGeoHash: envio.eudrGeoHash,
+          headCount: envio.headCount,
+          initialAvgWeightKg: envio.initialAvgWeightKg,
+          targetWeightKg: envio.targetWeightKg,
+          financingAmount: envio.financingAmount,
+          tokenSacAddress: TOKEN_SAC_TESTNET_USDC,
+        });
+        return { txHash: tx.txHash };
+      },
+      leerOnChain: (codigo) => leerLoteOnChain(codigo),
+      modoAnclaje: () => contextoAnclajeStellar(),
+      actualizarLote: escribirLote,
+      registrarRechazo: escribirLote,
+    },
+    input,
+  );
 }
 
 export async function crearLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -131,6 +119,9 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
   if (!user || !canPerformStage(user, 'PASO_1_CREAR_LOTE')) {
     return { errors: ['Esta acción requiere una cuenta con perfil de Productor.'] };
   }
+
+  const admin = createAdminClient();
+  const creacionKey = String(formData.get('creacion_key') ?? '').trim() || null;
 
   const parsed = paso1Schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -153,8 +144,7 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     return { errors: pesadas.errors.slice(0, 12) };
   }
   const resumen = resumenPesadas(pesadas.rows);
-
-  const admin = createAdminClient();
+  const rfidHash = rfidListHash(pesadas.rows);
 
   const { data: existentes } = await admin
     .from('caravanas')
@@ -200,12 +190,61 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     productorId = productor?.id ?? null;
   }
 
-  if (user) {
-    await admin.from('perfiles').update({ wallet: productorWallet }).eq('id', user.id);
-  }
+  await admin.from('perfiles').update({ wallet: productorWallet }).eq('id', user.id);
 
   const monto = data.montoTotalFinanciacion;
   const kilosTotales = resumen.promedioKg * resumen.cantidad;
+
+  const resultadoHumedal = await resolverVerificacionHumedal({
+    poligonoTexto: data.poligono,
+    usuarioId: user.id,
+    verificacionId: String(formData.get('verificacion_humedal') ?? '').trim() || null,
+  });
+  if (!resultadoHumedal.ok) {
+    return { errors: resultadoHumedal.errores };
+  }
+  const verificacion = resultadoHumedal.verificacion;
+
+  // Chequeo temprano de idempotencia: la misma clave de envío con la misma
+  // huella de datos reutiliza el lote; con datos distintos es un conflicto.
+  let creacionHuella: string | null = null;
+  if (creacionKey) {
+    creacionHuella = huellaCreacion({
+      renspa: data.renspa,
+      poligonoHash: verificacion.poligonoHash,
+      rfidHash,
+      monto: data.montoTotalFinanciacion,
+      cabezas: resumen.cantidad,
+      pesoObjetivoKg: data.pesoObjetivoKg,
+      categoria: data.categoria,
+      raza: data.raza,
+      tipoOperacion: data.tipoOperacion,
+      tipoRodeo: data.tipoRodeo,
+      plazoMeses: data.plazoMeses,
+      fechaVigencia: data.fechaVigencia,
+      moneda: data.moneda,
+    });
+    const { data: existente, error: errorReplay } = await admin
+      .from('lotes')
+      .select('codigo_lote, creacion_huella')
+      .eq('creado_por', user.id)
+      .eq('creacion_key', creacionKey)
+      .maybeSingle();
+    if (errorReplay) {
+      return { errors: [`No se pudo comprobar la clave de envío: ${errorReplay.message}`] };
+    }
+    const decision = decidirReplay({
+      existente: existente
+        ? {
+            codigoLote: String(existente.codigo_lote),
+            creacionHuella: (existente.creacion_huella as string | null) ?? null,
+          }
+        : null,
+      huella: creacionHuella,
+    });
+    if (decision.accion === 'redirigir') redirect(`/lotes/${decision.codigoLote}`);
+    if (decision.accion === 'conflicto') return { errors: [decision.error] };
+  }
 
   const { data: loteRow, error: insertError } = await admin
     .from('lotes')
@@ -213,8 +252,10 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
       renspa: data.renspa,
       provincia: data.provincia,
       localidad: data.localidad,
-      poligono_geojson: JSON.parse(data.poligono),
-      superficie_ha: geo.superficieHa,
+      // Geometría única: el lote persiste el polígono normalizado de PostGIS,
+      // el mismo que mide, hashea y compromete el manifiesto.
+      poligono_geojson: verificacion.reporte.poligono,
+      superficie_ha: verificacion.reporte.superficieLoteHa ?? geo.superficieHa,
       marca_liquida: data.marcaLiquida,
       tipo_operacion: data.tipoOperacion,
       categoria: data.categoria,
@@ -240,48 +281,92 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
       precio_por_kg: redondear(monto / kilosTotales),
       titulo: `${resumen.cantidad} ${data.categoria} ${data.raza} - ${Math.round(resumen.promedioKg)} kg`,
       estado_publicacion: 'PENDIENTE_VALIDACION',
+      porcentaje_humedal: verificacion.porcentajeTexto,
+      fuente_humedal: verificacion.fuente,
+      hash_verificacion_humedal: verificacion.reporteHash,
+      estado_humedal: verificacion.estado,
+      verificacion_humedal_id: verificacion.id,
+      creado_por: user.id,
+      creacion_key: creacionKey,
+      creacion_huella: creacionHuella,
     })
     .select('id, codigo_lote')
     .single();
 
   if (insertError || !loteRow) {
+    if (creacionKey && insertError?.code === '23505') {
+      const { data: existente } = await admin
+        .from('lotes')
+        .select('codigo_lote, creacion_huella')
+        .eq('creado_por', user.id)
+        .eq('creacion_key', creacionKey)
+        .maybeSingle();
+      if (existente?.codigo_lote) {
+        const decision = decidirReplay({
+          existente: {
+            codigoLote: String(existente.codigo_lote),
+            creacionHuella: (existente.creacion_huella as string | null) ?? null,
+          },
+          huella: creacionHuella ?? '',
+        });
+        if (decision.accion === 'redirigir') redirect(`/lotes/${decision.codigoLote}`);
+        if (decision.accion === 'conflicto') return { errors: [decision.error] };
+      }
+    }
     return { errors: [`No se pudo crear el lote: ${insertError?.message ?? 'error desconocido'}`] };
   }
 
   const codigo = String(loteRow.codigo_lote);
 
+  const limpiarAltaParcial = async (detalle: string): Promise<FormState> => {
+    try {
+      await admin.from('lotes').delete().eq('id', loteRow.id);
+    } catch {
+      // Limpieza best-effort: el lote quedaría PENDIENTE_VALIDACION sin anclaje igualmente.
+    }
+    return {
+      errors: [
+        `No se pudo completar el registro del lote (${detalle}). El lote no quedó guardado; reintentá el alta.`,
+      ],
+    };
+  };
+
   const renspaPdf = await leerArchivo(formData, 'renspa_pdf');
   let renspaDocUrl: string | null = null;
   let renspaDocHash: string | null = null;
-  if (renspaPdf) {
-    renspaDocUrl = await subirArchivo({
-      bucket: 'documentos',
-      path: `${codigo}/renspa-${sanitizarNombre(renspaPdf.nombre)}`,
-      file: renspaPdf.buffer,
-      contentType: mimeDocumento(renspaPdf.nombre),
-    });
-    renspaDocHash = sha256Hex(renspaPdf.buffer);
-  }
-
-  const boleto = await leerArchivo(formData, 'boleto_marca_pdf');
   let boletoUrl: string | null = null;
-  if (boleto) {
-    boletoUrl = await subirArchivo({
-      bucket: 'documentos',
-      path: `${codigo}/boleto-marca-${sanitizarNombre(boleto.nombre)}`,
-      file: boleto.buffer,
-      contentType: mimeDocumento(boleto.nombre),
+  try {
+    if (renspaPdf) {
+      renspaDocUrl = await subirArchivo({
+        bucket: 'documentos',
+        path: `${codigo}/renspa-${sanitizarNombre(renspaPdf.nombre)}`,
+        file: renspaPdf.buffer,
+        contentType: mimeDocumento(renspaPdf.nombre),
+      });
+      renspaDocHash = sha256Hex(renspaPdf.buffer);
+    }
+
+    const boleto = await leerArchivo(formData, 'boleto_marca_pdf');
+    if (boleto) {
+      boletoUrl = await subirArchivo({
+        bucket: 'documentos',
+        path: `${codigo}/boleto-marca-${sanitizarNombre(boleto.nombre)}`,
+        file: boleto.buffer,
+        contentType: mimeDocumento(boleto.nombre),
+      });
+    }
+
+    await subirArchivo({
+      bucket: 'planillas',
+      path: `${codigo}/pesadas-inicial.csv`,
+      file: Buffer.from(csvText, 'utf8'),
+      contentType: 'text/csv',
     });
+  } catch (error) {
+    const detalle = error instanceof Error ? error.message : String(error);
+    return limpiarAltaParcial(`no se pudieron subir los documentos: ${detalle}`);
   }
 
-  await subirArchivo({
-    bucket: 'planillas',
-    path: `${codigo}/pesadas-inicial.csv`,
-    file: Buffer.from(csvText, 'utf8'),
-    contentType: 'text/csv',
-  });
-
-  const rfidHash = rfidListHash(pesadas.rows);
   const certificacionesComerciales: CertificacionComercialLote[] = [];
 
   for (const codigoCert of CODIGOS_CERTIFICACION_COMERCIAL) {
@@ -328,7 +413,7 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     });
   }
 
-  await admin
+  const { error: errorHashes } = await admin
     .from('lotes')
     .update({
       renspa_doc_url: renspaDocUrl,
@@ -338,19 +423,25 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
       certificaciones_comerciales: certificacionesComerciales,
     })
     .eq('id', loteRow.id);
+  if (errorHashes) {
+    return limpiarAltaParcial(`no se guardaron los hashes de la evidencia: ${errorHashes.message}`);
+  }
 
-  await admin.from('caravanas').insert(
+  const { error: errorCaravanas } = await admin.from('caravanas').insert(
     pesadas.rows.map((r) => ({
       lote_id: loteRow.id,
       rfid: r.rfid,
       peso_inicial_kg: r.pesoKg,
     })),
   );
+  if (errorCaravanas) {
+    return limpiarAltaParcial(`no se registraron las caravanas: ${errorCaravanas.message}`);
+  }
 
-  const resultado = await intentarValidacionGfw({
+  const resultado = await ejecutarOrigenDelLote({
     loteId: String(loteRow.id),
     codigoLote: codigo,
-    poligono: JSON.parse(data.poligono),
+    poligono: verificacion.reporte.poligono,
     productorWallet,
     renspaDocHash: renspaDocHash ?? '',
     rfidHash,
@@ -358,12 +449,19 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     initialAvgWeightKg: resumen.promedioKg,
     targetWeightKg: data.pesoObjetivoKg,
     financingAmount: monto,
+    origenEstado: 'PENDIENTE',
+    origenManifest: null,
+    origenManifestHash: null,
+    txHashExistente: null,
   });
 
-  if (!resultado.ok) {
+  if (resultado.estado === 'rechazado') {
+    redirect(`/lotes/${codigo}`);
+  }
+  if (resultado.estado !== 'confirmado' && resultado.estado !== 'sin_cambios') {
     return {
       errors: [
-        `El lote ${codigo} se guardó y quedó PENDIENTE_VALIDACION. ${resultado.error}. Reintentá desde la ficha del lote.`,
+        `El lote ${codigo} se guardó y quedó PENDIENTE_VALIDACION. ${resultado.error} Reintentá desde la ficha del lote.`,
       ],
     };
   }
@@ -392,32 +490,109 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
     .maybeSingle();
   if (!lote) redirect('/');
 
-  if (!esDuenoDelLote(user, lote)) {
-    redirect(
-      `/lotes/${codigo}?error=${encodeURIComponent(
-        'Solo el productor dueño del lote puede reintentar la validación EUDR.',
-      )}`,
+  const volverConError: (mensaje: string) => never = (mensaje) =>
+    redirect(`/lotes/${codigo}?gfw=error&msg=${encodeURIComponent(mensaje)}`);
+
+  const titularidad = verificarTitularidadLote({
+    creadoPor: (lote.creado_por as string | null) ?? null,
+    usuarioId: user.id,
+  });
+  if (!titularidad.ok) volverConError(titularidad.error);
+
+  // Propiedad alternativa (productor_id / wallet): con cualquier dato de
+  // propiedad presente, el reintento exige coincidir con al menos uno.
+  const creadoPor = (lote.creado_por as string | null) ?? null;
+  const hayDatosPropiedad =
+    creadoPor !== null || lote.productor_id != null || lote.productor_wallet != null;
+  const esPropietario =
+    (creadoPor !== null && creadoPor === user.id) ||
+    ((lote.productor_id != null || lote.productor_wallet != null) && esDuenoDelLote(user, lote));
+  if (hayDatosPropiedad && !esPropietario) {
+    volverConError('Solo el productor dueño del lote puede reintentar la validación EUDR.');
+  }
+
+  if (lote.seal_1_eudr) {
+    volverConError('El Sello 1 ya fue emitido; su evidencia no se puede modificar.');
+  }
+
+  const origenEstado = ((lote.origen_estado as OrigenEstado | null) ?? 'PENDIENTE') as OrigenEstado;
+  if (origenEstado === 'RECHAZADO') {
+    volverConError(
+      'Este lote fue rechazado por pérdida de bosque (EUDR). Su evidencia quedó congelada y no admite un nuevo anclaje.',
     );
   }
 
-  const resultado = await intentarValidacionGfw({
+  // Un alta que quedó a medias (sin caravanas o sin su hash) no debe anclarse:
+  // se anclaría un origen incompleto. Se exige rehacer el alta.
+  const rfidHashLote = String(lote.rfid_list_hash ?? '').trim();
+  const { count: caravanasCount } = await admin
+    .from('caravanas')
+    .select('id', { count: 'exact', head: true })
+    .eq('lote_id', lote.id);
+  if (!rfidHashLote || !caravanasCount) {
+    volverConError(
+      'El alta de este lote quedó incompleta (faltan las caravanas o su hash): el origen no puede anclarse así. Volvé a registrar el lote desde el formulario.',
+    );
+  }
+
+  const manifiesto = (lote.origen_manifest as string | null) ?? null;
+  const manifiestoHash = (lote.origen_manifest_hash as string | null) ?? null;
+
+  // Si el manifiesto ya está preparado, se reutiliza tal cual (no se recalcula
+  // humedales ni GFW). Solo los lotes legacy sin manifiesto lo reconstruyen.
+  let verificacion: VerificacionHumedalGuardada | undefined;
+  if (!manifiesto) {
+    const resultadoHumedal = await resolverVerificacionHumedal({
+      poligonoTexto: JSON.stringify(lote.poligono_geojson),
+      usuarioId: user.id,
+      verificacionId: lote.verificacion_humedal_id ? String(lote.verificacion_humedal_id) : null,
+    });
+    if (!resultadoHumedal.ok) {
+      volverConError(resultadoHumedal.errores.join(' '));
+    }
+    verificacion = resultadoHumedal.verificacion;
+
+    const { error: errorVerificacion } = await admin
+      .from('lotes')
+      .update({
+        verificacion_humedal_id: verificacion.id,
+        porcentaje_humedal: verificacion.porcentajeTexto,
+        fuente_humedal: verificacion.fuente,
+        hash_verificacion_humedal: verificacion.reporteHash,
+        estado_humedal: verificacion.estado,
+      })
+      .eq('id', lote.id);
+    if (errorVerificacion) {
+      volverConError(
+        `No se pudo guardar la verificación de humedales (${errorVerificacion.message}). Reintentá.`,
+      );
+    }
+  }
+
+  const resultado = await ejecutarOrigenDelLote({
     loteId: String(lote.id),
     codigoLote: codigo,
     poligono: lote.poligono_geojson,
     productorWallet: String(lote.productor_wallet ?? ''),
     renspaDocHash: String(lote.renspa_doc_hash ?? ''),
-    rfidHash: String(lote.rfid_list_hash ?? ''),
+    rfidHash: rfidHashLote,
     headCount: Number(lote.cantidad_cabezas ?? 0),
     initialAvgWeightKg: Number(lote.peso_promedio_kg ?? 0),
     targetWeightKg: Number(lote.peso_objetivo_kg ?? 0),
     financingAmount: Number(lote.monto_total_financiacion ?? 0),
+    origenEstado,
+    origenManifest: manifiesto,
+    origenManifestHash: manifiestoHash,
+    txHashExistente: (lote.soroban_create_tx_hash as string | null) ?? null,
   });
 
-  if (!resultado.ok) {
-    redirect(`/lotes/${codigo}?gfw=error&msg=${encodeURIComponent(resultado.error)}`);
+  if (resultado.estado === 'rechazado' || resultado.estado === 'confirmado') {
+    redirect(`/lotes/${codigo}`);
   }
-
-  redirect(`/lotes/${codigo}`);
+  if (resultado.estado === 'sin_cambios') {
+    volverConError('El origen de este lote ya está anclado; no hace falta reintentar.');
+  }
+  volverConError(resultado.error);
 }
 
 export async function fondearLoteAction(formData: FormData): Promise<void> {
@@ -806,7 +981,9 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
 
   const user: PerfilUsuario | null = await getCurrentUser();
   if (!user || !canPerformStage(user, 'PASO_4B_RECEPCION')) {
-    volverConError('La recepción en balanza fiscal requiere una cuenta con perfil de Comprador.');
+    volverConError(
+      'La recepción en balanza fiscal requiere una cuenta con perfil de Comprador o Frigorífico.',
+    );
   }
 
   if (lote.estado_publicacion !== 'EN_TRANSITO_A_FRIGORIFICO') {
@@ -923,7 +1100,7 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     txHash = tx.txHash;
   }
 
-  if (user) {
+  if (user && user.rol !== 'FRIGORIFICO') {
     await admin.from('perfiles').update({ wallet: effectiveBuyerWallet }).eq('id', user.id);
   }
 

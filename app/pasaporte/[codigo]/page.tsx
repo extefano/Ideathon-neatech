@@ -8,6 +8,7 @@ import {
   type CertificacionConUrlResuelta,
 } from '@/components/certificaciones-comerciales';
 import { MapaPasaporte } from '@/components/mapa-lote';
+import { ResumenHumedal } from '@/components/resumen-humedal';
 import { Aviso } from '@/components/ui/aviso';
 import { CopiaHash } from '@/components/ui/copia-hash';
 import { Tabla } from '@/components/ui/tabla';
@@ -15,6 +16,7 @@ import { Tarjeta } from '@/components/ui/tarjeta';
 import { VerificadorIntegridad } from '@/components/verificador-integridad';
 import { construirDocumentos } from '@/lib/documentos-hashes';
 import { normalizarCertificacionesComerciales } from '@/lib/domain';
+import type { EstadoHumedal, FuenteHumedal } from '@/lib/humedales';
 import { getLoteCompleto } from '@/lib/queries';
 import { esWalletStellar } from '@/lib/stellar-args';
 import { createAdminClient } from '@/lib/storage';
@@ -97,6 +99,9 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
     actaHash: auditoria?.acta_hash,
     dteHash: recepcion?.dte_hash,
   });
+
+  const estadoHumedal = (lote.estado_humedal as EstadoHumedal | null) ?? null;
+  const fuenteHumedal = (lote.fuente_humedal as FuenteHumedal | null) ?? null;
 
   const certificacionesNormalizadas = normalizarCertificacionesComerciales(
     lote.certificaciones_comerciales,
@@ -227,6 +232,21 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
           </ul>
         </Tarjeta>
       </section>
+
+      {estadoHumedal && (
+        <Tarjeta
+          titulo="Ambiente del establecimiento"
+          descripcion="Proporción de humedal del campo: atributo informativo del lote, no forma parte del anclaje del Sello 1."
+        >
+          <ResumenHumedal
+            estado={estadoHumedal}
+            porcentajeHumedal={
+              lote.porcentaje_humedal != null ? String(lote.porcentaje_humedal) : null
+            }
+            fuente={fuenteHumedal}
+          />
+        </Tarjeta>
+      )}
 
       <CertificacionesComerciales
         codigoLote={String(lote.codigo_lote)}

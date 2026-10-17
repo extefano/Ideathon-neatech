@@ -147,6 +147,30 @@ export async function loginAction(
     return { errors: ['Completá tu correo electrónico y contraseña.'] };
   }
 
+  const cookieStore = await cookies();
+
+  // Si se ingresan credenciales del frigorífico demo
+  const demoFrigo = (await import('./auth')).DEMO_USERS.FRIGORIFICO;
+  if (email.toLowerCase() === demoFrigo.email.toLowerCase() && password === demoFrigo.password) {
+    cookieStore.set('muunar_demo_rol', 'FRIGORIFICO', {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    try {
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // noop
+    }
+    revalidatePath('/', 'layout');
+    redirect(redirectTo);
+  }
+
+  cookieStore.delete('muunar_demo_rol');
+
   // Si se ingresa un correo de cuenta demo, garantizar que esté inicializada
   const roles: RolUsuario[] = ['PRODUCTOR', 'VETERINARIO', 'COMPRADOR'];
   for (const r of roles) {
@@ -180,6 +204,8 @@ export async function registerAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const cookieStore = await cookies();
+  cookieStore.delete('muunar_demo_rol');
   const redirectTo = rutaInternaSegura(formData.get('redirectTo') as string | null);
   const validacion = validarDatosRegistro(leerEntradaRegistro(formData), {
     requiereCredenciales: true,
@@ -235,6 +261,27 @@ export async function loginDemoAction(input: FormData | RolUsuario): Promise<voi
     redirectTo = rutaInternaSegura(input.get('redirectTo') as string | null);
   }
 
+  const cookieStore = await cookies();
+
+  if (rol === 'FRIGORIFICO') {
+    cookieStore.set('muunar_demo_rol', 'FRIGORIFICO', {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    try {
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // noop
+    }
+    revalidatePath('/', 'layout');
+    redirect(redirectTo);
+  }
+
+  cookieStore.delete('muunar_demo_rol');
   const creds = await ensureDemoUser(rol);
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -249,11 +296,20 @@ export async function loginDemoAction(input: FormData | RolUsuario): Promise<voi
 }
 
 export async function logoutAction(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
   const cookieStore = await cookies();
+  cookieStore.delete('muunar_demo_rol');
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch {
+    // noop
+  }
   for (const cookie of cookieStore.getAll()) {
-    if (cookie.name.includes('sb-') || cookie.name.includes('auth')) {
+    if (
+      cookie.name.includes('sb-') ||
+      cookie.name.includes('auth') ||
+      cookie.name === 'muunar_demo_rol'
+    ) {
       cookieStore.set(cookie.name, '', { path: '/', maxAge: 0 });
       cookieStore.delete(cookie.name);
     }

@@ -4,6 +4,7 @@ import { EstadoBadge } from '@/components/estado-badge';
 import type { RolUsuario } from '@/lib/auth';
 import { normalizarCertificacionesComerciales, obtenerDefinicionCertificacion } from '@/lib/domain';
 import { accionLoteParaRol, resumirLote } from '@/lib/estado-lote';
+import { formatearPorcentajeHumedal } from '@/lib/humedales';
 import type { LoteListItem } from '@/lib/queries';
 
 export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiva?: RolUsuario }) {
@@ -85,6 +86,24 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
             </span>
           </div>
         </div>
+        {lote.estado_humedal && (
+          <div className="border-borde/50 border-t pt-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-texto-tenue font-medium">Humedal (informativo)</span>
+              <span
+                className={
+                  lote.estado_humedal === 'VERIFICADO'
+                    ? 'text-brand-fuerte font-mono font-semibold'
+                    : 'text-texto-tenue font-mono font-semibold'
+                }
+              >
+                {lote.estado_humedal === 'VERIFICADO' && lote.porcentaje_humedal != null
+                  ? `${formatearPorcentajeHumedal(String(lote.porcentaje_humedal))} % del campo`
+                  : 'sin dato'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border-borde mt-3 space-y-2.5 border-t pt-2.5">

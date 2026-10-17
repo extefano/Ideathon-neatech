@@ -299,3 +299,48 @@ fn lote_inexistente() {
         Err(Ok(Error::LoteInexistente))
     );
 }
+
+/// La raíz de origen compromete el reporte de humedales (manifiesto v2) y debe
+/// conservarse idéntica en todas las etapas del ciclo.
+const RAIZ_ORIGEN: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+#[test]
+fn la_raiz_de_origen_con_humedales_se_conserva_hasta_el_cierre() {
+    let c = setup();
+    let codigo = s(&c.env, "LOTE-HUM");
+    c.client.create_and_verify_origin(
+        &codigo,
+        &c.producer,
+        &s(&c.env, "renspa-hash"),
+        &s(&c.env, "rfid-hash"),
+        &s(&c.env, RAIZ_ORIGEN),
+        &30,
+        &240_000,
+        &460_000,
+        &(10_000 * USDC),
+    );
+    assert_eq!(c.client.get_lote(&codigo).eudr_geo_hash, s(&c.env, RAIZ_ORIGEN));
+
+    c.client.authorize_vet(&c.vet);
+    c.client.fund_lot_escrow(&codigo, &c.buyer, &(10_000 * USDC));
+    assert_eq!(c.client.get_lote(&codigo).eudr_geo_hash, s(&c.env, RAIZ_ORIGEN));
+
+    c.client.verify_sanitary_milestone(
+        &codigo,
+        &c.vet,
+        &320_000,
+        &650,
+        &s(&c.env, "acta"),
+        &s(&c.env, "csv-mes4"),
+    );
+    assert_eq!(c.client.get_lote(&codigo).eudr_geo_hash, s(&c.env, RAIZ_ORIGEN));
+
+    c.client.complete_delivery_and_settle(
+        &codigo,
+        &c.buyer,
+        &450_000,
+        &s(&c.env, "dte"),
+        &s(&c.env, "rec"),
+    );
+    assert_eq!(c.client.get_lote(&codigo).eudr_geo_hash, s(&c.env, RAIZ_ORIGEN));
+}

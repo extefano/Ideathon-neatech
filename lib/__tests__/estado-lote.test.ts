@@ -117,4 +117,30 @@ describe('accionLoteParaRol (vistas por rol)', () => {
       href: '/pasaporte/LOTE-9',
     });
   });
+
+  it('el frigorífico registra recepción en tránsito o listo para despacho y ve pasaporte en cerrados', () => {
+    expect(
+      accionLoteParaRol({ ...base, estado: 'EN_TRANSITO_A_FRIGORIFICO' }, 'FRIGORIFICO'),
+    ).toEqual({ texto: 'Registrar recepción', href: '/lotes/LOTE-9/recepcion' });
+    expect(
+      accionLoteParaRol(
+        { ...base, estado: 'FINANCIADO_EN_ENGORDE', seal_2_sanitary: true },
+        'FRIGORIFICO',
+      ),
+    ).toEqual({ texto: 'Registrar recepción', href: '/lotes/LOTE-9/recepcion' });
+    expect(
+      accionLoteParaRol(
+        { ...base, estado: 'FINANCIADO_EN_ENGORDE', seal_2_sanitary: false },
+        'FRIGORIFICO',
+      ),
+    ).toEqual({ texto: 'Ver ficha del lote', href: '/lotes/LOTE-9' });
+    expect(accionLoteParaRol({ ...base, estado: 'CERRADO_CICLO' }, 'FRIGORIFICO')).toEqual({
+      texto: 'Ver pasaporte EUDR',
+      href: '/pasaporte/LOTE-9',
+    });
+    expect(accionLoteParaRol(base, 'FRIGORIFICO')).toEqual({
+      texto: 'Ver ficha del lote',
+      href: '/lotes/LOTE-9',
+    });
+  });
 });

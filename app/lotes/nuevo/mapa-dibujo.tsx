@@ -42,7 +42,9 @@ export default function MapaDibujo({
   activo: boolean;
   onAgregar: (punto: Punto) => void;
 }) {
-  const centro: LatLngExpression = puntos.length > 0 ? puntos[0] : [-29.19, -58.08];
+  // Centro por defecto dentro del área cubierta por la fuente INH cargada
+  // (cuenca piloto del A° Yaguarí), para que dibujar y analizar dé resultado.
+  const centro: LatLngExpression = puntos.length > 0 ? puntos[0] : [-29.48, -58.06];
   const positions: LatLngExpression[] = puntos;
   const estilo = {
     color: '#FDDA24',

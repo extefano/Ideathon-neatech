@@ -23,11 +23,13 @@ export type LoteListItem = {
   seal_2_sanitary: boolean;
   seal_3_reception: boolean;
   certificaciones_comerciales?: CertificacionComercialLote[];
+  porcentaje_humedal?: number | null;
+  estado_humedal?: string | null;
   created_at: string;
 };
 
 const LOTE_LIST_COLUMNS_BASE =
-  'id, codigo_lote, titulo, estado_publicacion, provincia, localidad, categoria, raza, cantidad_cabezas, peso_promedio_kg, peso_objetivo_kg, monto_total_financiacion, moneda, seal_1_eudr, seal_2_sanitary, seal_3_reception, created_at';
+  'id, codigo_lote, titulo, estado_publicacion, provincia, localidad, categoria, raza, cantidad_cabezas, peso_promedio_kg, peso_objetivo_kg, monto_total_financiacion, moneda, seal_1_eudr, seal_2_sanitary, seal_3_reception, porcentaje_humedal, estado_humedal, created_at';
 const LOTE_LIST_COLUMNS = `${LOTE_LIST_COLUMNS_BASE}, certificaciones_comerciales`;
 
 function mapearFilasLote(data: unknown): LoteListItem[] {
@@ -43,17 +45,58 @@ function mapearFilasLote(data: unknown): LoteListItem[] {
   }));
 }
 
-export async function listarLotes(opts?: { estado?: EstadoLote }): Promise<LoteListItem[]> {
+export type FiltroHumedalListado = {
+  min?: number | null;
+  max?: number | null;
+  soloSinDato?: boolean;
+};
+
+export type OpcionesListarLotes = {
+  estado?: EstadoLote;
+  humedal?: FiltroHumedalListado;
+  provincia?: string;
+  categoria?: string;
+  raza?: string;
+  moneda?: string;
+};
+
+export async function listarLotes(opts?: OpcionesListarLotes): Promise<LoteListItem[]> {
   const admin = createAdminClient();
-  let query = admin
-    .from('lotes')
-    .select(LOTE_LIST_COLUMNS)
-    .order('created_at', { ascending: false })
-    .limit(60);
+  let query = admin.from('lotes').select(LOTE_LIST_COLUMNS);
 
   if (opts?.estado) {
     query = query.eq('estado_publicacion', opts.estado);
   }
+  if (opts?.provincia) {
+    query = query.eq('provincia', opts.provincia);
+  }
+  if (opts?.categoria) {
+    query = query.eq('categoria', opts.categoria);
+  }
+  if (opts?.raza) {
+    query = query.eq('raza', opts.raza);
+  }
+  if (opts?.moneda) {
+    query = query.eq('moneda', opts.moneda);
+  }
+
+  // El filtro de humedal se aplica en la consulta, antes del límite: un lote
+  // que cumple no puede quedar afuera por estar fuera de los primeros 60.
+  const humedal = opts?.humedal;
+  if (humedal?.soloSinDato) {
+    query = query.is('porcentaje_humedal', null);
+  } else if (humedal) {
+    if (typeof humedal.min === 'number') {
+      query = query.gte('porcentaje_humedal', humedal.min);
+    }
+    if (typeof humedal.max === 'number') {
+      query = query.lte('porcentaje_humedal', humedal.max);
+    }
+  }
+
+  // Todos los filtros van antes del límite: la ventana de 60 es de resultados
+  // que ya cumplen, no de lotes recientes que después se descartan.
+  query = query.order('created_at', { ascending: false }).limit(60);
 
   let { data, error } = await query;
   if (error && error.message.includes('certificaciones_comerciales')) {
@@ -196,6 +239,89 @@ export async function listarLotesPendientesAuditoria(): Promise<LoteListItem[]> 
   }
 
   if (error) throw new Error(`Error listando lotes pendientes de auditoría: ${error.message}`);
+  return mapearFilasLote(data);
+}
+
+/**
+ * Lotes en tránsito hacia la planta faenadora (listos para recepción en balanza fiscal).
+ */
+export async function listarLotesEnTransitoFrigorifico(): Promise<LoteListItem[]> {
+  const admin = createAdminClient();
+  let { data, error } = await admin
+    .from('lotes')
+    .select(LOTE_LIST_COLUMNS)
+    .eq('estado_publicacion', 'EN_TRANSITO_A_FRIGORIFICO')
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'EN_TRANSITO_A_FRIGORIFICO')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
+  if (error) throw new Error(`Error listando lotes en tránsito al frigorífico: ${error.message}`);
+  return mapearFilasLote(data);
+}
+
+/**
+ * Lotes listos para despacho (engorde finalizado con Sello 2 sanitario aprobado).
+ */
+export async function listarLotesListosDespachoFrigorifico(): Promise<LoteListItem[]> {
+  const admin = createAdminClient();
+  let { data, error } = await admin
+    .from('lotes')
+    .select(LOTE_LIST_COLUMNS)
+    .eq('estado_publicacion', 'FINANCIADO_EN_ENGORDE')
+    .eq('seal_2_sanitary', true)
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'FINANCIADO_EN_ENGORDE')
+      .eq('seal_2_sanitary', true)
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
+  if (error) throw new Error(`Error listando lotes listos para despacho: ${error.message}`);
+  return mapearFilasLote(data);
+}
+
+/**
+ * Lotes recepcionados con ciclo cerrado (Sello 3 y pasaporte EUDR).
+ */
+export async function listarLotesRecepcionadosFrigorifico(): Promise<LoteListItem[]> {
+  const admin = createAdminClient();
+  let { data, error } = await admin
+    .from('lotes')
+    .select(LOTE_LIST_COLUMNS)
+    .eq('estado_publicacion', 'CERRADO_CICLO')
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'CERRADO_CICLO')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
+  if (error) throw new Error(`Error listando lotes recepcionados: ${error.message}`);
   return mapearFilasLote(data);
 }
 

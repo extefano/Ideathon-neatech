@@ -10,6 +10,7 @@ import { ContactoProductor } from '@/components/contacto-productor';
 import { DocumentosHashes } from '@/components/documentos-hashes';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EvidenciaSatelital, type GfwConsulta } from '@/components/evidencia-satelital';
+import { ResumenHumedal } from '@/components/resumen-humedal';
 import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
 import { Tabla } from '@/components/ui/tabla';
@@ -20,6 +21,7 @@ import { construirDocumentos } from '@/lib/documentos-hashes';
 import { normalizarCertificacionesComerciales, type EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { resumirLote } from '@/lib/estado-lote';
+import type { EstadoHumedal, FuenteHumedal } from '@/lib/humedales';
 import { getLoteCompleto } from '@/lib/queries';
 import { esWalletStellar } from '@/lib/stellar-args';
 import { createAdminClient } from '@/lib/storage';
@@ -142,6 +144,8 @@ export default async function LotePage({
   });
 
   const sello2 = Boolean(lote.seal_2_sanitary);
+  const estadoHumedal = (lote.estado_humedal as EstadoHumedal | null) ?? null;
+  const fuenteHumedal = (lote.fuente_humedal as FuenteHumedal | null) ?? null;
   const certificacionesNormalizadas = normalizarCertificacionesComerciales(
     lote.certificaciones_comerciales,
   );
@@ -356,6 +360,21 @@ export default async function LotePage({
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
+
+          {estadoHumedal && (
+            <Tarjeta
+              titulo="Ambiente del establecimiento"
+              descripcion="Proporción de humedal del campo: atributo informativo del lote, no forma parte del anclaje del Sello 1."
+            >
+              <ResumenHumedal
+                estado={estadoHumedal}
+                porcentajeHumedal={
+                  lote.porcentaje_humedal != null ? String(lote.porcentaje_humedal) : null
+                }
+                fuente={fuenteHumedal}
+              />
+            </Tarjeta>
+          )}
 
           <Tarjeta titulo="Detalles técnicos verificables">
             <details>

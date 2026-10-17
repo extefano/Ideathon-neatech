@@ -6,6 +6,7 @@ const datosBase: DatosEtapa = {
   provincia: 'Corrientes',
   localidad: 'Mercedes',
   poligonoOk: true,
+  dibujoActivo: false,
   archivoCsv: true,
   csvOk: true,
   monto: '10000',
@@ -27,6 +28,13 @@ describe('validarEtapa (#33)', () => {
       poligonoOk: false,
     });
     expect(Object.keys(errores).sort()).toEqual(['localidad', 'poligono', 'provincia', 'renspa']);
+  });
+
+  it('bloquea el avance mientras hay un dibujo sin guardar', () => {
+    const errores = validarEtapa(0, { ...datosBase, dibujoActivo: true });
+
+    expect(errores.poligono).toContain('dibujo');
+    expect(puedeAvanzar(0, { ...datosBase, dibujoActivo: true })).toBe(false);
   });
 
   it('etapa 2 exige el CSV y que no tenga errores', () => {

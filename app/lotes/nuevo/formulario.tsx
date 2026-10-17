@@ -2,10 +2,18 @@
 
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useActionState, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useActionState,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { Aviso } from '@/components/ui/aviso';
 import { Boton } from '@/components/ui/boton';
 import { Pasos, type Paso } from '@/components/ui/pasos';
+import { PorcentajeHumedal } from '@/components/porcentaje-humedal';
 import { crearLoteAction, type FormState } from '@/lib/actions';
 import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
 import {
@@ -20,7 +28,10 @@ import {
   type CodigoCertificacionComercial,
 } from '@/lib/domain';
 import { parseAndValidatePolygon } from '@/lib/geo';
+import { descripcionHumedal } from '@/lib/humedales';
 import { validarEtapa, type ErroresEtapa } from './etapas';
+import { crearControladorHumedal, type EstadoAnalisisHumedal } from './humedal-estado';
+import { guardarPoligonoAction } from './humedal-action';
 import {
   ESTADO_DIBUJO_INICIAL,
   MIN_VERTICES,
@@ -29,6 +40,7 @@ import {
   cancelarDibujo,
   deshacerPunto,
   guardarDibujo,
+  poligonoTieneAgujeros,
   puedeGuardar,
   puntosDesdePoligono,
   puntosVisibles,
@@ -98,6 +110,13 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   const [csvNombre, setCsvNombre] = useState<string | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const renspaRef = useRef<HTMLInputElement>(null);
+  const [humedal, setHumedal] = useState<EstadoAnalisisHumedal>({ fase: 'vacio' });
+  const [analizandoEnvio, setAnalizandoEnvio] = useState(false);
+  const [errorDemo, setErrorDemo] = useState<string | null>(null);
+  const [verificacionId, setVerificacionId] = useState('');
+  const [creacionKey, setCreacionKey] = useState('');
+  const [controlHumedal] = useState(() => crearControladorHumedal(setHumedal));
+  const tokenCargaDemoRef = useRef(0);
 
   const geo = useMemo(
     () => (poligonoTexto ? parseAndValidatePolygon(poligonoTexto) : null),
@@ -105,6 +124,10 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   );
   const puntosGuardados = useMemo(() => puntosDesdePoligono(poligonoTexto), [poligonoTexto]);
   const puntosMapa = puntosVisibles(dibujo, puntosGuardados);
+  const tieneAgujeros = useMemo(() => poligonoTieneAgujeros(poligonoTexto), [poligonoTexto]);
+  const analisisVigente = humedal.fase === 'resultado' && humedal.geometria === poligonoTexto;
+  const analizando =
+    analizandoEnvio || (humedal.fase === 'analizando' && humedal.geometria === poligonoTexto);
 
   function valor(name: string): string {
     const elemento = formRef.current?.elements.namedItem(name);
@@ -126,6 +149,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       provincia: valor('provincia'),
       localidad: valor('localidad'),
       poligonoOk: Boolean(geo?.ok),
+      dibujoActivo: dibujo.activo,
       archivoCsv: archivoSeleccionado('archivo_rfid_csv'),
       csvOk: Boolean(csvInfo && csvInfo.errors.length === 0 && csvInfo.rows > 0),
       monto: valor('montoTotalFinanciacion'),
@@ -181,6 +205,90 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       return;
     }
     await inspeccionarCsv(file);
+  }
+
+  /**
+   * Cambia el polígono del formulario e invalida cualquier análisis o carga
+   * demo en vuelo: una respuesta vieja nunca debe pisar esta edición.
+   */
+  function actualizarPoligono(texto: string) {
+    tokenCargaDemoRef.current += 1;
+    controlHumedal.invalidar();
+    setVerificacionId('');
+    setErrorDemo(null);
+    setPoligonoTexto(texto);
+  }
+
+  async function analizarHumedal(poligono: string) {
+    // Clave de idempotencia del alta: una sola por intento, generada antes del
+    // envío para que el FormData del clic de confirmación ya la incluya.
+    if (!creacionKey) setCreacionKey(crypto.randomUUID());
+    const token = controlHumedal.iniciar(poligono);
+    try {
+      const resultado = await guardarPoligonoAction(poligono);
+      if (controlHumedal.resolver(token, poligono, resultado)) {
+        setVerificacionId(resultado.ok ? resultado.verificacionId : '');
+      }
+    } catch {
+      if (
+        controlHumedal.resolver(token, poligono, {
+          ok: false,
+          errores: ['No pudimos analizar el humedal. Revisá tu conexión y reintentá.'],
+        })
+      ) {
+        setVerificacionId('');
+      }
+    }
+  }
+
+  /** Carga el polígono de demo sin pisar ediciones hechas mientras viaja. */
+  async function cargarPoligonoDemo() {
+    const token = (tokenCargaDemoRef.current += 1);
+    setErrorDemo(null);
+    try {
+      const res = await fetch('/demo/poligono.geojson');
+      if (!res.ok) throw new Error('Sin respuesta de demo');
+      const texto = await res.text();
+      if (tokenCargaDemoRef.current !== token) return;
+      actualizarPoligono(texto);
+      setDibujo(cancelarDibujo());
+      void analizarHumedal(texto);
+    } catch {
+      if (tokenCargaDemoRef.current !== token) return;
+      setErrorDemo('No se pudo cargar el polígono de demo. Reintentá o pegá el GeoJSON a mano.');
+    }
+  }
+
+  async function alEnviar(event: ReactMouseEvent<HTMLButtonElement>) {
+    if (dibujo.activo) {
+      event.preventDefault();
+      setErroresEtapa((actuales) => ({
+        ...actuales,
+        poligono: 'Terminá o guardá el dibujo del polígono antes de enviar.',
+      }));
+      return;
+    }
+    if (analizandoEnvio || analizando) {
+      event.preventDefault();
+      return;
+    }
+    const geoActual = poligonoTexto ? parseAndValidatePolygon(poligonoTexto) : null;
+    if (!geoActual?.ok) {
+      event.preventDefault();
+      return;
+    }
+
+    // Gate de dos pasos: el resumen y la evidencia que se envían deben
+    // corresponder al polígono visible y a un resultado ya revisado. Si no hay
+    // resultado vigente, este clic solo analiza y muestra; el envío exige un
+    // segundo clic explícito (nunca `requestSubmit()` automático).
+    if (controlHumedal.geometriaVigente() !== poligonoTexto) {
+      event.preventDefault();
+      if (humedal.fase === 'analizando' && humedal.geometria === poligonoTexto) return;
+      setAnalizandoEnvio(true);
+      await analizarHumedal(poligonoTexto);
+      setAnalizandoEnvio(false);
+    }
   }
 
   async function generarCaravanasUnicasDemo() {
@@ -403,8 +511,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <button
               type="button"
               aria-pressed={dibujo.activo}
-              disabled={dibujo.activo}
-              className={`rounded-control focus-visible:ring-foco border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none ${
+              disabled={dibujo.activo || tieneAgujeros}
+              aria-describedby={tieneAgujeros ? 'poligono-agujeros' : undefined}
+              className={`rounded-control focus-visible:ring-foco border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${
                 dibujo.activo
                   ? 'border-brand-fuerte bg-brand/15 text-brand-fuerte font-semibold'
                   : 'border-borde-fuerte text-texto hover:border-texto-tenue'
@@ -419,7 +528,10 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               className="rounded-control focus-visible:ring-foco border-brand-fuerte bg-brand border px-3 py-1.5 text-xs font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
               onClick={() => {
                 const resultado = guardarDibujo(dibujo);
-                if (resultado.poligono) setPoligonoTexto(resultado.poligono);
+                if (resultado.poligono) {
+                  actualizarPoligono(resultado.poligono);
+                  void analizarHumedal(resultado.poligono);
+                }
                 setDibujo(resultado.estado);
               }}
             >
@@ -445,14 +557,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <button
               type="button"
               className="rounded-control focus-visible:ring-foco border-borde-fuerte text-texto hover:border-texto-tenue border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none"
-              onClick={() =>
-                void fetch('/demo/poligono.geojson')
-                  .then((r) => r.text())
-                  .then((texto) => {
-                    setPoligonoTexto(texto);
-                    setDibujo(cancelarDibujo());
-                  })
-              }
+              onClick={() => void cargarPoligonoDemo()}
             >
               Usar polígono de demo
             </button>
@@ -461,19 +566,42 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
                 type="button"
                 className="rounded-control focus-visible:ring-foco border-borde-fuerte text-texto hover:border-texto-tenue border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none"
                 onClick={() => {
-                  setPoligonoTexto('');
+                  actualizarPoligono('');
                   setDibujo(cancelarDibujo());
                 }}
               >
                 Limpiar
               </button>
             )}
+            {poligonoTexto &&
+              geo?.ok &&
+              !dibujo.activo &&
+              (humedal.fase === 'vacio' || humedal.fase === 'error') && (
+                <button
+                  type="button"
+                  className="rounded-control focus-visible:ring-foco border-brand text-brand border px-3 py-1.5 text-xs font-semibold focus-visible:ring-2 focus-visible:outline-none"
+                  onClick={() => void analizarHumedal(poligonoTexto)}
+                >
+                  Analizar humedal
+                </button>
+              )}
             {geo && (
               <span className={geo.ok ? 'text-brand-fuerte text-xs' : 'text-xs text-red-700'}>
                 {geo.ok ? `Polígono válido — ${geo.superficieHa} ha` : geo.errors.join(' · ')}
               </span>
             )}
           </div>
+          {tieneAgujeros && (
+            <p id="poligono-agujeros" role="status" className="mt-1 text-xs text-neutral-300">
+              Este polígono tiene agujeros (anillos interiores). El editor del mapa no los soporta:
+              quitálos desde el GeoJSON para poder editarlo con “Dibujar polígono”.
+            </p>
+          )}
+          {errorDemo && (
+            <Aviso variante="error" className="mt-2">
+              {errorDemo}
+            </Aviso>
+          )}
           {dibujo.activo && (
             <p
               className={`mt-1 text-xs ${dibujo.borrador.length >= MIN_VERTICES ? 'text-brand-fuerte' : 'text-texto-suave'}`}
@@ -489,11 +617,28 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             placeholder='{"type":"Polygon","coordinates":[[[-58.04,-29.16],…]]}'
             value={poligonoTexto}
             disabled={dibujo.activo}
-            onChange={(event) => setPoligonoTexto(event.target.value)}
+            onChange={(event) => actualizarPoligono(event.target.value)}
           />
-          <input type="hidden" name="poligono" value={poligonoTexto} />
+          <input type="hidden" name="poligono" value={poligonoTexto} readOnly />
+          <input type="hidden" name="verificacion_humedal" value={verificacionId} readOnly />
+          <input type="hidden" name="creacion_key" value={creacionKey} readOnly />
           {erroresEtapa.poligono && (
             <p className="mt-1 text-xs text-red-700">{erroresEtapa.poligono}</p>
+          )}
+          {humedal.fase === 'analizando' && (
+            <p role="status" className="mt-2 text-xs text-neutral-300">
+              Analizando humedales del polígono…
+            </p>
+          )}
+          {humedal.fase === 'resultado' && <PorcentajeHumedal reporte={humedal.reporte} />}
+          {humedal.fase === 'error' && (
+            <Aviso variante="error" titulo="No pudimos analizar el humedal" className="mt-2">
+              <ul className="list-disc space-y-1 pl-4">
+                {humedal.errores.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </Aviso>
           )}
         </div>
       </section>
@@ -978,10 +1123,42 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             </li>
             <li>Polígono: {geo?.ok ? `${geo.superficieHa} ha válidas` : 'sin validar'}</li>
             <li>
+              Humedales:{' '}
+              {humedal.fase === 'resultado' && humedal.geometria === poligonoTexto
+                ? descripcionHumedal(humedal.reporte)
+                : humedal.fase === 'error'
+                  ? 'el análisis falló; se reintenta antes de enviar'
+                  : 'se analiza antes de enviar'}
+            </li>
+            <li>
               Al enviar se consulta Global Forest Watch (corte 31/12/2020) y se registra el Sello 1.
             </li>
           </ul>
         </Aviso>
+
+        {humedal.fase === 'analizando' && humedal.geometria === poligonoTexto && (
+          <p role="status" className="text-xs text-neutral-300">
+            Analizando humedales del polígono…
+          </p>
+        )}
+        {humedal.fase === 'error' && (
+          <Aviso variante="error" titulo="No pudimos analizar el humedal">
+            <ul className="list-disc space-y-1 pl-4">
+              {humedal.errores.map((error) => (
+                <li key={error}>{error}</li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              Sin un análisis revisado no se puede enviar el lote: corregí el polígono o reintentá
+              con el botón de abajo.
+            </p>
+          </Aviso>
+        )}
+        {analisisVigente && (
+          <Aviso variante="exito" titulo="Análisis ambiental listo">
+            Se revisó el polígono actual. Confirmá el envío con “Enviar lote y validar EUDR”.
+          </Aviso>
+        )}
       </section>
 
       <div className="border-borde flex flex-wrap items-center justify-between gap-3 border-t pt-4">
@@ -1004,10 +1181,17 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             )}
             <Boton
               type="submit"
-              cargando={pending}
-              disabled={pending || !walletState?.address || !walletState.esTestnet}
+              cargando={pending || analizando}
+              disabled={pending || analizando || !walletState?.address || !walletState.esTestnet}
+              onClick={(event) => void alEnviar(event)}
             >
-              {pending ? 'Validando EUDR y registrando Sello 1…' : 'Enviar lote y validar EUDR'}
+              {analizando
+                ? 'Analizando humedales…'
+                : pending
+                  ? 'Validando EUDR y registrando Sello 1…'
+                  : analisisVigente
+                    ? 'Enviar lote y validar EUDR'
+                    : 'Analizar humedal y revisar'}
             </Boton>
           </div>
         )}

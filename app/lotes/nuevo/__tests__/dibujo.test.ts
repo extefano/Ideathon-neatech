@@ -7,6 +7,7 @@ import {
   deshacerPunto,
   guardarDibujo,
   poligonoDesdePuntos,
+  poligonoTieneAgujeros,
   puntosDesdePoligono,
   puntosVisibles,
   puedeGuardar,
@@ -123,5 +124,57 @@ describe('modo dibujo', () => {
     expect(puntosDesdePoligono(poligonoDesdePuntos(puntos))).toEqual(puntos);
     expect(puntosDesdePoligono('')).toEqual([]);
     expect(puntosDesdePoligono('no-json')).toEqual([]);
+  });
+});
+
+const anilloExterior = [
+  [-58.1, -29.5],
+  [-58.0, -29.5],
+  [-58.0, -29.4],
+  [-58.1, -29.4],
+  [-58.1, -29.5],
+];
+
+const anilloInterior = [
+  [-58.08, -29.47],
+  [-58.04, -29.47],
+  [-58.04, -29.45],
+  [-58.08, -29.45],
+  [-58.08, -29.47],
+];
+
+describe('poligonoTieneAgujeros', () => {
+  it('detecta un Polygon con anillo interior', () => {
+    const conAgujero = { type: 'Polygon', coordinates: [anilloExterior, anilloInterior] };
+
+    expect(poligonoTieneAgujeros(JSON.stringify(conAgujero))).toBe(true);
+  });
+
+  it('un Polygon simple (solo anillo exterior) no tiene agujeros', () => {
+    const simple = { type: 'Polygon', coordinates: [anilloExterior] };
+
+    expect(poligonoTieneAgujeros(JSON.stringify(simple))).toBe(false);
+  });
+
+  it('detecta agujeros también dentro de un Feature', () => {
+    const conAgujero = {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Polygon', coordinates: [anilloExterior, anilloInterior] },
+    };
+    const simple = {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Polygon', coordinates: [anilloExterior] },
+    };
+
+    expect(poligonoTieneAgujeros(JSON.stringify(conAgujero))).toBe(true);
+    expect(poligonoTieneAgujeros(JSON.stringify(simple))).toBe(false);
+  });
+
+  it('es conservador con textos vacíos, inválidos o que no son polígonos', () => {
+    expect(poligonoTieneAgujeros('')).toBe(false);
+    expect(poligonoTieneAgujeros('no-json')).toBe(false);
+    expect(poligonoTieneAgujeros('{"type":"Point","coordinates":[0,0]}')).toBe(false);
   });
 });
