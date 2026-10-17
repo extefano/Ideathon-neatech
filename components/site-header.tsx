@@ -32,7 +32,7 @@ export async function SiteHeader() {
             aria-label="Muunar — inicio"
           >
             <Image
-              src="/brand/muunar-isotipo-blanco.svg"
+              src="/brand/muunar-isotipo-negro.svg"
               alt=""
               width={565}
               height={560}
