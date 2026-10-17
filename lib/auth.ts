@@ -30,6 +30,40 @@ export type AuthFormState = {
   errors: string[];
 };
 
+export const TIPOS_COMPRADOR = [
+  'FRIGORIFICO_EXPORTADOR',
+  'INVERSOR_AGRO',
+  'CONSIGNATARIA',
+] as const;
+
+export type TipoComprador = (typeof TIPOS_COMPRADOR)[number];
+
+export type DatosRegistroEntrada = {
+  rol?: string | null;
+  nombre_completo?: string | null;
+  cuit?: string | null;
+  email?: string | null;
+  password?: string | null;
+  matricula_profesional?: string | null;
+  acreditacion_senasa?: string | null;
+  operador_consignatario?: string | null;
+  tipo_comprador?: string | null;
+  matricula_ruca?: string | null;
+};
+
+export type DatosRegistroValidados = {
+  rol: RolUsuario;
+  nombreCompleto: string;
+  cuit: string;
+  email: string;
+  password: string;
+  matriculaProfesional: string;
+  acreditacionSenasa: string;
+  operadorConsignatario: string;
+  tipoComprador: TipoComprador;
+  matriculaRuca: string;
+};
+
 export const DEMO_USERS: Record<
   RolUsuario,
   {
@@ -41,7 +75,7 @@ export const DEMO_USERS: Record<
     wallet: string;
     matricula?: string;
     acreditacion_senasa?: string;
-    tipo_comprador?: 'FRIGORIFICO_EXPORTADOR' | 'INVERSOR_AGRO' | 'CONSIGNATARIA';
+    tipo_comprador?: TipoComprador;
     matricula_ruca?: string;
     operador_consignatario?: string;
     anos_operando?: number;
@@ -78,6 +112,86 @@ export const DEMO_USERS: Record<
     matricula_ruca: 'RUCA-8921',
   },
 };
+
+export function rutaInternaSegura(valor: string | null | undefined, alterno = '/'): string {
+  if (!valor) return alterno;
+  if (!valor.startsWith('/')) return alterno;
+  if (valor.startsWith('//') || valor.startsWith('/\\')) return alterno;
+  return valor;
+}
+
+export function validarDatosRegistro(
+  entrada: DatosRegistroEntrada,
+  opciones: { requiereCredenciales: boolean },
+): { ok: true; datos: DatosRegistroValidados } | { ok: false; errors: string[] } {
+  const rol = entrada.rol ?? '';
+  const nombreCompleto = entrada.nombre_completo?.trim() ?? '';
+  const cuit = entrada.cuit?.trim() ?? '';
+  const email = entrada.email?.trim() ?? '';
+  const password = entrada.password ?? '';
+
+  const errors: string[] = [];
+
+  if (!['PRODUCTOR', 'VETERINARIO', 'COMPRADOR'].includes(rol)) {
+    errors.push('El rol seleccionado no es válido.');
+  }
+  if (!nombreCompleto) {
+    errors.push('El nombre o razón social es obligatorio.');
+  }
+  if (!cuit) {
+    errors.push('El CUIT es obligatorio.');
+  }
+  if (opciones.requiereCredenciales) {
+    if (!email || !email.includes('@')) {
+      errors.push('Ingresá un correo electrónico válido.');
+    }
+    if (!password || password.length < 6) {
+      errors.push('La contraseña debe tener al menos 6 caracteres.');
+    }
+  }
+
+  let matriculaProfesional = '';
+  let acreditacionSenasa = '';
+  let operadorConsignatario = '';
+  let tipoComprador: TipoComprador = 'FRIGORIFICO_EXPORTADOR';
+  let matriculaRuca = '';
+
+  if (rol === 'VETERINARIO') {
+    matriculaProfesional = entrada.matricula_profesional?.trim() ?? '';
+    acreditacionSenasa = entrada.acreditacion_senasa?.trim() ?? '';
+    if (!matriculaProfesional) {
+      errors.push('La matrícula profesional es obligatoria para veterinarios.');
+    }
+  } else if (rol === 'PRODUCTOR') {
+    operadorConsignatario = entrada.operador_consignatario?.trim() ?? '';
+  } else if (rol === 'COMPRADOR') {
+    const rawTipo = entrada.tipo_comprador ?? 'FRIGORIFICO_EXPORTADOR';
+    if ((TIPOS_COMPRADOR as readonly string[]).includes(rawTipo)) {
+      tipoComprador = rawTipo as TipoComprador;
+    }
+    matriculaRuca = entrada.matricula_ruca?.trim() ?? '';
+  }
+
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return {
+    ok: true,
+    datos: {
+      rol: rol as RolUsuario,
+      nombreCompleto,
+      cuit,
+      email,
+      password,
+      matriculaProfesional,
+      acreditacionSenasa,
+      operadorConsignatario,
+      tipoComprador,
+      matriculaRuca,
+    },
+  };
+}
 
 export function canPerformStage(user: PerfilUsuario | null | undefined, stage: Stage): boolean {
   switch (stage) {

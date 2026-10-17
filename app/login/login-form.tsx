@@ -26,6 +26,51 @@ const ROLES: { id: RolUsuario; titulo: string; descripcion: string }[] = [
   },
 ];
 
+function IconoGoogle() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 18 18" className="h-4 w-4 shrink-0">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.96 10.71a5.41 5.41 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58Z"
+      />
+    </svg>
+  );
+}
+
+function IconoApple() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
+      <path
+        fill="currentColor"
+        d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
+      />
+    </svg>
+  );
+}
+
+function IconoFacebook() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
+      <path
+        fill="#1877F2"
+        d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+      />
+    </svg>
+  );
+}
+
 type ErroresCampo = Record<string, string>;
 
 function validarLogin(form: FormData): ErroresCampo {
@@ -150,11 +195,60 @@ export function LoginForm({
         </button>
       </div>
 
+      {/* Ingreso con redes sociales (próximamente) */}
+      <div className="mt-6 space-y-4">
+        <div
+          className="grid grid-cols-3 gap-2"
+          role="group"
+          aria-label="Ingreso con redes sociales"
+        >
+          <Boton
+            variante="secundario"
+            disabled
+            title="Próximamente"
+            aria-label="Continuar con Google (próximamente)"
+            className="w-full"
+          >
+            <IconoGoogle />
+          </Boton>
+          <Boton
+            variante="secundario"
+            disabled
+            title="Próximamente"
+            aria-label="Continuar con Apple (próximamente)"
+            className="w-full"
+          >
+            <IconoApple />
+          </Boton>
+          <Boton
+            variante="secundario"
+            disabled
+            title="Próximamente"
+            aria-label="Continuar con Facebook (próximamente)"
+            className="w-full"
+          >
+            <IconoFacebook />
+          </Boton>
+        </div>
+        <p className="text-center text-[11px] text-neutral-500">
+          Ingreso con redes sociales: próximamente.
+        </p>
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-neutral-800" aria-hidden="true" />
+          <span className="text-[11px] font-medium tracking-wider text-neutral-500 uppercase">
+            o con tu correo
+          </span>
+          <span className="h-px flex-1 bg-neutral-800" aria-hidden="true" />
+        </div>
+      </div>
+
+      {/* Formulario: Iniciar sesión */}
       {tab === 'login' && (
         <form
           action={runLoginAction}
           onSubmit={alEnviarLogin}
-          className="mt-6 space-y-4"
+          className="space-y-4"
           noValidate
         >
           <input type="hidden" name="redirectTo" value={redirectTarget} />
@@ -198,7 +292,7 @@ export function LoginForm({
         <form
           action={runRegisterAction}
           onSubmit={alEnviarRegistro}
-          className="mt-6 space-y-5"
+          className="space-y-5"
           noValidate
         >
           <input type="hidden" name="rol" value={rol} />

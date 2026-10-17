@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { Aviso } from '@/components/ui/aviso';
-import { getCurrentUser, logoutAction } from '@/lib/auth';
+import { getCurrentUser, logoutAction, rutaInternaSegura } from '@/lib/auth';
 import { LoginForm } from './login-form';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export default async function LoginPage({
   const sp = await searchParams;
   const user = await getCurrentUser();
   const defaultTab = sp.tab === 'register' ? 'register' : 'login';
-  const redirectTo = sp.redirectTo || '/';
+  const redirectTo = rutaInternaSegura(sp.redirectTo);
 
   return (
     <main className="flex min-h-[70vh] flex-col items-center justify-center p-4 sm:p-6">
