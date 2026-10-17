@@ -245,12 +245,7 @@ export function LoginForm({
 
       {/* Formulario: Iniciar sesión */}
       {tab === 'login' && (
-        <form
-          action={runLoginAction}
-          onSubmit={alEnviarLogin}
-          className="space-y-4"
-          noValidate
-        >
+        <form action={runLoginAction} onSubmit={alEnviarLogin} className="space-y-4" noValidate>
           <input type="hidden" name="redirectTo" value={redirectTarget} />
 
           {loginState.errors.length > 0 && (
