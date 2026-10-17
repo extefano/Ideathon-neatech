@@ -1,6 +1,12 @@
 import Link from 'next/link';
-import { LoteCard } from '@/components/lote-card';
+import { LotesMarketplace } from '@/components/lotes-marketplace';
 import { Aviso } from '@/components/ui/aviso';
+import {
+  CERTIFICACIONES_COMERCIALES,
+  esCodigoCertificacionComercial,
+  filtrarLotesPorCertificacion,
+  type CodigoCertificacionComercial,
+} from '@/lib/domain';
 import { listarLotes, type LoteListItem } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +16,7 @@ type FiltrosMercado = {
   categoria?: string;
   raza?: string;
   moneda?: string;
+  certificacion?: string;
 };
 
 function unicos(lotes: LoteListItem[], clave: 'provincia' | 'categoria' | 'raza'): string[] {
@@ -70,20 +77,27 @@ export default async function MercadoPage({
     console.error('Error listando lotes del mercado', error);
   }
 
+  const certFiltro: CodigoCertificacionComercial | '' =
+    sp.certificacion && esCodigoCertificacionComercial(sp.certificacion) ? sp.certificacion : '';
+
   const filtros = {
     provincia: sp.provincia ?? '',
     categoria: sp.categoria ?? '',
     raza: sp.raza ?? '',
     moneda: sp.moneda ?? '',
+    certificacion: certFiltro,
   };
 
-  const filtrados = lotes.filter(
+  const lotesPorAtributo = lotes.filter(
     (lote) =>
       (!filtros.provincia || lote.provincia === filtros.provincia) &&
       (!filtros.categoria || lote.categoria === filtros.categoria) &&
       (!filtros.raza || lote.raza === filtros.raza) &&
       (!filtros.moneda || lote.moneda === filtros.moneda),
   );
+  const filtrados = certFiltro
+    ? filtrarLotesPorCertificacion(lotesPorAtributo, certFiltro)
+    : lotesPorAtributo;
 
   const hayFiltros = Object.values(filtros).some(Boolean);
 
@@ -99,7 +113,8 @@ export default async function MercadoPage({
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">Mercado de lotes</h1>
         <p className="text-texto-suave max-w-3xl">
-          Lotes con origen verificado y libre de deforestación. Compará kilos, precio por kg y
+          Lotes con origen verificado y libre de deforestación (Eje 1 · EUDR) y diferenciales
+          comerciales voluntarios (Eje 2 · Valor agregado). Compará kilos, precio por kg y
           uniformidad antes de financiar.
         </p>
       </header>
@@ -110,7 +125,7 @@ export default async function MercadoPage({
       </Aviso>
 
       <form method="get" className="rounded-tarjeta border-borde bg-panel border p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <CampoSelect
             etiqueta="Provincia"
             name="provincia"
@@ -144,6 +159,27 @@ export default async function MercadoPage({
               <option value="EURC">EURC</option>
             </select>
           </div>
+          <div className="space-y-1">
+            <label
+              htmlFor="filtro-certificacion"
+              className="text-texto-suave block text-xs font-semibold"
+            >
+              Valor agregado (Eje 2)
+            </label>
+            <select
+              id="filtro-certificacion"
+              name="certificacion"
+              defaultValue={filtros.certificacion}
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <option value="">Todas las preferencias</option>
+              {CERTIFICACIONES_COMERCIALES.map((cert) => (
+                <option key={cert.codigo} value={cert.codigo}>
+                  {cert.etiquetaFiltro}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
@@ -174,11 +210,7 @@ export default async function MercadoPage({
             : 'No hay lotes disponibles en este momento.'}
         </Aviso>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtrados.map((lote) => (
-            <LoteCard key={lote.id} lote={lote} />
-          ))}
-        </div>
+        <LotesMarketplace lotes={lotesPorAtributo} filtroInicial={certFiltro || 'TODOS'} />
       )}
     </main>
   );

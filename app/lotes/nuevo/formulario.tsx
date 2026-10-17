@@ -7,7 +7,15 @@ import { Boton } from '@/components/ui/boton';
 import { Pasos, type Paso } from '@/components/ui/pasos';
 import { crearLoteAction, type FormState } from '@/lib/actions';
 import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
-import { CATEGORIAS, MONEDAS, RAZAS, TIPOS_OPERACION, TIPOS_RODEO } from '@/lib/domain';
+import {
+  CATEGORIAS,
+  CERTIFICACIONES_COMERCIALES,
+  MONEDAS,
+  RAZAS,
+  TIPOS_OPERACION,
+  TIPOS_RODEO,
+  type CodigoCertificacionComercial,
+} from '@/lib/domain';
 import { parseAndValidatePolygon } from '@/lib/geo';
 import { validarEtapa, type ErroresEtapa } from './etapas';
 import {
@@ -42,7 +50,7 @@ const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-texto-su
 const PASOS: Paso[] = [
   { titulo: 'Origen', descripcion: 'Establecimiento y polígono' },
   { titulo: 'Ganado', descripcion: 'Caravanas RFID' },
-  { titulo: 'Documentos', descripcion: 'Marca y señales' },
+  { titulo: 'Documentos', descripcion: 'Marca y certificaciones' },
   { titulo: 'Condiciones', descripcion: 'Precio y revisión' },
 ];
 
@@ -72,6 +80,18 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   const [poligonoTexto, setPoligonoTexto] = useState('');
   const [dibujo, setDibujo] = useState<EstadoDibujo>(ESTADO_DIBUJO_INICIAL);
   const [csvInfo, setCsvInfo] = useState<CsvInfo | null>(null);
+  const [certsActivas, setCertsActivas] = useState<Record<CodigoCertificacionComercial, boolean>>({
+    HUELLA_CARBONO_SINERGIA: false,
+    BIENESTAR_ANIMAL: false,
+    LIBRE_ANTIBIOTICOS_HORMONAS: false,
+  });
+  const [certsUsarDemo, setCertsUsarDemo] = useState<Record<CodigoCertificacionComercial, boolean>>(
+    {
+      HUELLA_CARBONO_SINERGIA: false,
+      BIENESTAR_ANIMAL: false,
+      LIBRE_ANTIBIOTICOS_HORMONAS: false,
+    },
+  );
   const csvRef = useRef<HTMLInputElement>(null);
   const renspaRef = useRef<HTMLInputElement>(null);
 
@@ -634,10 +654,10 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
 
       {/* Etapa 3 — Documentos */}
       <section className={etapa === 2 ? 'space-y-4' : 'hidden'}>
-        <h2 className="text-lg font-semibold">3. Documentos</h2>
+        <h2 className="text-lg font-semibold">3. Documentos y certificaciones voluntarias</h2>
         <p className="text-texto-suave text-sm">
-          Adjuntá el boleto de marca y señal. Los hashes SHA-256 se calculan al enviar el
-          formulario.
+          Adjuntá el boleto de marca y señal y, opcionalmente, declará certificaciones comerciales
+          voluntarias (Eje 2). Los hashes SHA-256 se calculan al enviar el formulario.
         </p>
         <div>
           <label className={claseLabel} htmlFor="boleto_marca_pdf">
@@ -651,6 +671,135 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             className={claseInput}
           />
         </div>
+
+        <div className="rounded-tarjeta border-borde bg-panel space-y-4 border p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-texto text-sm font-semibold">
+                Certificaciones comerciales voluntarias (Eje 2 · Valor agregado)
+              </h3>
+              <p className="text-texto-suave mt-0.5 text-xs">
+                Opcionales. Aportan valor comercial en góndola (UE / Mercosur) y actúan como filtro
+                de compra, sin sustituir los 3 sellos obligatorios de acceso aduanero EUDR + SENASA
+                (Eje 1).
+              </p>
+            </div>
+            <span className="border-borde-fuerte bg-panel-elevado text-texto-suave rounded border px-2 py-0.5 font-mono text-[11px]">
+              Eje 2 · Voluntario
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {CERTIFICACIONES_COMERCIALES.map((cert) => {
+              const activa = certsActivas[cert.codigo];
+              const usaDemo = certsUsarDemo[cert.codigo];
+
+              return (
+                <div
+                  key={cert.codigo}
+                  className={`rounded-tarjeta border p-3.5 transition-colors ${
+                    activa
+                      ? 'border-brand-fuerte/50 bg-brand/5'
+                      : 'border-borde bg-panel-elevado/40'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      id={`cert_activa_${cert.codigo}`}
+                      name={`cert_activa_${cert.codigo}`}
+                      type="checkbox"
+                      checked={activa}
+                      onChange={(e) =>
+                        setCertsActivas((prev) => ({
+                          ...prev,
+                          [cert.codigo]: e.target.checked,
+                        }))
+                      }
+                      className="accent-brand mt-1 h-4 w-4 shrink-0"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={`cert_activa_${cert.codigo}`}
+                        className="text-texto cursor-pointer text-sm font-semibold"
+                      >
+                        {cert.nombre}
+                      </label>
+                      <p className="text-texto-suave text-xs">{cert.norma}</p>
+                      <p className="text-texto-tenue mt-1 text-xs">{cert.rolTecnico}</p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={activa ? 'border-borde mt-3 space-y-3 border-t pt-3 pl-7' : 'hidden'}
+                  >
+                    <input
+                      type="hidden"
+                      name={`cert_usar_demo_${cert.codigo}`}
+                      value={usaDemo ? 'true' : 'false'}
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className={claseLabel} htmlFor={`cert_emisor_${cert.codigo}`}>
+                          Entidad medidora / certificadora
+                        </label>
+                        <input
+                          id={`cert_emisor_${cert.codigo}`}
+                          name={`cert_emisor_${cert.codigo}`}
+                          className={claseInput}
+                          defaultValue={cert.emisorDefault}
+                        />
+                      </div>
+                      <div>
+                        <label className={claseLabel} htmlFor={`cert_observaciones_${cert.codigo}`}>
+                          Alcance / plan de mitigación o manejo
+                        </label>
+                        <input
+                          id={`cert_observaciones_${cert.codigo}`}
+                          name={`cert_observaciones_${cert.codigo}`}
+                          className={claseInput}
+                          defaultValue={cert.observacionesDefault}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={claseLabel} htmlFor={`cert_pdf_${cert.codigo}`}>
+                        Informe o certificado PDF (opcional, se calcula hash SHA-256)
+                      </label>
+                      <input
+                        id={`cert_pdf_${cert.codigo}`}
+                        name={`cert_pdf_${cert.codigo}`}
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        className={claseInput}
+                        onChange={() =>
+                          setCertsUsarDemo((prev) => ({ ...prev, [cert.codigo]: false }))
+                        }
+                      />
+                      <div className="mt-1 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          className="focus-visible:ring-foco text-brand-fuerte text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                          onClick={() =>
+                            setCertsUsarDemo((prev) => ({ ...prev, [cert.codigo]: true }))
+                          }
+                        >
+                          Usar PDF demo ({cert.demoPdfNombre})
+                        </button>
+                        {usaDemo && (
+                          <span className="text-texto-suave text-xs">
+                            ✓ Se adjuntará {cert.demoPdfNombre} con su hash SHA-256
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <Aviso variante="info">
           La constancia RENSPA se cargó en la etapa 1. Al enviar, cada documento se sella con su
           huella digital.

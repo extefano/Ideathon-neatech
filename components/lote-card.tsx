@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { EstadoBadge } from '@/components/estado-badge';
 import type { RolUsuario } from '@/lib/auth';
+import { normalizarCertificacionesComerciales, obtenerDefinicionCertificacion } from '@/lib/domain';
 import { accionLoteParaRol, resumirLote } from '@/lib/estado-lote';
 import type { LoteListItem } from '@/lib/queries';
 
@@ -28,6 +29,8 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
     { activo: lote.seal_3_reception, nombre: '3 · Cierre' },
   ];
 
+  const certificaciones = normalizarCertificacionesComerciales(lote.certificaciones_comerciales);
+
   return (
     <article className="rounded-tarjeta border-borde bg-panel flex flex-col border p-4">
       <div className="flex items-center justify-between gap-2">
@@ -51,19 +54,50 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
         {lote.peso_promedio_kg ?? '—'} kg → {lote.peso_objetivo_kg ?? '—'} kg
       </p>
 
-      <div className="mt-3 flex gap-1.5">
-        {sellos.map((sello) => (
-          <span
-            key={sello.nombre}
-            className={`rounded border px-1.5 py-0.5 text-[10px] ${
-              sello.activo
-                ? 'border-brand-fuerte/40 bg-brand/10 text-brand-fuerte'
-                : 'border-borde-fuerte text-texto-tenue'
-            }`}
-          >
-            {sello.nombre}
-          </span>
-        ))}
+      <div className="border-borde mt-3 space-y-2 border-t pt-2.5">
+        <div>
+          <p className="text-texto-suave text-[11px] font-medium">
+            Sellos EUDR (Obligatorios · Eje 1):
+          </p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {sellos.map((sello) => (
+              <span
+                key={sello.nombre}
+                className={`rounded border px-1.5 py-0.5 text-[10px] ${
+                  sello.activo
+                    ? 'border-brand-fuerte/40 bg-brand/10 text-brand-fuerte'
+                    : 'border-borde-fuerte text-texto-tenue'
+                }`}
+              >
+                {sello.nombre}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-texto-suave text-[11px] font-medium">
+            Valor agregado (Voluntarios · Eje 2):
+          </p>
+          {certificaciones.length > 0 ? (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {certificaciones.map((cert) => {
+                const def = obtenerDefinicionCertificacion(cert.codigo);
+                return (
+                  <span
+                    key={cert.codigo}
+                    title={`${def.nombre} (${def.norma})`}
+                    className="border-borde-fuerte bg-panel-elevado text-texto rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                  >
+                    ✓ {def.etiquetaTarjeta}
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-texto-tenue mt-0.5 text-[11px]">Sin certificaciones voluntarias</p>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 flex-1">

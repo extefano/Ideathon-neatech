@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
+import {
+  CertificacionesComerciales,
+  type CertificacionConUrlResuelta,
+} from '@/components/certificaciones-comerciales';
 import { DocumentosHashes } from '@/components/documentos-hashes';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EvidenciaSatelital, type GfwConsulta } from '@/components/evidencia-satelital';
@@ -11,7 +15,7 @@ import { Tarjeta } from '@/components/ui/tarjeta';
 import { reintentarGfwAction } from '@/lib/actions';
 import { getCurrentUser } from '@/lib/auth';
 import { construirDocumentos } from '@/lib/documentos-hashes';
-import type { EstadoLote } from '@/lib/domain';
+import { normalizarCertificacionesComerciales, type EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { resumirLote } from '@/lib/estado-lote';
 import { getLoteCompleto } from '@/lib/queries';
@@ -23,6 +27,9 @@ export const dynamic = 'force-dynamic';
 
 async function urlFirmada(bucket: string, path: unknown, expires = 3600): Promise<string | null> {
   if (typeof path !== 'string' || path.length === 0) return null;
+  if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
   try {
     const admin = createAdminClient();
     const { data } = await admin.storage.from(bucket).createSignedUrl(path, expires);
@@ -132,6 +139,15 @@ export default async function LotePage({
   });
 
   const sello2 = Boolean(lote.seal_2_sanitary);
+  const certificacionesNormalizadas = normalizarCertificacionesComerciales(
+    lote.certificaciones_comerciales,
+  );
+  const certificacionesConUrl: CertificacionConUrlResuelta[] = await Promise.all(
+    certificacionesNormalizadas.map(async (cert) => ({
+      ...cert,
+      docUrlResuelta: await urlFirmada('documentos', cert.doc_url),
+    })),
+  );
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-8">
@@ -280,7 +296,10 @@ export default async function LotePage({
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Tarjeta titulo="Progreso de los 3 sellos">
+        <Tarjeta
+          titulo="Progreso de los 3 sellos (Eje 1 · Obligatorio)"
+          descripcion="Requisitos indispensables de cumplimiento aduanero y sanitario (EUDR + SENASA)."
+        >
           <ul className="space-y-4">
             <SelloItem
               nombre="Sello 1 · Origen libre de deforestación"
@@ -318,6 +337,13 @@ export default async function LotePage({
           />
         </Tarjeta>
       </div>
+
+      <CertificacionesComerciales
+        codigoLote={String(lote.codigo_lote)}
+        certificaciones={certificacionesConUrl}
+        permitirEdicion={true}
+        userActual={currentUser}
+      />
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">

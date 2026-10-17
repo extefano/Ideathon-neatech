@@ -44,8 +44,9 @@ async function VistaProductor({ user }: { user: PerfilUsuario }) {
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">Tus lotes</h1>
         <p className="text-texto-suave max-w-3xl">
-          Cargá lotes nuevos y seguí el estado de cada uno: origen libre de deforestación, engorde y
-          cierre. Cuando un lote queda disponible, aparece en el mercado para que un comprador lo
+          Cargá lotes nuevos y seguí el estado de cada uno: origen libre de deforestación (Eje 1 ·
+          EUDR), engorde, cierre y sus certificaciones comerciales voluntarias (Eje 2 · Valor
+          agregado). Cuando un lote queda disponible, aparece en el mercado para que un comprador lo
           financie.
         </p>
       </header>

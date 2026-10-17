@@ -2,6 +2,10 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
+import {
+  CertificacionesComerciales,
+  type CertificacionConUrlResuelta,
+} from '@/components/certificaciones-comerciales';
 import { MapaPasaporte } from '@/components/mapa-lote';
 import { Aviso } from '@/components/ui/aviso';
 import { CopiaHash } from '@/components/ui/copia-hash';
@@ -9,10 +13,26 @@ import { Tabla } from '@/components/ui/tabla';
 import { Tarjeta } from '@/components/ui/tarjeta';
 import { VerificadorIntegridad } from '@/components/verificador-integridad';
 import { construirDocumentos } from '@/lib/documentos-hashes';
+import { normalizarCertificacionesComerciales } from '@/lib/domain';
 import { getLoteCompleto } from '@/lib/queries';
 import { esWalletStellar } from '@/lib/stellar-args';
+import { createAdminClient } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
+
+async function urlFirmada(bucket: string, path: unknown, expires = 3600): Promise<string | null> {
+  if (typeof path !== 'string' || path.length === 0) return null;
+  if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.storage.from(bucket).createSignedUrl(path, expires);
+    return data?.signedUrl ?? null;
+  } catch {
+    return null;
+  }
+}
 
 function mostrarWalletPublica(wallet: unknown): string {
   if (typeof wallet === 'string' && esWalletStellar(wallet)) return wallet;
@@ -76,9 +96,27 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
     dteHash: recepcion?.dte_hash,
   });
 
-  const hashesAuditor = documentos
-    .filter((documento) => documento.hash)
-    .map((documento) => ({ etiqueta: documento.titulo, hash: documento.hash as string }));
+  const certificacionesNormalizadas = normalizarCertificacionesComerciales(
+    lote.certificaciones_comerciales,
+  );
+  const certificacionesConUrl: CertificacionConUrlResuelta[] = await Promise.all(
+    certificacionesNormalizadas.map(async (cert) => ({
+      ...cert,
+      docUrlResuelta: await urlFirmada('documentos', cert.doc_url),
+    })),
+  );
+
+  const hashesAuditor = [
+    ...documentos
+      .filter((documento) => documento.hash)
+      .map((documento) => ({ etiqueta: documento.titulo, hash: documento.hash as string })),
+    ...certificacionesConUrl
+      .filter((cert) => cert.doc_hash)
+      .map((cert) => ({
+        etiqueta: `Certificación Eje 2 · ${cert.nombre}`,
+        hash: cert.doc_hash as string,
+      })),
+  ];
 
   const timeline = [
     {
@@ -187,6 +225,12 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
           </ul>
         </Tarjeta>
       </section>
+
+      <CertificacionesComerciales
+        codigoLote={String(lote.codigo_lote)}
+        certificaciones={certificacionesConUrl}
+        permitirEdicion={false}
+      />
 
       <Tarjeta titulo="Detalles técnicos verificables">
         <details>

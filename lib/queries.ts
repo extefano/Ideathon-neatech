@@ -1,4 +1,8 @@
-import type { EstadoLote } from '@/lib/domain';
+import {
+  resolverCertificacionesLote,
+  type CertificacionComercialLote,
+  type EstadoLote,
+} from '@/lib/domain';
 import { createAdminClient } from '@/lib/storage';
 
 export type LoteListItem = {
@@ -18,11 +22,26 @@ export type LoteListItem = {
   seal_1_eudr: boolean;
   seal_2_sanitary: boolean;
   seal_3_reception: boolean;
+  certificaciones_comerciales?: CertificacionComercialLote[];
   created_at: string;
 };
 
-const LOTE_LIST_COLUMNS =
+const LOTE_LIST_COLUMNS_BASE =
   'id, codigo_lote, titulo, estado_publicacion, provincia, localidad, categoria, raza, cantidad_cabezas, peso_promedio_kg, peso_objetivo_kg, monto_total_financiacion, moneda, seal_1_eudr, seal_2_sanitary, seal_3_reception, created_at';
+const LOTE_LIST_COLUMNS = `${LOTE_LIST_COLUMNS_BASE}, certificaciones_comerciales`;
+
+function mapearFilasLote(data: unknown): LoteListItem[] {
+  const filas = (data ?? []) as Array<
+    Omit<LoteListItem, 'certificaciones_comerciales'> & { certificaciones_comerciales?: unknown }
+  >;
+  return filas.map((fila) => ({
+    ...fila,
+    certificaciones_comerciales: resolverCertificacionesLote(
+      fila.certificaciones_comerciales,
+      fila.codigo_lote,
+    ),
+  }));
+}
 
 export async function listarLotes(opts?: { estado?: EstadoLote }): Promise<LoteListItem[]> {
   const admin = createAdminClient();
@@ -36,9 +55,23 @@ export async function listarLotes(opts?: { estado?: EstadoLote }): Promise<LoteL
     query = query.eq('estado_publicacion', opts.estado);
   }
 
-  const { data, error } = await query;
+  let { data, error } = await query;
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    let fallbackQuery = admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .order('created_at', { ascending: false })
+      .limit(60);
+    if (opts?.estado) {
+      fallbackQuery = fallbackQuery.eq('estado_publicacion', opts.estado);
+    }
+    const fallbackRes = await fallbackQuery;
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
   if (error) throw new Error(`Error listando lotes: ${error.message}`);
-  return (data ?? []) as unknown as LoteListItem[];
+  return mapearFilasLote(data);
 }
 
 /** Lotes del productor: los que registró (por `productor_id`) o los que llevan su wallet. */
@@ -59,7 +92,7 @@ export async function listarLotesDeProductor(opts: {
     .order('created_at', { ascending: false })
     .limit(60);
   if (error) throw new Error(`Error listando lotes del productor: ${error.message}`);
-  return (data ?? []) as unknown as LoteListItem[];
+  return mapearFilasLote(data);
 }
 
 /** Compras del comprador: lotes donde su wallet quedó como `comprador_wallet` (se setea al fondear). */
@@ -74,7 +107,7 @@ export async function listarComprasDeComprador(wallet?: string | null): Promise<
     .order('funded_at', { ascending: false })
     .limit(60);
   if (error) throw new Error(`Error listando compras del comprador: ${error.message}`);
-  return (data ?? []) as unknown as LoteListItem[];
+  return mapearFilasLote(data);
 }
 
 /** Lotes que un veterinario ya auditó (auditorías con su wallet). */
@@ -100,7 +133,7 @@ export async function listarLotesRevisadosPorVeterinario(
     .order('created_at', { ascending: false })
     .limit(60);
   if (error) throw new Error(`Error listando lotes revisados: ${error.message}`);
-  return (data ?? []) as unknown as LoteListItem[];
+  return mapearFilasLote(data);
 }
 
 /** Lotes financiados que todavía esperan la auditoría del Mes 4 (Sello 2). */
@@ -114,7 +147,7 @@ export async function listarLotesPendientesAuditoria(): Promise<LoteListItem[]> 
     .order('created_at', { ascending: false })
     .limit(60);
   if (error) throw new Error(`Error listando lotes pendientes de auditoría: ${error.message}`);
-  return (data ?? []) as unknown as LoteListItem[];
+  return mapearFilasLote(data);
 }
 
 export async function getLoteCompleto(codigo: string) {
@@ -127,6 +160,14 @@ export async function getLoteCompleto(codigo: string) {
 
   if (error) throw new Error(`Error leyendo lote: ${error.message}`);
   if (!lote) return null;
+
+  const loteConCertificaciones = {
+    ...lote,
+    certificaciones_comerciales: resolverCertificacionesLote(
+      lote.certificaciones_comerciales,
+      String(lote.codigo_lote),
+    ),
+  };
 
   const [caravanas, movimientos, auditorias, recepciones, productor] = await Promise.all([
     admin.from('caravanas').select('*').eq('lote_id', lote.id).order('rfid'),
@@ -147,7 +188,7 @@ export async function getLoteCompleto(codigo: string) {
   ]);
 
   return {
-    lote,
+    lote: loteConCertificaciones,
     caravanas: caravanas.data ?? [],
     movimientos: movimientos.data ?? [],
     auditorias: auditorias.data ?? [],
