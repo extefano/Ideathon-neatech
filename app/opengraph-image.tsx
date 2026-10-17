@@ -14,7 +14,7 @@ export default function OpenGraphImage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0a0a0a',
+        backgroundColor: '#faf7f0',
         gap: 28,
       }}
     >
@@ -28,9 +28,9 @@ export default function OpenGraphImage() {
             display: 'flex',
           }}
         />
-        <div style={{ fontSize: 104, color: '#ffffff' }}>Muunar</div>
+        <div style={{ fontSize: 104, color: '#1c1917' }}>Muunar</div>
       </div>
-      <div style={{ fontSize: 40, color: '#fdda24' }}>Trazabilidad ganadera EUDR · Stellar</div>
+      <div style={{ fontSize: 40, color: '#8a6a00' }}>Trazabilidad ganadera EUDR · Stellar</div>
     </div>,
     size,
   );

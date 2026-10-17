@@ -71,23 +71,21 @@ export function VerificadorIntegridad({ hashes }: { hashes: HashEsperado[] }) {
         onDrop={alSoltar}
         className="rounded-tarjeta focus-within:ring-foco border-borde bg-panel flex cursor-pointer flex-col items-center justify-center border border-dashed p-6 text-center focus-within:ring-2"
       >
-        <span className="text-sm font-semibold text-neutral-200">
-          Arrastrá un archivo acá o elegilo
-        </span>
-        <span className="mt-1 text-xs text-neutral-500">
+        <span className="text-texto text-sm font-semibold">Arrastrá un archivo acá o elegilo</span>
+        <span className="text-texto-tenue mt-1 text-xs">
           El hash se calcula en tu navegador; el archivo no se sube a ningún servidor.
         </span>
         <input
           id="verificador-archivo"
           type="file"
-          className="mt-3 block w-full max-w-xs text-sm text-neutral-300"
+          className="text-texto-suave mt-3 block w-full max-w-xs text-sm"
           onChange={alSeleccionarArchivo}
         />
       </label>
 
       {resultado && aviso && (
         <div className="mt-4 space-y-2 text-xs">
-          <p className="font-mono break-all text-neutral-400">
+          <p className="text-texto-suave font-mono break-all">
             {resultado.archivo}: {resultado.hash}
           </p>
           <Aviso variante={aviso.variante} titulo={aviso.titulo}>

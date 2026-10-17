@@ -3,7 +3,13 @@
 import 'leaflet/dist/leaflet.css';
 import type { LatLngExpression } from 'leaflet';
 import { MapContainer, Polygon, TileLayer } from 'react-leaflet';
-import { UbicacionMapa } from './ubicacion-mapa';
+
+const TILES = (
+  <TileLayer
+    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    attribution="Tiles: Esri World Imagery"
+  />
+);
 
 export default function MapaPoligono({
   poligono,
@@ -20,17 +26,22 @@ export default function MapaPoligono({
   const centro: LatLngExpression = ring[0] ?? [-29.19, -58.08];
 
   return (
-    <div className={`overflow-hidden rounded-md border border-neutral-700 ${altura}`}>
-      <MapContainer center={centro} zoom={13} className="h-full w-full" scrollWheelZoom={false}>
-        <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          attribution="Tiles: Esri World Imagery"
-        />
-        {ring.length >= 3 && (
+    <div className={`border-borde-fuerte overflow-hidden rounded-md border ${altura}`}>
+      {ring.length >= 3 ? (
+        <MapContainer
+          bounds={ring}
+          boundsOptions={{ padding: [28, 28], maxZoom: 15 }}
+          className="h-full w-full"
+          scrollWheelZoom={false}
+        >
+          {TILES}
           <Polygon positions={ring} pathOptions={{ color: '#FDDA24', weight: 2 }} />
-        )}
-        <UbicacionMapa poligono={ring.length >= 3 ? ring : undefined} />
-      </MapContainer>
+        </MapContainer>
+      ) : (
+        <MapContainer center={centro} zoom={13} className="h-full w-full" scrollWheelZoom={false}>
+          {TILES}
+        </MapContainer>
+      )}
     </div>
   );
 }

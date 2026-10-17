@@ -12,16 +12,16 @@ const NOMBRE_ROL: Record<RolUsuario, string> = {
 export function CredencialSesion({ user }: { user: PerfilUsuario }) {
   const walletValida = user.wallet && esWalletStellar(user.wallet) ? user.wallet : null;
   return (
-    <div className="rounded-control flex flex-wrap items-center justify-between gap-2 border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-xs text-neutral-300">
+    <div className="rounded-control border-borde bg-panel-elevado text-texto-suave flex flex-wrap items-center justify-between gap-2 border px-3 py-2 text-xs">
       <div className="flex items-center gap-2">
         <span>
-          Operando como: <strong className="text-white">{user.nombre_completo}</strong> · CUIT{' '}
-          <span className="font-mono text-neutral-200">{user.cuit}</span> ·{' '}
-          <span className="text-brand font-semibold">{NOMBRE_ROL[user.rol]}</span>
+          Operando como: <strong className="text-texto">{user.nombre_completo}</strong> · CUIT{' '}
+          <span className="text-texto font-mono">{user.cuit}</span> ·{' '}
+          <span className="text-brand-fuerte font-semibold">{NOMBRE_ROL[user.rol]}</span>
         </span>
       </div>
       {walletValida && (
-        <span className="font-mono text-[11px] text-neutral-400">
+        <span className="text-texto-suave font-mono text-[11px]">
           Wallet: {walletValida.slice(0, 4)}…{walletValida.slice(-4)}
         </span>
       )}
@@ -56,7 +56,7 @@ export function BannerRolRequerido({
           `Para ejecutar esta etapa del flujo tenés que iniciar sesión con un perfil de ${nombreRol}.`}
       </p>
       {userActual && (
-        <p className="mt-1 text-neutral-300">
+        <p className="text-texto-suave mt-1">
           Estás con sesión iniciada como <strong>{userActual.nombre_completo}</strong> (
           {NOMBRE_ROL[userActual.rol]}).
         </p>
@@ -79,7 +79,7 @@ export function BannerRolRequerido({
         )}
         <Link
           href={registerHref}
-          className="focus-visible:ring-foco text-xs text-neutral-300 underline focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-visible:ring-foco text-texto-suave text-xs underline focus-visible:ring-2 focus-visible:outline-none"
         >
           ¿No tenés cuenta? Registrate
         </Link>

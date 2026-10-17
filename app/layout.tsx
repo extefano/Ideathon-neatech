@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+      <body className="bg-superficie text-texto min-h-screen antialiased">
         <MotionProvider>
           <SiteHeader />
           {children}

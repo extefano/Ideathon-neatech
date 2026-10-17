@@ -53,7 +53,8 @@
 ## Foco y teclado
 
 - Todo interactivo alcanzable con Tab y activable con Enter/Espacio.
-- `focus-visible` visible (anillo amarillo `ring-brand`) con contraste AA.
+- `focus-visible` visible (anillo oscuro `ring-foco`, de alto contraste sobre
+  fondos claros) con contraste AA.
 - Orden de tabulación = orden visual.
 - Controles de al menos 44 px de alto útil (dedos en tablet/campo).
 - Nunca `outline: none` sin un reemplazo visible.
@@ -67,4 +68,7 @@
 ## Tokens
 
 Definidos en `app/globals.css` (`@theme`). Preferí siempre el token o el
-componente compartido antes que una clase suelta nueva.
+componente compartido antes que una clase suelta nueva. Superficies claras:
+`superficie` (fondo), `panel`, `panel-elevado`, `borde`, `borde-fuerte`. Texto:
+`texto`, `texto-suave`, `texto-tenue`. Marca: `brand` (amarillo, para fondos) y
+`brand-fuerte` (amarillo oscurecido, para texto/acento sobre claro).

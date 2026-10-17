@@ -50,3 +50,11 @@ Términos canónicos del proyecto. Usar estos nombres en código, issues, tests 
 - **Manifiesto de origen v2**: documento `muunar.origen.v2` (código, polígono normalizado y consulta GFW) cuya raíz SHA-256 es el `eudr_geo_hash` que recibe Soroban en el Sello 1. No incluye atributos informativos como humedales (ADR-0002).
 - **Hash SHA-256**: huella del contenido de un archivo (PDF/CSV) anclada on-chain; permite detectar alteraciones pero no prueba veracidad.
 - **Taxonomía de estados**: `CARGADO`, `VALIDADO_POR_PLATAFORMA`, `CONTRASTADO_CON_FUENTE_OFICIAL`, `REGISTRADO_EN_BLOCKCHAIN`, `PAGO_LIBERADO`.
+
+## Certificaciones comerciales voluntarias (Eje 2)
+
+- **Eje 1 (Acceso aduanero obligatorio)**: los 3 sellos obligatorios (identidad RFID individual, tránsito oficial RENSPA/DT-e de SENASA y polígono libre de deforestación EUDR post 31/12/2020). Sin ellos no hay exportación legal a la Unión Europea.
+- **Eje 2 (Agregado de valor comercial voluntario)**: certificaciones y mediciones privadas/independientes que **no reemplazan** los 3 sellos del Eje 1, pero actúan como preferencias de compra para frigoríficos exportadores e importadores (UE / Mercosur) y habilitan precios _premium_ en góndola.
+- **Huella de Carbono e Inventario GEI — Sinergia Medio Ambiente (`HUELLA_CARBONO_SINERGIA`)**: medición de inventario biológico de gases de efecto invernadero y diseño de planes de mitigación (pastoreo rotativo, manejo silvopastoril) bajo **ISO 14064 / ISO 14067** y GHG Protocol, con auditoría independiente (IRAM, SGS, Control Union). Aporta diferencial ESG comercial sin sustituir el control satelital EUDR.
+- **Bienestar Animal Certificado (`BIENESTAR_ANIMAL`)**: certificación bajo **ISO 34700 / Welfare Quality** (sellos **Welfair** en UE/Latam e **ITW / QS** en Alemania), auditada por IRAM, OIA o Control Union; garantiza trato ético del ganado libre de dolor, estrés y transporte controlado.
+- **Libre de Antibióticos y Promotores Hormonales (`LIBRE_ANTIBIOTICOS_HORMONAS`)**: certificación bajo **Protocolo Cuota Hilton / Mercado UE** avalada por SENASA e inspeccionada por OIA / LSQA; garantiza crianza sin promotores de crecimiento hormonales ni uso preventivo/subterapéutico de antibióticos.

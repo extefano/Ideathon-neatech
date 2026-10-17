@@ -158,7 +158,7 @@ export function ConnectWallet({
   return (
     <div className="space-y-2" data-testid="connect-wallet">
       {label && (
-        <span className="mb-1 block text-xs font-medium tracking-wide text-neutral-400 uppercase">
+        <span className="text-texto-suave mb-1 block text-xs font-medium tracking-wide uppercase">
           {label}
         </span>
       )}
@@ -173,16 +173,16 @@ export function ConnectWallet({
       )}
 
       {direccion ? (
-        <div className="space-y-2 rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs">
+        <div className="border-borde-fuerte bg-panel space-y-2 rounded-md border p-3 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span
                 className={`h-2.5 w-2.5 rounded-full ${esTestnet ? 'bg-brand' : 'bg-red-500'}`}
               />
-              <span className="font-mono font-semibold text-neutral-100" title={direccion}>
+              <span className="text-texto font-mono font-semibold" title={direccion}>
                 {acortarWallet(direccion)}
               </span>
-              <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 uppercase">
+              <span className="bg-panel-elevado text-texto-suave rounded px-1.5 py-0.5 text-[10px] font-medium uppercase">
                 {metodo === 'walletconnect' ? 'Freighter Mobile (WC v2)' : `Freighter · ${red}`}
               </span>
             </div>
@@ -190,7 +190,7 @@ export function ConnectWallet({
             <button
               type="button"
               onClick={() => void handleDesconectar()}
-              className="cursor-pointer rounded border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:border-red-500/50 hover:text-red-300"
+              className="border-borde-fuerte text-texto-suave cursor-pointer rounded border px-2.5 py-1 text-xs transition-colors hover:border-red-600/50 hover:text-red-700"
             >
               Desconectar
             </button>
@@ -199,7 +199,7 @@ export function ConnectWallet({
           {!esTestnet && (
             <div
               role="alert"
-              className="border-brand/40 bg-brand/10 text-brand rounded border p-2.5 text-xs"
+              className="border-brand-fuerte/40 bg-brand/10 text-brand-fuerte rounded border p-2.5 text-xs"
             >
               ⚠️ <strong>Red incorrecta ({red}):</strong> Freighter no está en{' '}
               <strong>TESTNET</strong>. Cambiá la red a Testnet en tu wallet y volvé a conectar; la
@@ -212,12 +212,12 @@ export function ConnectWallet({
           {instalado === false && (
             <div
               role="alert"
-              className="border-brand/40 bg-brand/10 rounded-md border p-3 text-xs text-neutral-200"
+              className="border-brand-fuerte/40 bg-brand/10 text-texto rounded-md border p-3 text-xs"
             >
-              <p className="text-brand font-semibold">
+              <p className="text-brand-fuerte font-semibold">
                 Extensión Freighter no detectada en este navegador
               </p>
-              <p className="mt-1 text-neutral-300">
+              <p className="text-texto-suave mt-1">
                 Para operar y firmar transacciones en Stellar Testnet debés instalar la extensión en
                 desktop o conectar Freighter Mobile vía WalletConnect v2:
               </p>
@@ -234,7 +234,7 @@ export function ConnectWallet({
                   type="button"
                   onClick={() => void handleConectarMobile()}
                   disabled={conectandoMobile}
-                  className="cursor-pointer rounded border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:border-neutral-500 disabled:opacity-50"
+                  className="border-borde-fuerte bg-panel text-texto hover:border-texto-tenue cursor-pointer rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
                 >
                   {conectandoMobile
                     ? 'Generando QR WalletConnect...'
@@ -250,9 +250,9 @@ export function ConnectWallet({
                 type="button"
                 onClick={() => void handleConectarExtension()}
                 disabled={cargando}
-                className="hover:border-brand hover:text-brand inline-flex cursor-pointer items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-neutral-100 disabled:opacity-50"
+                className="hover:border-brand-fuerte hover:text-brand-fuerte border-borde-fuerte bg-panel text-texto inline-flex cursor-pointer items-center gap-2 rounded-md border px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
               >
-                <span className="h-2 w-2 rounded-full bg-neutral-500" />
+                <span className="bg-texto-tenue h-2 w-2 rounded-full" />
                 {cargando ? 'Conectando con Freighter…' : 'Conectar Freighter'}
               </button>
 
@@ -260,7 +260,7 @@ export function ConnectWallet({
                 type="button"
                 onClick={() => void handleConectarMobile()}
                 disabled={conectandoMobile}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-neutral-300 hover:border-neutral-600 disabled:opacity-50"
+                className="border-borde bg-panel text-texto-suave hover:border-borde-fuerte inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-2 text-xs disabled:opacity-50"
               >
                 {conectandoMobile ? 'Abriendo QR…' : '📱 Freighter Mobile (QR)'}
               </button>
@@ -268,13 +268,13 @@ export function ConnectWallet({
           )}
 
           {wcUri && (
-            <div className="rounded-lg border border-neutral-700 bg-neutral-900 p-4 text-xs text-neutral-200">
+            <div className="border-borde-fuerte bg-panel text-texto rounded-lg border p-4 text-xs">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-2">
-                  <p className="font-semibold text-white">
+                  <p className="text-texto font-semibold">
                     Conectar Freighter Mobile (WalletConnect v2 · Testnet)
                   </p>
-                  <p className="max-w-sm text-neutral-400">
+                  <p className="text-texto-suave max-w-sm">
                     Escaneá el código QR desde la app móvil de Freighter o abrí el enlace directo si
                     estás en tu teléfono.
                   </p>
@@ -292,7 +292,7 @@ export function ConnectWallet({
                         setWcQrDataUrl(null);
                         setConectandoMobile(false);
                       }}
-                      className="rounded border border-neutral-700 px-2.5 py-1.5 text-neutral-400 hover:text-white"
+                      className="border-borde-fuerte text-texto-suave hover:text-texto rounded border px-2.5 py-1.5"
                     >
                       Cancelar
                     </button>
@@ -314,7 +314,7 @@ export function ConnectWallet({
       )}
 
       {error && (
-        <p role="alert" className="text-xs text-red-400">
+        <p role="alert" className="text-xs text-red-600">
           {error}
         </p>
       )}

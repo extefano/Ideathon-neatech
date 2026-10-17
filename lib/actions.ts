@@ -1,10 +1,25 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth';
+import {
+  canPerformStage,
+  esDuenoDelLote,
+  getCurrentUser,
+  identidadProductor,
+  type PerfilUsuario,
+} from '@/lib/auth';
 import { rfidListHash, sha256Hex } from '@/lib/crypto';
 import { parsePesadasCsv, resumenPesadas, conciliarCaravanas } from '@/lib/csv';
-import { ADPV_MAX_KG_DIA, ADPV_MIN_KG_DIA, paso1Schema } from '@/lib/domain';
+import {
+  ADPV_MAX_KG_DIA,
+  ADPV_MIN_KG_DIA,
+  CODIGOS_CERTIFICACION_COMERCIAL,
+  esCodigoCertificacionComercial,
+  normalizarCertificacionesComerciales,
+  obtenerDefinicionCertificacion,
+  paso1Schema,
+  type CertificacionComercialLote,
+} from '@/lib/domain';
 import { calcularDesembolsos, calcularLiquidacionFinal } from '@/lib/escrow';
 import { consultarDeforestacion } from '@/lib/gfw';
 import { parseAndValidatePolygon } from '@/lib/geo';
@@ -100,8 +115,8 @@ async function ejecutarOrigenDelLote(input: InputOrigen): Promise<ResultadoOrige
 }
 
 export async function crearLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await getCurrentUser();
-  if (!user || user.rol !== 'PRODUCTOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_1_CREAR_LOTE')) {
     return { errors: ['Esta acción requiere una cuenta con perfil de Productor.'] };
   }
 
@@ -148,8 +163,7 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     };
   }
 
-  const productorNombre = String(formData.get('productor_nombre') ?? '').trim();
-  const productorCuit = String(formData.get('productor_cuit') ?? '').trim();
+  const { nombre: productorNombre, cuit: productorCuit } = identidadProductor(user);
   const productorWallet = String(formData.get('productor_wallet') ?? '').trim();
   if (!esWalletStellar(productorWallet)) {
     return {
@@ -353,6 +367,52 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     return limpiarAltaParcial(`no se pudieron subir los documentos: ${detalle}`);
   }
 
+  const certificacionesComerciales: CertificacionComercialLote[] = [];
+
+  for (const codigoCert of CODIGOS_CERTIFICACION_COMERCIAL) {
+    const activa = formData.get(`cert_activa_${codigoCert}`);
+    if (!activa) continue;
+
+    const def = obtenerDefinicionCertificacion(codigoCert);
+    const emisor =
+      String(formData.get(`cert_emisor_${codigoCert}`) ?? '').trim() || def.emisorDefault;
+    const fechaEmision =
+      String(formData.get(`cert_fecha_${codigoCert}`) ?? '').trim() ||
+      new Date().toISOString().slice(0, 10);
+    const observaciones =
+      String(formData.get(`cert_observaciones_${codigoCert}`) ?? '').trim() ||
+      def.observacionesDefault;
+    const usarDemo = formData.get(`cert_usar_demo_${codigoCert}`) === 'true';
+    const pdfCert = await leerArchivo(formData, `cert_pdf_${codigoCert}`);
+
+    let docUrl: string | null = null;
+    let docHash: string | null = null;
+
+    if (pdfCert) {
+      docUrl = await subirArchivo({
+        bucket: 'documentos',
+        path: `${codigo}/cert-${codigoCert.toLowerCase()}-${sanitizarNombre(pdfCert.nombre)}`,
+        file: pdfCert.buffer,
+        contentType: mimeDocumento(pdfCert.nombre),
+      });
+      docHash = sha256Hex(pdfCert.buffer);
+    } else if (usarDemo) {
+      docUrl = def.demoPdfUrl;
+      docHash = def.demoPdfHash;
+    }
+
+    certificacionesComerciales.push({
+      codigo: codigoCert,
+      nombre: def.nombre,
+      norma: def.norma,
+      emisor,
+      fecha_emision: fechaEmision,
+      observaciones,
+      doc_url: docUrl,
+      doc_hash: docHash,
+    });
+  }
+
   const { error: errorHashes } = await admin
     .from('lotes')
     .update({
@@ -360,6 +420,7 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
       renspa_doc_hash: renspaDocHash,
       boleto_marca_url: boletoUrl,
       rfid_list_hash: rfidHash,
+      certificaciones_comerciales: certificacionesComerciales,
     })
     .eq('id', loteRow.id);
   if (errorHashes) {
@@ -412,8 +473,8 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
   const codigo = String(formData.get('codigo') ?? '');
   if (!codigo) redirect('/');
 
-  const user = await getCurrentUser();
-  if (!user || user.rol !== 'PRODUCTOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_1_CREAR_LOTE')) {
     redirect(
       `/lotes/${codigo}?error=${encodeURIComponent(
         'El reintento EUDR requiere una cuenta con perfil de Productor.',
@@ -437,6 +498,18 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
     usuarioId: user.id,
   });
   if (!titularidad.ok) volverConError(titularidad.error);
+
+  // Propiedad alternativa (productor_id / wallet): con cualquier dato de
+  // propiedad presente, el reintento exige coincidir con al menos uno.
+  const creadoPor = (lote.creado_por as string | null) ?? null;
+  const hayDatosPropiedad =
+    creadoPor !== null || lote.productor_id != null || lote.productor_wallet != null;
+  const esPropietario =
+    (creadoPor !== null && creadoPor === user.id) ||
+    ((lote.productor_id != null || lote.productor_wallet != null) && esDuenoDelLote(user, lote));
+  if (hayDatosPropiedad && !esPropietario) {
+    volverConError('Solo el productor dueño del lote puede reintentar la validación EUDR.');
+  }
 
   if (lote.seal_1_eudr) {
     volverConError('El Sello 1 ya fue emitido; su evidencia no se puede modificar.');
@@ -526,8 +599,8 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
   const codigo = String(formData.get('codigo') ?? '');
   if (!codigo) redirect('/');
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'COMPRADOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_2_FONDEAR_ESCROW')) {
     redirect(
       `/lotes/${codigo}?error=${encodeURIComponent(
         'El fondeo de escrow requiere una cuenta con perfil de Comprador.',
@@ -662,8 +735,8 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
     );
   }
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'VETERINARIO') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_3_AUDITORIA_VET')) {
     volverConError(
       'La auditoría sanitaria está reservada exclusivamente a Veterinarios acreditados. El productor y el comprador tienen prohibido este paso.',
     );
@@ -854,8 +927,8 @@ export async function despacharLoteAction(formData: FormData): Promise<void> {
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'PRODUCTOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_4A_DESPACHO')) {
     volverConError('El despacho DT-e requiere una cuenta con perfil de Productor.');
   }
 
@@ -906,8 +979,8 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'COMPRADOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_4B_RECEPCION')) {
     volverConError('La recepción en balanza fiscal requiere una cuenta con perfil de Comprador.');
   }
 
@@ -1110,4 +1183,88 @@ export async function solicitarUsdcDemoAction(
       error: err instanceof Error ? err.message : String(err),
     };
   }
+}
+
+export async function registrarCertificacionComercialAction(formData: FormData): Promise<void> {
+  const codigo = String(formData.get('codigo') ?? '').trim();
+  if (!codigo) redirect('/');
+
+  const volverConError: (mensaje: string) => never = (mensaje) =>
+    redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
+
+  const user = await getCurrentUser();
+  if (user && user.rol !== 'PRODUCTOR' && user.rol !== 'VETERINARIO') {
+    volverConError(
+      'La carga de certificaciones voluntarias requiere una cuenta de Productor o Veterinario acreditado.',
+    );
+  }
+
+  const codigoCertRaw = String(formData.get('codigo_certificacion') ?? '').trim();
+  if (!esCodigoCertificacionComercial(codigoCertRaw)) {
+    volverConError('Seleccioná una certificación comercial válida del catálogo.');
+  }
+
+  const admin = createAdminClient();
+  const { data: lote } = await admin
+    .from('lotes')
+    .select('id, codigo_lote, certificaciones_comerciales')
+    .eq('codigo_lote', codigo)
+    .maybeSingle();
+  if (!lote) redirect('/');
+
+  const def = obtenerDefinicionCertificacion(codigoCertRaw);
+  const actuales = normalizarCertificacionesComerciales(lote.certificaciones_comerciales);
+  const previa = actuales.find((c) => c.codigo === codigoCertRaw);
+
+  const emisor = String(formData.get('emisor') ?? '').trim() || previa?.emisor || def.emisorDefault;
+  const fechaEmision =
+    String(formData.get('fecha_emision') ?? '').trim() ||
+    previa?.fecha_emision ||
+    new Date().toISOString().slice(0, 10);
+  const observaciones =
+    String(formData.get('observaciones') ?? '').trim() ||
+    previa?.observaciones ||
+    def.observacionesDefault;
+  const usarDemo = formData.get('usar_demo_pdf') === 'true';
+  const archivoPdf = await leerArchivo(formData, 'cert_pdf');
+
+  let docUrl: string | null = previa?.doc_url ?? null;
+  let docHash: string | null = previa?.doc_hash ?? null;
+
+  if (archivoPdf) {
+    docUrl = await subirArchivo({
+      bucket: 'documentos',
+      path: `${codigo}/cert-${codigoCertRaw.toLowerCase()}-${sanitizarNombre(archivoPdf.nombre)}`,
+      file: archivoPdf.buffer,
+      contentType: mimeDocumento(archivoPdf.nombre),
+    });
+    docHash = sha256Hex(archivoPdf.buffer);
+  } else if (usarDemo) {
+    docUrl = def.demoPdfUrl;
+    docHash = def.demoPdfHash;
+  }
+
+  const nuevaCert: CertificacionComercialLote = {
+    codigo: codigoCertRaw,
+    nombre: def.nombre,
+    norma: def.norma,
+    emisor,
+    fecha_emision: fechaEmision,
+    observaciones,
+    doc_url: docUrl,
+    doc_hash: docHash,
+  };
+
+  const actualizadas = [...actuales.filter((c) => c.codigo !== codigoCertRaw), nuevaCert];
+
+  const { error } = await admin
+    .from('lotes')
+    .update({ certificaciones_comerciales: actualizadas })
+    .eq('id', lote.id);
+
+  if (error) {
+    volverConError(`No se pudo guardar la certificación: ${error.message}`);
+  }
+
+  redirect(`/lotes/${codigo}`);
 }

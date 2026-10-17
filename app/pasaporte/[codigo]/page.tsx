@@ -2,6 +2,10 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
+import {
+  CertificacionesComerciales,
+  type CertificacionConUrlResuelta,
+} from '@/components/certificaciones-comerciales';
 import { MapaPasaporte } from '@/components/mapa-lote';
 import { ResumenHumedal } from '@/components/resumen-humedal';
 import { Aviso } from '@/components/ui/aviso';
@@ -10,11 +14,27 @@ import { Tabla } from '@/components/ui/tabla';
 import { Tarjeta } from '@/components/ui/tarjeta';
 import { VerificadorIntegridad } from '@/components/verificador-integridad';
 import { construirDocumentos } from '@/lib/documentos-hashes';
+import { normalizarCertificacionesComerciales } from '@/lib/domain';
 import type { EstadoHumedal, FuenteHumedal } from '@/lib/humedales';
 import { getLoteCompleto } from '@/lib/queries';
 import { esWalletStellar } from '@/lib/stellar-args';
+import { createAdminClient } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
+
+async function urlFirmada(bucket: string, path: unknown, expires = 3600): Promise<string | null> {
+  if (typeof path !== 'string' || path.length === 0) return null;
+  if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.storage.from(bucket).createSignedUrl(path, expires);
+    return data?.signedUrl ?? null;
+  } catch {
+    return null;
+  }
+}
 
 function mostrarWalletPublica(wallet: unknown): string {
   if (typeof wallet === 'string' && esWalletStellar(wallet)) return wallet;
@@ -29,13 +49,13 @@ function fecha(iso?: string | null): string {
 
 function TxLink({ txHash }: { txHash: unknown }) {
   if (typeof txHash !== 'string' || txHash.length === 0)
-    return <span className="text-neutral-600">—</span>;
+    return <span className="text-texto-tenue">—</span>;
   return (
     <a
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="focus-visible:ring-foco text-brand font-mono text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-foco text-brand-fuerte font-mono text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
       {txHash.slice(0, 12)}… ↗
     </a>
@@ -81,9 +101,27 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
   const estadoHumedal = (lote.estado_humedal as EstadoHumedal | null) ?? null;
   const fuenteHumedal = (lote.fuente_humedal as FuenteHumedal | null) ?? null;
 
-  const hashesAuditor = documentos
-    .filter((documento) => documento.hash)
-    .map((documento) => ({ etiqueta: documento.titulo, hash: documento.hash as string }));
+  const certificacionesNormalizadas = normalizarCertificacionesComerciales(
+    lote.certificaciones_comerciales,
+  );
+  const certificacionesConUrl: CertificacionConUrlResuelta[] = await Promise.all(
+    certificacionesNormalizadas.map(async (cert) => ({
+      ...cert,
+      docUrlResuelta: await urlFirmada('documentos', cert.doc_url),
+    })),
+  );
+
+  const hashesAuditor = [
+    ...documentos
+      .filter((documento) => documento.hash)
+      .map((documento) => ({ etiqueta: documento.titulo, hash: documento.hash as string })),
+    ...certificacionesConUrl
+      .filter((cert) => cert.doc_hash)
+      .map((cert) => ({
+        etiqueta: `Certificación Eje 2 · ${cert.nombre}`,
+        hash: cert.doc_hash as string,
+      })),
+  ];
 
   const timeline = [
     {
@@ -108,15 +146,15 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
 
   return (
     <main className="mx-auto max-w-6xl space-y-8 p-6 sm:p-8">
-      <header className="rounded-tarjeta border-brand/40 bg-brand/5 border p-6">
+      <header className="rounded-tarjeta border-brand-fuerte/40 bg-brand/5 border p-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
-            <p className="text-brand text-xs font-semibold tracking-widest uppercase">
+            <p className="text-brand-fuerte text-xs font-semibold tracking-widest uppercase">
               Lote certificado EUDR · 3/3 sellos verificados en Stellar Soroban (testnet)
             </p>
             <h1 className="mt-2 text-3xl font-bold">{lote.codigo_lote}</h1>
             <p className="mt-1 text-lg">{lote.titulo}</p>
-            <p className="mt-2 text-sm text-neutral-400">
+            <p className="text-texto-suave mt-2 text-sm">
               Origen: {productor?.nombre_razon_social ?? '—'} — {lote.localidad}, {lote.provincia},
               Argentina · trazabilidad completa.
             </p>
@@ -132,7 +170,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             <a
               href={qrDataUrl}
               download={`${codigo}-qr.png`}
-              className="focus-visible:ring-foco text-brand mt-2 block text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+              className="focus-visible:ring-foco text-brand-fuerte mt-2 block text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
             >
               Descargar QR
             </a>
@@ -151,9 +189,9 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
                 {indice + 1}
               </span>
               <div>
-                <p className="text-sm font-semibold text-neutral-100">{hito.titulo}</p>
-                <p className="text-xs text-neutral-500">{hito.fecha}</p>
-                <p className="mt-1 text-sm text-neutral-300">{hito.detalle}</p>
+                <p className="text-texto text-sm font-semibold">{hito.titulo}</p>
+                <p className="text-texto-tenue text-xs">{hito.fecha}</p>
+                <p className="text-texto-suave mt-1 text-sm">{hito.detalle}</p>
               </div>
             </li>
           ))}
@@ -168,14 +206,14 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
           <a
             href={geoDataUri}
             download={`${codigo}.geojson`}
-            className="focus-visible:ring-foco text-brand mt-3 inline-block text-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
+            className="focus-visible:ring-foco text-brand-fuerte mt-3 inline-block text-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
           >
             Descargar polígono GeoJSON (para TRACES UE)
           </a>
         </Tarjeta>
 
         <Tarjeta titulo="Entrega y liquidación">
-          <ul className="space-y-2 text-sm text-neutral-300">
+          <ul className="text-texto-suave space-y-2 text-sm">
             <li>
               Cabezas recibidas: <strong>{recepcion?.cabezas_recibidas ?? '—'}</strong> · peso final
               promedio {recepcion?.peso_final_promedio_kg ?? '—'} kg
@@ -208,28 +246,32 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
         </Tarjeta>
       )}
 
+      <CertificacionesComerciales
+        codigoLote={String(lote.codigo_lote)}
+        certificaciones={certificacionesConUrl}
+        permitirEdicion={false}
+      />
+
       <Tarjeta titulo="Detalles técnicos verificables">
         <details>
-          <summary className="cursor-pointer text-sm font-semibold text-neutral-200">
+          <summary className="text-texto cursor-pointer text-sm font-semibold">
             Hashes, transacciones y actores
           </summary>
 
           <div className="mt-4 space-y-5">
             <div>
-              <h3 className="text-sm font-semibold text-neutral-200">
-                Documentos y hashes SHA-256
-              </h3>
+              <h3 className="text-texto text-sm font-semibold">Documentos y hashes SHA-256</h3>
               <ul className="mt-2 space-y-2">
                 {documentos.map((documento) => (
                   <li
                     key={documento.clave}
                     className="flex flex-wrap items-center justify-between gap-2"
                   >
-                    <span className="text-sm text-neutral-300">{documento.titulo}</span>
+                    <span className="text-texto-suave text-sm">{documento.titulo}</span>
                     {documento.hash ? (
                       <CopiaHash valor={documento.hash} />
                     ) : (
-                      <span className="text-xs text-neutral-500">{documento.pendiente}</span>
+                      <span className="text-texto-tenue text-xs">{documento.pendiente}</span>
                     )}
                   </li>
                 ))}
@@ -237,7 +279,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-neutral-200">Transacciones en Stellar</h3>
+              <h3 className="text-texto text-sm font-semibold">Transacciones en Stellar</h3>
               <ul className="mt-2 space-y-1 text-xs">
                 <li>
                   Sello 1: <TxLink txHash={lote.soroban_create_tx_hash} />
@@ -255,24 +297,24 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-neutral-200">Actores y wallets</h3>
-              <ul className="mt-2 space-y-1 text-sm text-neutral-300">
+              <h3 className="text-texto text-sm font-semibold">Actores y wallets</h3>
+              <ul className="text-texto-suave mt-2 space-y-1 text-sm">
                 <li>
                   Productor:{' '}
-                  <span className="font-mono text-xs text-neutral-400">
+                  <span className="text-texto-suave font-mono text-xs">
                     {mostrarWalletPublica(lote.productor_wallet)}
                   </span>
                 </li>
                 <li>
                   Veterinario acreditado: {auditoria?.vet_nombre ?? '—'} (
                   {auditoria?.matricula ?? '—'}) ·{' '}
-                  <span className="font-mono text-xs text-neutral-400">
+                  <span className="text-texto-suave font-mono text-xs">
                     {mostrarWalletPublica(auditoria?.vet_wallet)}
                   </span>
                 </li>
                 <li>
                   Frigorífico:{' '}
-                  <span className="font-mono text-xs text-neutral-400">
+                  <span className="text-texto-suave font-mono text-xs">
                     {mostrarWalletPublica(lote.comprador_wallet)}
                   </span>
                 </li>
@@ -280,7 +322,7 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-neutral-200">
+              <h3 className="text-texto text-sm font-semibold">
                 Trazabilidad individual por caravana
               </h3>
               <Tabla
@@ -321,11 +363,11 @@ export default async function PasaportePage({ params }: { params: Promise<{ codi
         eventos; un hash detecta alteraciones, no prueba la veracidad del contenido.
       </Aviso>
 
-      <p className="text-center text-xs text-neutral-600">
+      <p className="text-texto-tenue text-center text-xs">
         Pasaporte generado por Muunar ·{' '}
         <Link
           href={`/lotes/${codigo}`}
-          className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
         >
           ver ficha interna
         </Link>{' '}

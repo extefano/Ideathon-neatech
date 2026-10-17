@@ -20,7 +20,28 @@ function iniciales(nombre: string): string {
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
-  const puedeRegistrar = !user || user.rol === 'PRODUCTOR';
+
+  const claseNav =
+    'focus-visible:ring-foco text-neutral-950 rounded-control px-3 py-2 text-sm font-semibold hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none';
+
+  const enlaces: { href: string; texto: string }[] =
+    user?.rol === 'PRODUCTOR'
+      ? [
+          { href: '/', texto: 'Mis lotes' },
+          { href: '/mercado', texto: 'Mercado' },
+          { href: '/lotes/nuevo', texto: 'Registrar lote' },
+        ]
+      : user?.rol === 'VETERINARIO'
+        ? [
+            { href: '/', texto: 'Para revisar' },
+            { href: '/mercado', texto: 'Mercado' },
+          ]
+        : user?.rol === 'COMPRADOR'
+          ? [
+              { href: '/mercado', texto: 'Mercado' },
+              { href: '/', texto: 'Mis compras' },
+            ]
+          : [{ href: '/mercado', texto: 'Mercado' }];
 
   return (
     <header className="bg-brand border-b-4 border-neutral-950 text-neutral-950">
@@ -32,34 +53,31 @@ export async function SiteHeader() {
             aria-label="Muunar — inicio"
           >
             <Image
-              src="/brand/muunar-isotipo-blanco.svg"
+              src="/brand/muunar-isotipo-negro.svg"
               alt=""
-              width={565}
-              height={560}
-              priority
+              width={555}
+              height={526}
+              preload
               className="h-10 w-auto"
             />
-            <span className="text-2xl font-bold tracking-tight text-neutral-950">Muunar</span>
+            <Image
+              src="/brand/muunar-wordmark-negro.svg"
+              alt=""
+              width={449}
+              height={74}
+              className="h-4 w-auto"
+            />
           </Link>
 
           <nav
             className="flex flex-wrap items-center gap-1 sm:gap-2"
             aria-label="Navegación principal"
           >
-            <Link
-              href="/mercado"
-              className="focus-visible:ring-foco rounded-control px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none"
-            >
-              Mercado
-            </Link>
-            {puedeRegistrar && (
-              <Link
-                href="/lotes/nuevo"
-                className="focus-visible:ring-foco rounded-control px-3 py-2 text-sm font-semibold text-neutral-950 hover:bg-neutral-950/10 focus-visible:ring-2 focus-visible:outline-none"
-              >
-                Registrar lote
+            {enlaces.map((enlace) => (
+              <Link key={enlace.href} href={enlace.href} className={claseNav}>
+                {enlace.texto}
               </Link>
-            )}
+            ))}
           </nav>
         </div>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useActionState, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Aviso } from '@/components/ui/aviso';
@@ -25,6 +26,51 @@ const ROLES: { id: RolUsuario; titulo: string; descripcion: string }[] = [
     descripcion: 'Fondea el escrow y confirma la recepción en balanza.',
   },
 ];
+
+function IconoGoogle() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 18 18" className="h-4 w-4 shrink-0">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.96 10.71a5.41 5.41 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58Z"
+      />
+    </svg>
+  );
+}
+
+function IconoApple() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
+      <path
+        fill="currentColor"
+        d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
+      />
+    </svg>
+  );
+}
+
+function IconoFacebook() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
+      <path
+        fill="#1877F2"
+        d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+      />
+    </svg>
+  );
+}
 
 type ErroresCampo = Record<string, string>;
 
@@ -106,11 +152,17 @@ export function LoginForm({
   return (
     <div className="rounded-tarjeta border-borde bg-panel w-full max-w-md border p-6 shadow-2xl sm:p-8">
       <div className="text-center">
-        <span className="text-xl font-black tracking-widest text-white">MUUNAR</span>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
+        <Image
+          src="/brand/muunar-logo-negro.svg"
+          alt="Muunar"
+          width={565}
+          height={673}
+          className="mx-auto block h-20 w-auto"
+        />
+        <h1 className="text-texto mt-1 text-2xl font-bold tracking-tight">
           {tab === 'login' ? 'Iniciar sesión' : 'Creá tu cuenta'}
         </h1>
-        <p className="mt-1 text-xs text-neutral-400">
+        <p className="text-texto-suave mt-1 text-xs">
           {tab === 'login'
             ? 'Accedé a tu perfil de trazabilidad ganadera EUDR'
             : 'Elegí tu rol en la cadena y completá tus datos'}
@@ -120,7 +172,7 @@ export function LoginForm({
       <div
         role="tablist"
         aria-label="Ingresar o registrarse"
-        className="rounded-control mt-6 grid grid-cols-2 border border-neutral-800 bg-neutral-900/60 p-1"
+        className="rounded-control border-borde bg-panel-elevado mt-6 grid grid-cols-2 border p-1"
       >
         <button
           type="button"
@@ -130,7 +182,7 @@ export function LoginForm({
           className={`rounded-control focus-visible:ring-foco cursor-pointer py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:outline-none ${
             tab === 'login'
               ? 'bg-brand text-neutral-950 shadow'
-              : 'text-neutral-400 hover:text-neutral-200'
+              : 'text-texto-suave hover:text-texto'
           }`}
         >
           Iniciar sesión
@@ -143,20 +195,64 @@ export function LoginForm({
           className={`rounded-control focus-visible:ring-foco cursor-pointer py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:outline-none ${
             tab === 'register'
               ? 'bg-brand text-neutral-950 shadow'
-              : 'text-neutral-400 hover:text-neutral-200'
+              : 'text-texto-suave hover:text-texto'
           }`}
         >
           Registrar
         </button>
       </div>
 
-      {tab === 'login' && (
-        <form
-          action={runLoginAction}
-          onSubmit={alEnviarLogin}
-          className="mt-6 space-y-4"
-          noValidate
+      {/* Ingreso con redes sociales (próximamente) */}
+      <div className="mt-6 space-y-4">
+        <div
+          className="grid grid-cols-3 gap-2"
+          role="group"
+          aria-label="Ingreso con redes sociales"
         >
+          <Boton
+            variante="secundario"
+            disabled
+            title="Próximamente"
+            aria-label="Continuar con Google (próximamente)"
+            className="w-full"
+          >
+            <IconoGoogle />
+          </Boton>
+          <Boton
+            variante="secundario"
+            disabled
+            title="Próximamente"
+            aria-label="Continuar con Apple (próximamente)"
+            className="w-full"
+          >
+            <IconoApple />
+          </Boton>
+          <Boton
+            variante="secundario"
+            disabled
+            title="Próximamente"
+            aria-label="Continuar con Facebook (próximamente)"
+            className="w-full"
+          >
+            <IconoFacebook />
+          </Boton>
+        </div>
+        <p className="text-texto-tenue text-center text-[11px]">
+          Ingreso con redes sociales: próximamente.
+        </p>
+
+        <div className="flex items-center gap-3">
+          <span className="bg-borde h-px flex-1" aria-hidden="true" />
+          <span className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
+            o con tu correo
+          </span>
+          <span className="bg-borde h-px flex-1" aria-hidden="true" />
+        </div>
+      </div>
+
+      {/* Formulario: Iniciar sesión */}
+      {tab === 'login' && (
+        <form action={runLoginAction} onSubmit={alEnviarLogin} className="space-y-4" noValidate>
           <input type="hidden" name="redirectTo" value={redirectTarget} />
 
           {loginState.errors.length > 0 && (
@@ -198,7 +294,7 @@ export function LoginForm({
         <form
           action={runRegisterAction}
           onSubmit={alEnviarRegistro}
-          className="mt-6 space-y-5"
+          className="space-y-5"
           noValidate
         >
           <input type="hidden" name="rol" value={rol} />
@@ -215,7 +311,7 @@ export function LoginForm({
           )}
 
           <fieldset>
-            <legend className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            <legend className="text-texto-suave text-xs font-semibold tracking-wide uppercase">
               1. Elegí tu perfil en la cadena
             </legend>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -229,16 +325,16 @@ export function LoginForm({
                     onClick={() => setRol(item.id)}
                     className={`rounded-tarjeta focus-visible:ring-foco flex cursor-pointer flex-col items-start gap-1 border p-3 text-left transition-all focus-visible:ring-2 focus-visible:outline-none ${
                       activo
-                        ? 'border-brand ring-brand bg-neutral-900 ring-1'
-                        : 'border-neutral-800 bg-neutral-950/60 hover:border-neutral-700'
+                        ? 'border-brand-fuerte ring-brand-fuerte bg-panel ring-1'
+                        : 'border-borde bg-panel hover:border-borde-fuerte'
                     }`}
                   >
                     <span
-                      className={`text-xs font-bold ${activo ? 'text-brand' : 'text-neutral-200'}`}
+                      className={`text-xs font-bold ${activo ? 'text-brand-fuerte' : 'text-texto'}`}
                     >
                       {item.titulo}
                     </span>
-                    <span className="text-[11px] leading-tight text-neutral-500">
+                    <span className="text-texto-tenue text-[11px] leading-tight">
                       {item.descripcion}
                     </span>
                   </button>
@@ -248,7 +344,7 @@ export function LoginForm({
           </fieldset>
 
           <fieldset className="space-y-4">
-            <legend className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            <legend className="text-texto-suave text-xs font-semibold tracking-wide uppercase">
               2. Tus datos profesionales
             </legend>
 
@@ -293,14 +389,14 @@ export function LoginForm({
                 <div className="space-y-1">
                   <label
                     htmlFor="campo-tipo_comprador"
-                    className="block text-xs font-semibold tracking-wide text-neutral-400 uppercase"
+                    className="text-texto-suave block text-xs font-semibold tracking-wide uppercase"
                   >
                     Tipo de comprador
                   </label>
                   <select
                     id="campo-tipo_comprador"
                     name="tipo_comprador"
-                    className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                   >
                     <option value="FRIGORIFICO_EXPORTADOR">Frigorífico exportador</option>
                     <option value="INVERSOR_AGRO">Inversor agropecuario</option>
@@ -340,8 +436,8 @@ export function LoginForm({
         </form>
       )}
 
-      <div className="mt-8 border-t border-neutral-800 pt-5">
-        <p className="text-center text-[11px] font-medium text-neutral-400">
+      <div className="border-borde mt-8 border-t pt-5">
+        <p className="text-texto-suave text-center text-[11px] font-medium">
           O ingresá rápidamente con un rol demo para evaluar el flujo:
         </p>
 
@@ -358,10 +454,10 @@ export function LoginForm({
               <input type="hidden" name="redirectTo" value={redirectTarget} />
               <button
                 type="submit"
-                className="rounded-control focus-visible:ring-foco hover:border-brand w-full cursor-pointer border border-neutral-800 bg-neutral-900/80 p-2 text-center text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                className="rounded-control focus-visible:ring-foco hover:border-brand-fuerte border-borde bg-panel w-full cursor-pointer border p-2 text-center text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
-                <span className="block font-semibold text-neutral-200">{item.etiqueta}</span>
-                <span className="block truncate text-[10px] text-neutral-500">{item.demo}</span>
+                <span className="text-texto block font-semibold">{item.etiqueta}</span>
+                <span className="text-texto-tenue block truncate text-[10px]">{item.demo}</span>
               </button>
             </form>
           ))}

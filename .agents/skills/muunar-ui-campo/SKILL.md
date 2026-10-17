@@ -50,9 +50,11 @@ principal.
   todo elemento interactivo (nunca `outline: none` sin reemplazo).
 - **Tildes y mayúsculas correctas** en todo texto visible (es-AR, voseo del
   repo).
-- **Marca**: fondo oscuro; amarillo `#FDDA24` (`bg-brand`) **solo con texto
-  negro** (`text-neutral-950`); rojo reservado a rechazo/error; nunca
-  emerald/sky/indigo/violet/amber.
+- **Marca**: fondo claro cálido (crema, tokens `superficie`/`panel`/`borde` con
+  texto `texto`/`texto-suave`/`texto-tenue`); amarillo `#FDDA24` (`bg-brand`)
+  como **acento**: sólido **solo con texto negro** (`text-neutral-950`) y, para
+  texto o enlaces sobre fondos claros, `text-brand-fuerte` (variante oscura
+  legible); rojo reservado a rechazo/error; nunca emerald/sky/indigo/violet/amber.
 - **Sin clases ad-hoc nuevas** cuando ya existe token o componente compartido.
 - **Estados accesibles**: `aria-current="step"` en el paso actual, `role="alert"`
   en errores, `role="status"` en avisos de éxito/info.

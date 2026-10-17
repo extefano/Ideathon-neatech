@@ -5,7 +5,135 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/storage';
 import { createClient } from '@/lib/supabase/server';
-import { ensureDemoUser, type AuthFormState, type RolUsuario } from './auth';
+import {
+  ensureDemoUser,
+  rutaInternaSegura,
+  validarDatosRegistro,
+  type AuthFormState,
+  type DatosRegistroEntrada,
+  type DatosRegistroValidados,
+  type RolUsuario,
+} from './auth';
+
+function leerEntradaRegistro(formData: FormData): DatosRegistroEntrada {
+  return {
+    rol: formData.get('rol') as string | null,
+    nombre_completo: formData.get('nombre_completo') as string | null,
+    cuit: formData.get('cuit') as string | null,
+    email: formData.get('email') as string | null,
+    password: formData.get('password') as string | null,
+    matricula_profesional: formData.get('matricula_profesional') as string | null,
+    acreditacion_senasa: formData.get('acreditacion_senasa') as string | null,
+    operador_consignatario: formData.get('operador_consignatario') as string | null,
+    tipo_comprador: formData.get('tipo_comprador') as string | null,
+    matricula_ruca: formData.get('matricula_ruca') as string | null,
+  };
+}
+
+async function crearActorYPerfil(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  datos: DatosRegistroValidados,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const shortId = userId.replace(/-/g, '').slice(0, 10).toUpperCase();
+  const wallet = `G${datos.rol.slice(0, 4)}-${shortId}`;
+
+  let productorId: string | null = null;
+  let veterinarioId: string | null = null;
+  let compradorId: string | null = null;
+
+  if (datos.rol === 'PRODUCTOR') {
+    const { data, error } = await admin
+      .from('productores')
+      .upsert(
+        {
+          wallet,
+          nombre_razon_social: datos.nombreCompleto,
+          cuit: datos.cuit,
+          operador_consignatario: datos.operadorConsignatario || null,
+        },
+        { onConflict: 'wallet' },
+      )
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      return {
+        ok: false,
+        error: `Error registrando productor: ${error?.message ?? 'error desconocido'}`,
+      };
+    }
+    productorId = data.id;
+  } else if (datos.rol === 'VETERINARIO') {
+    const { data, error } = await admin
+      .from('veterinarios')
+      .upsert(
+        {
+          wallet,
+          nombre_completo: datos.nombreCompleto,
+          cuit: datos.cuit,
+          matricula_profesional: datos.matriculaProfesional,
+          acreditacion_senasa: datos.acreditacionSenasa || null,
+        },
+        { onConflict: 'wallet' },
+      )
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      return {
+        ok: false,
+        error: `Error registrando veterinario: ${error?.message ?? 'error desconocido'}`,
+      };
+    }
+    veterinarioId = data.id;
+  } else {
+    const { data, error } = await admin
+      .from('compradores')
+      .upsert(
+        {
+          wallet,
+          razon_social: datos.nombreCompleto,
+          cuit: datos.cuit,
+          tipo_comprador: datos.tipoComprador,
+          matricula_ruca: datos.matriculaRuca || null,
+        },
+        { onConflict: 'wallet' },
+      )
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      return {
+        ok: false,
+        error: `Error registrando comprador: ${error?.message ?? 'error desconocido'}`,
+      };
+    }
+    compradorId = data.id;
+  }
+
+  const { error: perfilError } = await admin.from('perfiles').upsert(
+    {
+      id: userId,
+      rol: datos.rol,
+      nombre_completo: datos.nombreCompleto,
+      cuit: datos.cuit,
+      matricula: datos.matriculaProfesional || null,
+      tipo_comprador: datos.rol === 'COMPRADOR' ? datos.tipoComprador : null,
+      wallet,
+      productor_id: productorId,
+      veterinario_id: veterinarioId,
+      comprador_id: compradorId,
+    },
+    { onConflict: 'id' },
+  );
+
+  if (perfilError) {
+    return { ok: false, error: `Error guardando perfil: ${perfilError.message}` };
+  }
+
+  return { ok: true };
+}
 
 export async function loginAction(
   _prevState: AuthFormState,
@@ -13,7 +141,7 @@ export async function loginAction(
 ): Promise<AuthFormState> {
   const email = (formData.get('email') as string | null)?.trim() ?? '';
   const password = (formData.get('password') as string | null) ?? '';
-  const redirectTo = (formData.get('redirectTo') as string | null) ?? '/';
+  const redirectTo = rutaInternaSegura(formData.get('redirectTo') as string | null);
 
   if (!email || !password) {
     return { errors: ['Completá tu correo electrónico y contraseña.'] };
@@ -45,72 +173,30 @@ export async function loginAction(
   }
 
   revalidatePath('/', 'layout');
-  redirect(redirectTo.startsWith('/') ? redirectTo : '/');
+  redirect(redirectTo);
 }
 
 export async function registerAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const rol = (formData.get('rol') as RolUsuario | null) ?? 'PRODUCTOR';
-  const nombreCompleto = (formData.get('nombre_completo') as string | null)?.trim() ?? '';
-  const cuit = (formData.get('cuit') as string | null)?.trim() ?? '';
-  const email = (formData.get('email') as string | null)?.trim() ?? '';
-  const password = (formData.get('password') as string | null) ?? '';
-  const redirectTo = (formData.get('redirectTo') as string | null) ?? '/';
+  const redirectTo = rutaInternaSegura(formData.get('redirectTo') as string | null);
+  const validacion = validarDatosRegistro(leerEntradaRegistro(formData), {
+    requiereCredenciales: true,
+  });
 
-  const errors: string[] = [];
-
-  if (!['PRODUCTOR', 'VETERINARIO', 'COMPRADOR'].includes(rol)) {
-    errors.push('El rol seleccionado no es válido.');
+  if (!validacion.ok) {
+    return { errors: validacion.errors };
   }
-  if (!nombreCompleto) {
-    errors.push('El nombre o razón social es obligatorio.');
-  }
-  if (!cuit) {
-    errors.push('El CUIT es obligatorio.');
-  }
-  if (!email || !email.includes('@')) {
-    errors.push('Ingresá un correo electrónico válido.');
-  }
-  if (!password || password.length < 6) {
-    errors.push('La contraseña debe tener al menos 6 caracteres.');
-  }
-
-  let matriculaProfesional = '';
-  let acreditacionSenasa = '';
-  let operadorConsignatario = '';
-  let tipoComprador: 'FRIGORIFICO_EXPORTADOR' | 'INVERSOR_AGRO' | 'CONSIGNATARIA' =
-    'FRIGORIFICO_EXPORTADOR';
-  let matriculaRuca = '';
-
-  if (rol === 'VETERINARIO') {
-    matriculaProfesional = (formData.get('matricula_profesional') as string | null)?.trim() ?? '';
-    acreditacionSenasa = (formData.get('acreditacion_senasa') as string | null)?.trim() ?? '';
-    if (!matriculaProfesional) {
-      errors.push('La matrícula profesional es obligatoria para veterinarios.');
-    }
-  } else if (rol === 'PRODUCTOR') {
-    operadorConsignatario = (formData.get('operador_consignatario') as string | null)?.trim() ?? '';
-  } else if (rol === 'COMPRADOR') {
-    const rawTipo = (formData.get('tipo_comprador') as string | null) ?? 'FRIGORIFICO_EXPORTADOR';
-    if (['FRIGORIFICO_EXPORTADOR', 'INVERSOR_AGRO', 'CONSIGNATARIA'].includes(rawTipo)) {
-      tipoComprador = rawTipo as typeof tipoComprador;
-    }
-    matriculaRuca = (formData.get('matricula_ruca') as string | null)?.trim() ?? '';
-  }
-
-  if (errors.length > 0) {
-    return { errors };
-  }
+  const datos = validacion.datos;
 
   const admin = createAdminClient();
 
   const { data: userData, error: userError } = await admin.auth.admin.createUser({
-    email,
-    password,
+    email: datos.email,
+    password: datos.password,
     email_confirm: true,
-    user_metadata: { rol, nombre_completo: nombreCompleto },
+    user_metadata: { rol: datos.rol, nombre_completo: datos.nombreCompleto },
   });
 
   if (userError || !userData.user) {
@@ -120,87 +206,15 @@ export async function registerAction(
     return { errors: [userError?.message ?? 'No se pudo crear la cuenta.'] };
   }
 
-  const userId = userData.user.id;
-  const shortId = userId.replace(/-/g, '').slice(0, 10).toUpperCase();
-
-  let productorId: string | null = null;
-  let veterinarioId: string | null = null;
-  let compradorId: string | null = null;
-  const wallet = `G${rol.slice(0, 4)}-${shortId}`;
-
-  if (rol === 'PRODUCTOR') {
-    const { data: prod, error: prodErr } = await admin
-      .from('productores')
-      .insert({
-        wallet,
-        nombre_razon_social: nombreCompleto,
-        cuit,
-        operador_consignatario: operadorConsignatario || null,
-      })
-      .select('id')
-      .single();
-
-    if (prodErr) {
-      return { errors: [`Error registrando productor: ${prodErr.message}`] };
-    }
-    productorId = prod.id;
-  } else if (rol === 'VETERINARIO') {
-    const { data: vet, error: vetErr } = await admin
-      .from('veterinarios')
-      .insert({
-        wallet,
-        nombre_completo: nombreCompleto,
-        cuit,
-        matricula_profesional: matriculaProfesional,
-        acreditacion_senasa: acreditacionSenasa || null,
-      })
-      .select('id')
-      .single();
-
-    if (vetErr) {
-      return { errors: [`Error registrando veterinario: ${vetErr.message}`] };
-    }
-    veterinarioId = vet.id;
-  } else if (rol === 'COMPRADOR') {
-    const { data: comp, error: compErr } = await admin
-      .from('compradores')
-      .insert({
-        wallet,
-        razon_social: nombreCompleto,
-        cuit,
-        tipo_comprador: tipoComprador,
-        matricula_ruca: matriculaRuca || null,
-      })
-      .select('id')
-      .single();
-
-    if (compErr) {
-      return { errors: [`Error registrando comprador: ${compErr.message}`] };
-    }
-    compradorId = comp.id;
-  }
-
-  const { error: perfilErr } = await admin.from('perfiles').insert({
-    id: userId,
-    rol,
-    nombre_completo: nombreCompleto,
-    cuit,
-    matricula: matriculaProfesional || null,
-    tipo_comprador: rol === 'COMPRADOR' ? tipoComprador : null,
-    wallet,
-    productor_id: productorId,
-    veterinario_id: veterinarioId,
-    comprador_id: compradorId,
-  });
-
-  if (perfilErr) {
-    return { errors: [`Error guardando perfil: ${perfilErr.message}`] };
+  const creado = await crearActorYPerfil(admin, userData.user.id, datos);
+  if (!creado.ok) {
+    return { errors: [creado.error] };
   }
 
   const supabase = await createClient();
   const { error: signInErr } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+    email: datos.email,
+    password: datos.password,
   });
 
   if (signInErr) {
@@ -208,7 +222,7 @@ export async function registerAction(
   }
 
   revalidatePath('/', 'layout');
-  redirect(redirectTo.startsWith('/') ? redirectTo : '/');
+  redirect(redirectTo);
 }
 
 export async function loginDemoAction(input: FormData | RolUsuario): Promise<void> {
@@ -218,10 +232,7 @@ export async function loginDemoAction(input: FormData | RolUsuario): Promise<voi
     rol = input;
   } else if (input instanceof FormData) {
     rol = (input.get('rol') as RolUsuario) || 'PRODUCTOR';
-    const formRedirect = input.get('redirectTo') as string | null;
-    if (formRedirect && formRedirect.startsWith('/')) {
-      redirectTo = formRedirect;
-    }
+    redirectTo = rutaInternaSegura(input.get('redirectTo') as string | null);
   }
 
   const creds = await ensureDemoUser(rol);
@@ -234,7 +245,7 @@ export async function loginDemoAction(input: FormData | RolUsuario): Promise<voi
   }
 
   revalidatePath('/', 'layout');
-  redirect(redirectTo.startsWith('/') ? redirectTo : '/');
+  redirect(redirectTo);
 }
 
 export async function logoutAction(): Promise<void> {

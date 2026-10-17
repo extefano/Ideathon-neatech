@@ -1,6 +1,11 @@
 import Link from 'next/link';
-import { LoteCard } from '@/components/lote-card';
+import { LotesMarketplace } from '@/components/lotes-marketplace';
 import { Aviso } from '@/components/ui/aviso';
+import {
+  CERTIFICACIONES_COMERCIALES,
+  esCodigoCertificacionComercial,
+  type CodigoCertificacionComercial,
+} from '@/lib/domain';
 import { listarLotes, type LoteListItem } from '@/lib/queries';
 import {
   hayFiltrosHumedal,
@@ -19,6 +24,7 @@ type FiltrosMercado = {
   humMin?: string;
   humMax?: string;
   humSinDato?: string;
+  certificacion?: string;
 };
 
 function unicos(lotes: LoteListItem[], clave: 'provincia' | 'categoria' | 'raza'): string[] {
@@ -49,14 +55,14 @@ function CampoSelect({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={`filtro-${name}`} className="block text-xs font-semibold text-neutral-400">
+      <label htmlFor={`filtro-${name}`} className="text-texto-suave block text-xs font-semibold">
         {etiqueta}
       </label>
       <select
         id={`filtro-${name}`}
         name={name}
         defaultValue={valor}
-        className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
       >
         <option value="">Todas</option>
         {opciones.map((opcion) => (
@@ -78,7 +84,8 @@ export default async function MercadoPage({
   const humedal = parsearFiltrosHumedal(sp);
   const filtros = parsearFiltrosMercado(sp);
   const filtroHumedalValido = humedal.errores.length === 0 && hayFiltrosHumedal(humedal);
-  const hayFiltros = hayFiltrosMercado(filtros) || hayFiltrosHumedal(humedal);
+  const hayFiltros =
+    hayFiltrosMercado(filtros) || hayFiltrosHumedal(humedal) || Boolean(sp.certificacion);
 
   let lotes: LoteListItem[] = [];
   let disponibles: LoteListItem[] = [];
@@ -107,16 +114,23 @@ export default async function MercadoPage({
     console.error('Error listando lotes del mercado', error);
   }
 
+  const certFiltro: CodigoCertificacionComercial | '' =
+    sp.certificacion && esCodigoCertificacionComercial(sp.certificacion) ? sp.certificacion : '';
+
   return (
     <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <Link href="/" className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400">
+      <Link
+        href="/"
+        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      >
         ← Inicio
       </Link>
 
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">Mercado de lotes</h1>
-        <p className="max-w-3xl text-neutral-400">
-          Lotes con origen verificado y libre de deforestación. Compará kilos, precio por kg y
+        <p className="text-texto-suave max-w-3xl">
+          Lotes con origen verificado y libre de deforestación (Eje 1 · EUDR) y diferenciales
+          comerciales voluntarios (Eje 2 · Valor agregado). Compará kilos, precio por kg y
           uniformidad antes de financiar.
         </p>
       </header>
@@ -137,7 +151,7 @@ export default async function MercadoPage({
       )}
 
       <form method="get" className="rounded-tarjeta border-borde bg-panel border p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <CampoSelect
             etiqueta="Provincia"
             name="provincia"
@@ -163,7 +177,7 @@ export default async function MercadoPage({
             opciones={conValorActual(['USDC', 'EURC'], filtros.moneda)}
           />
           <div className="space-y-1">
-            <label htmlFor="filtro-humMin" className="block text-xs font-semibold text-neutral-400">
+            <label htmlFor="filtro-humMin" className="text-texto-suave block text-xs font-semibold">
               Humedal mínimo (%)
             </label>
             <input
@@ -174,11 +188,11 @@ export default async function MercadoPage({
               max={100}
               step="0.1"
               defaultValue={humedal.min ?? ''}
-              className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="filtro-humMax" className="block text-xs font-semibold text-neutral-400">
+            <label htmlFor="filtro-humMax" className="text-texto-suave block text-xs font-semibold">
               Humedal máximo (%)
             </label>
             <input
@@ -189,7 +203,7 @@ export default async function MercadoPage({
               max={100}
               step="0.1"
               defaultValue={humedal.max ?? ''}
-              className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
             />
           </div>
           <div className="flex min-h-11 items-center gap-2 pb-2">
@@ -201,9 +215,30 @@ export default async function MercadoPage({
               defaultChecked={humedal.sinDato}
               className="accent-brand h-4 w-4"
             />
-            <label htmlFor="filtro-humSinDato" className="text-sm text-neutral-300">
+            <label htmlFor="filtro-humSinDato" className="text-texto text-sm">
               Solo lotes sin dato de humedal
             </label>
+          </div>
+          <div className="space-y-1">
+            <label
+              htmlFor="filtro-certificacion"
+              className="text-texto-suave block text-xs font-semibold"
+            >
+              Valor agregado (Eje 2)
+            </label>
+            <select
+              id="filtro-certificacion"
+              name="certificacion"
+              defaultValue={certFiltro}
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <option value="">Todas las preferencias</option>
+              {CERTIFICACIONES_COMERCIALES.map((cert) => (
+                <option key={cert.codigo} value={cert.codigo}>
+                  {cert.etiquetaFiltro}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -216,7 +251,7 @@ export default async function MercadoPage({
           {hayFiltros && (
             <Link
               href="/mercado"
-              className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400 underline focus-visible:ring-2 focus-visible:outline-none"
+              className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm underline focus-visible:ring-2 focus-visible:outline-none"
             >
               Limpiar filtros
             </Link>
@@ -235,11 +270,7 @@ export default async function MercadoPage({
             : 'No hay lotes disponibles en este momento.'}
         </Aviso>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {lotes.map((lote) => (
-            <LoteCard key={lote.id} lote={lote} />
-          ))}
-        </div>
+        <LotesMarketplace lotes={lotes} filtroInicial={certFiltro || 'TODOS'} />
       )}
     </main>
   );

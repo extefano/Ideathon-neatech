@@ -25,7 +25,7 @@ describe('Campo', () => {
     expect(input).toHaveAttribute('aria-describedby', 'campo-cuit-error');
     const error = screen.getByRole('alert');
     expect(error).toHaveTextContent('El CUIT debe tener 11 dígitos');
-    expect(input.className).toContain('border-red-500/60');
+    expect(input.className).toContain('border-red-600/50');
   });
 
   it('describe la ayuda cuando no hay error', () => {

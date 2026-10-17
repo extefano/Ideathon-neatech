@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
+import {
+  CertificacionesComerciales,
+  type CertificacionConUrlResuelta,
+} from '@/components/certificaciones-comerciales';
 import { DocumentosHashes } from '@/components/documentos-hashes';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EvidenciaSatelital, type GfwConsulta } from '@/components/evidencia-satelital';
@@ -12,7 +16,7 @@ import { Tarjeta } from '@/components/ui/tarjeta';
 import { reintentarGfwAction } from '@/lib/actions';
 import { getCurrentUser } from '@/lib/auth';
 import { construirDocumentos } from '@/lib/documentos-hashes';
-import type { EstadoLote } from '@/lib/domain';
+import { normalizarCertificacionesComerciales, type EstadoLote } from '@/lib/domain';
 import { calcularDesembolsos } from '@/lib/escrow';
 import { resumirLote } from '@/lib/estado-lote';
 import type { EstadoHumedal, FuenteHumedal } from '@/lib/humedales';
@@ -25,6 +29,9 @@ export const dynamic = 'force-dynamic';
 
 async function urlFirmada(bucket: string, path: unknown, expires = 3600): Promise<string | null> {
   if (typeof path !== 'string' || path.length === 0) return null;
+  if (path.startsWith('/') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
   try {
     const admin = createAdminClient();
     const { data } = await admin.storage.from(bucket).createSignedUrl(path, expires);
@@ -41,7 +48,7 @@ function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="focus-visible:ring-foco text-brand text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-foco text-brand-fuerte text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
       {etiqueta} ↗
     </a>
@@ -54,16 +61,16 @@ function SelloItem({ nombre, activo, falta }: { nombre: string; activo: boolean;
       <span
         aria-hidden="true"
         className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
-          activo ? 'border-brand text-brand' : 'border-neutral-600 text-neutral-500'
+          activo ? 'border-brand-fuerte text-brand-fuerte' : 'border-borde-fuerte text-texto-tenue'
         }`}
       >
         {activo ? '✓' : '·'}
       </span>
       <div>
-        <p className={`text-sm font-semibold ${activo ? 'text-neutral-100' : 'text-neutral-400'}`}>
+        <p className={`text-sm font-semibold ${activo ? 'text-texto' : 'text-texto-suave'}`}>
           {nombre}
         </p>
-        <p className="text-xs text-neutral-500">
+        <p className="text-texto-tenue text-xs">
           {activo ? 'Verificado y anclado en Stellar.' : `Falta: ${falta}`}
         </p>
       </div>
@@ -136,21 +143,33 @@ export default async function LotePage({
   const sello2 = Boolean(lote.seal_2_sanitary);
   const estadoHumedal = (lote.estado_humedal as EstadoHumedal | null) ?? null;
   const fuenteHumedal = (lote.fuente_humedal as FuenteHumedal | null) ?? null;
+  const certificacionesNormalizadas = normalizarCertificacionesComerciales(
+    lote.certificaciones_comerciales,
+  );
+  const certificacionesConUrl: CertificacionConUrlResuelta[] = await Promise.all(
+    certificacionesNormalizadas.map(async (cert) => ({
+      ...cert,
+      docUrlResuelta: await urlFirmada('documentos', cert.doc_url),
+    })),
+  );
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-8">
-      <Link href="/" className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400">
+      <Link
+        href="/"
+        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      >
         ← Lotes
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-sm text-neutral-400">{lote.codigo_lote}</span>
+            <span className="text-texto-suave font-mono text-sm">{lote.codigo_lote}</span>
             <EstadoBadge estado={estado} />
           </div>
           <h1 className="mt-2 text-3xl font-bold">{lote.titulo ?? 'Lote sin título'}</h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="text-texto-suave mt-1 text-sm">
             RENSPA {lote.renspa} · {lote.localidad}, {lote.provincia} · {lote.superficie_ha} ha ·{' '}
             {lote.tipo_operacion ?? '—'}
           </p>
@@ -178,8 +197,8 @@ export default async function LotePage({
 
       <Tarjeta titulo="Resumen y próximos pasos" descripcion={resumen.descripcion}>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-neutral-300">
-            Estado canónico: <span className="text-neutral-100">{resumen.canonico}</span>
+          <span className="text-texto-suave text-sm">
+            Estado canónico: <span className="text-texto">{resumen.canonico}</span>
           </span>
           {resumen.accion && estado !== 'DISPONIBLE' && (
             <Link
@@ -281,7 +300,10 @@ export default async function LotePage({
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Tarjeta titulo="Progreso de los 3 sellos">
+        <Tarjeta
+          titulo="Progreso de los 3 sellos (Eje 1 · Obligatorio)"
+          descripcion="Requisitos indispensables de cumplimiento aduanero y sanitario (EUDR + SENASA)."
+        >
           <ul className="space-y-4">
             <SelloItem
               nombre="Sello 1 · Origen libre de deforestación"
@@ -320,6 +342,13 @@ export default async function LotePage({
         </Tarjeta>
       </div>
 
+      <CertificacionesComerciales
+        codigoLote={String(lote.codigo_lote)}
+        certificaciones={certificacionesConUrl}
+        permitirEdicion={true}
+        userActual={currentUser}
+      />
+
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <EvidenciaSatelital gfw={gfw} poligono={lote.poligono_geojson} />
@@ -341,7 +370,7 @@ export default async function LotePage({
 
           <Tarjeta titulo="Detalles técnicos verificables">
             <details>
-              <summary className="cursor-pointer text-sm font-semibold text-neutral-200">
+              <summary className="text-texto cursor-pointer text-sm font-semibold">
                 Transacciones, caravanas y accesos técnicos
               </summary>
               <div className="mt-4 space-y-5">
@@ -355,7 +384,7 @@ export default async function LotePage({
                 <div className="flex flex-wrap gap-4 text-xs">
                   {renspaUrl && (
                     <a
-                      className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       href={renspaUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -365,7 +394,7 @@ export default async function LotePage({
                   )}
                   {boletoUrl && (
                     <a
-                      className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       href={boletoUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -374,12 +403,12 @@ export default async function LotePage({
                     </a>
                   )}
                   {!renspaUrl && !boletoUrl && (
-                    <span className="text-neutral-500">Documentos con acceso restringido.</span>
+                    <span className="text-texto-tenue">Documentos con acceso restringido.</span>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-200">
+                  <h3 className="text-texto text-sm font-semibold">
                     Caravanas RFID ({caravanas.length})
                   </h3>
                   <Tabla
@@ -410,7 +439,7 @@ export default async function LotePage({
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-200">Movimientos del escrow</h3>
+                  <h3 className="text-texto text-sm font-semibold">Movimientos del escrow</h3>
                   <Tabla
                     className="mt-2"
                     columnas={[
@@ -431,10 +460,8 @@ export default async function LotePage({
                   />
                 </div>
 
-                <div className="space-y-1 text-sm text-neutral-300">
-                  <h3 className="text-sm font-semibold text-neutral-200">
-                    Productor y trazabilidad
-                  </h3>
+                <div className="text-texto-suave space-y-1 text-sm">
+                  <h3 className="text-texto text-sm font-semibold">Productor y trazabilidad</h3>
                   <p>
                     Productor:{' '}
                     {productor?.nombre_razon_social ??
@@ -443,16 +470,16 @@ export default async function LotePage({
                         : 'Productor registrado')}
                     {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
                   </p>
-                  <p className="font-mono text-xs text-neutral-500">
+                  <p className="text-texto-tenue font-mono text-xs">
                     {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
                       ? String(lote.productor_wallet)
                       : 'Wallet pendiente de vinculación en Freighter'}
                   </p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-texto-tenue text-xs">
                     {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
                     {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
                   </p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-texto-tenue text-xs">
                     Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
                     (Pasos 3 y 4)
                   </p>

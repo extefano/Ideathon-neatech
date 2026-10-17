@@ -53,7 +53,7 @@ export default function MapaDibujo({
   return (
     <div
       className={`relative h-80 overflow-hidden rounded-md border ${
-        activo ? 'border-brand ring-brand/40 ring-2' : 'border-neutral-700'
+        activo ? 'border-brand-fuerte ring-brand-fuerte/40 ring-2' : 'border-borde-fuerte'
       }`}
     >
       <MapContainer center={centro} zoom={12} className="h-full w-full" scrollWheelZoom>

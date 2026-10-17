@@ -15,7 +15,17 @@ import { Pasos, type Paso } from '@/components/ui/pasos';
 import { PorcentajeHumedal } from '@/components/porcentaje-humedal';
 import { crearLoteAction, type FormState } from '@/lib/actions';
 import { parsePesadasCsv, resumenPesadas } from '@/lib/csv';
-import { CATEGORIAS, MONEDAS, RAZAS, TIPOS_OPERACION, TIPOS_RODEO } from '@/lib/domain';
+import {
+  CATEGORIAS,
+  CERTIFICACIONES_COMERCIALES,
+  MONEDAS,
+  PESO_MAX_KG,
+  PESO_MIN_KG,
+  RAZAS,
+  TIPOS_OPERACION,
+  TIPOS_RODEO,
+  type CodigoCertificacionComercial,
+} from '@/lib/domain';
 import { parseAndValidatePolygon } from '@/lib/geo';
 import { descripcionHumedal } from '@/lib/humedales';
 import { validarEtapa, type ErroresEtapa } from './etapas';
@@ -42,19 +52,19 @@ import { esWalletStellar } from '@/lib/stellar-args';
 
 const MapaDibujo = dynamic(() => import('./mapa-dibujo'), {
   ssr: false,
-  loading: () => <div className="h-80 rounded-md border border-neutral-700 bg-neutral-900" />,
+  loading: () => <div className="border-borde-fuerte bg-panel h-80 rounded-md border" />,
 });
 
 const claseInput =
-  'w-full rounded-control border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none min-h-11';
+  'w-full rounded-control border border-borde-fuerte bg-panel px-3 py-2 text-sm text-texto focus-visible:border-brand-fuerte focus-visible:outline-none min-h-11';
 const claseInputError =
-  'w-full rounded-control border border-red-500/60 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none min-h-11';
-const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-neutral-400 uppercase';
+  'w-full rounded-control border border-red-600/60 bg-panel px-3 py-2 text-sm text-texto focus-visible:border-brand-fuerte focus-visible:outline-none min-h-11';
+const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-texto-suave uppercase';
 
 const PASOS: Paso[] = [
   { titulo: 'Origen', descripcion: 'Establecimiento y polígono' },
   { titulo: 'Ganado', descripcion: 'Caravanas RFID' },
-  { titulo: 'Documentos', descripcion: 'Marca y señales' },
+  { titulo: 'Documentos', descripcion: 'Marca y certificaciones' },
   { titulo: 'Condiciones', descripcion: 'Precio y revisión' },
 ];
 
@@ -84,6 +94,19 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   const [poligonoTexto, setPoligonoTexto] = useState('');
   const [dibujo, setDibujo] = useState<EstadoDibujo>(ESTADO_DIBUJO_INICIAL);
   const [csvInfo, setCsvInfo] = useState<CsvInfo | null>(null);
+  const [certsActivas, setCertsActivas] = useState<Record<CodigoCertificacionComercial, boolean>>({
+    HUELLA_CARBONO_SINERGIA: false,
+    BIENESTAR_ANIMAL: false,
+    LIBRE_ANTIBIOTICOS_HORMONAS: false,
+  });
+  const [certsUsarDemo, setCertsUsarDemo] = useState<Record<CodigoCertificacionComercial, boolean>>(
+    {
+      HUELLA_CARBONO_SINERGIA: false,
+      BIENESTAR_ANIMAL: false,
+      LIBRE_ANTIBIOTICOS_HORMONAS: false,
+    },
+  );
+  const [csvNombre, setCsvNombre] = useState<string | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const renspaRef = useRef<HTMLInputElement>(null);
   const [humedal, setHumedal] = useState<EstadoAnalisisHumedal>({ fase: 'vacio' });
@@ -148,6 +171,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   }
 
   async function inspeccionarCsv(file: File) {
+    setCsvNombre(file.name);
     const text = await file.text();
     const parsed = parsePesadasCsv(text);
     if (parsed.errors.length > 0) {
@@ -175,6 +199,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   async function onCsvChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) {
+      setCsvNombre(null);
       setCsvInfo(null);
       return;
     }
@@ -265,24 +290,6 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
     }
   }
 
-  async function cargarArchivoDemo(
-    inputRef: { current: HTMLInputElement | null },
-    url: string,
-    nombre: string,
-    tipo: string,
-    despues?: (file: File) => Promise<void>,
-  ) {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const file = new File([blob], nombre, { type: tipo });
-    if (inputRef.current) {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      inputRef.current.files = dt.files;
-    }
-    if (despues) await despues(file);
-  }
-
   async function generarCaravanasUnicasDemo() {
     const prefijo = Date.now().toString().slice(-6);
     const lineas = ['caravana_rfid,peso_kg'];
@@ -299,6 +306,24 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       csvRef.current.files = dt.files;
     }
     await inspeccionarCsv(file);
+  }
+
+  async function cargarArchivoDemo(
+    inputRef: { current: HTMLInputElement | null },
+    url: string,
+    nombre: string,
+    tipo: string,
+    despues?: (file: File) => Promise<void>,
+  ) {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], nombre, { type: tipo });
+    if (inputRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      inputRef.current.files = dt.files;
+    }
+    if (despues) await despues(file);
   }
 
   return (
@@ -328,7 +353,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       {/* Etapa 1 — Establecimiento y origen */}
       <section className={etapa === 0 ? 'space-y-4' : 'hidden'}>
         <h2 className="text-lg font-semibold">1. Establecimiento y origen</h2>
-        <p className="text-sm text-neutral-400">
+        <p className="text-texto-suave text-sm">
           Datos del campo, constancia RENSPA y el polígono que se valida contra deforestación.
         </p>
 
@@ -340,8 +365,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <input
               id="productor_nombre"
               name="productor_nombre"
-              className={claseInput}
-              placeholder="Estancia La Esperanza SA"
+              readOnly
+              aria-describedby="productor_identidad_ayuda"
+              className={`${claseInput} cursor-not-allowed opacity-70`}
               defaultValue={user?.nombre_completo ?? ''}
             />
           </div>
@@ -352,8 +378,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <input
               id="productor_cuit"
               name="productor_cuit"
-              className={claseInput}
-              placeholder="30-71234567-8"
+              readOnly
+              aria-describedby="productor_identidad_ayuda"
+              className={`${claseInput} cursor-not-allowed opacity-70`}
               defaultValue={user?.cuit ?? ''}
             />
           </div>
@@ -366,6 +393,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             />
           </div>
         </div>
+        <p id="productor_identidad_ayuda" className="text-xs text-neutral-400">
+          El nombre y el CUIT se toman de tu cuenta; si necesitás cambiarlos, actualizá tu perfil.
+        </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
@@ -382,7 +412,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue="05.077.0.00412/00"
             />
             {erroresEtapa.renspa && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.renspa}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.renspa}</p>
             )}
           </div>
           <div>
@@ -398,7 +428,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue="Corrientes"
             />
             {erroresEtapa.provincia && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.provincia}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.provincia}</p>
             )}
           </div>
           <div>
@@ -414,7 +444,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue="Mercedes"
             />
             {erroresEtapa.localidad && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.localidad}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.localidad}</p>
             )}
           </div>
         </div>
@@ -433,7 +463,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
           />
           <button
             type="button"
-            className="text-brand mt-1 text-xs hover:underline"
+            className="text-brand-fuerte mt-1 text-xs hover:underline"
             onClick={() =>
               void cargarArchivoDemo(
                 renspaRef,
@@ -454,17 +484,17 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             type="checkbox"
             className="accent-brand h-4 w-4"
           />
-          <label htmlFor="marcaLiquida" className="text-sm text-neutral-300">
+          <label htmlFor="marcaLiquida" className="text-texto-suave text-sm">
             Marca líquida (todos los animales con la marca del vendedor)
           </label>
         </div>
 
         <div>
           <p className={claseLabel}>Polígono del establecimiento *</p>
-          <p className="text-xs text-neutral-500">
-            Activá <span className="text-neutral-300">Dibujar polígono</span> y hacé clic en el mapa
+          <p className="text-texto-tenue text-xs">
+            Activá <span className="text-texto-suave">Dibujar polígono</span> y hacé clic en el mapa
             satelital (mínimo 3 vértices); después{' '}
-            <span className="text-neutral-300">Guardar polígono</span>. También podés pegar un
+            <span className="text-texto-suave">Guardar polígono</span>. También podés pegar un
             GeoJSON o cargar el de demo.
           </p>
           {etapa === 0 && (
@@ -484,8 +514,8 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               aria-describedby={tieneAgujeros ? 'poligono-agujeros' : undefined}
               className={`rounded-control focus-visible:ring-foco border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40 ${
                 dibujo.activo
-                  ? 'border-brand bg-brand/15 text-brand font-semibold'
-                  : 'border-neutral-700 text-neutral-200 hover:border-neutral-500'
+                  ? 'border-brand-fuerte bg-brand/15 text-brand-fuerte font-semibold'
+                  : 'border-borde-fuerte text-texto hover:border-texto-tenue'
               }`}
               onClick={() => setDibujo(activarDibujo(puntosGuardados))}
             >
@@ -494,7 +524,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <button
               type="button"
               disabled={!puedeGuardar(dibujo)}
-              className="rounded-control focus-visible:ring-foco border-brand bg-brand border px-3 py-1.5 text-xs font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
+              className="rounded-control focus-visible:ring-foco border-brand-fuerte bg-brand border px-3 py-1.5 text-xs font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
               onClick={() => {
                 const resultado = guardarDibujo(dibujo);
                 if (resultado.poligono) {
@@ -509,7 +539,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <button
               type="button"
               disabled={!dibujo.activo || dibujo.borrador.length === 0}
-              className="rounded-control focus-visible:ring-foco border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte text-texto hover:border-texto-tenue border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none disabled:opacity-40"
               onClick={() => setDibujo((estado) => deshacerPunto(estado))}
             >
               Deshacer último punto
@@ -517,7 +547,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             {dibujo.activo && (
               <button
                 type="button"
-                className="rounded-control focus-visible:ring-foco border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500 focus-visible:ring-2 focus-visible:outline-none"
+                className="rounded-control focus-visible:ring-foco border-borde-fuerte text-texto hover:border-texto-tenue border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none"
                 onClick={() => setDibujo(cancelarDibujo())}
               >
                 Cancelar
@@ -525,7 +555,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             )}
             <button
               type="button"
-              className="rounded-control focus-visible:ring-foco border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte text-texto hover:border-texto-tenue border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => void cargarPoligonoDemo()}
             >
               Usar polígono de demo
@@ -533,7 +563,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             {puntosGuardados.length > 0 && (
               <button
                 type="button"
-                className="rounded-control focus-visible:ring-foco border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:border-neutral-500 focus-visible:ring-2 focus-visible:outline-none"
+                className="rounded-control focus-visible:ring-foco border-borde-fuerte text-texto hover:border-texto-tenue border px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:outline-none"
                 onClick={() => {
                   actualizarPoligono('');
                   setDibujo(cancelarDibujo());
@@ -555,7 +585,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
                 </button>
               )}
             {geo && (
-              <span className={geo.ok ? 'text-brand text-xs' : 'text-xs text-red-300'}>
+              <span className={geo.ok ? 'text-brand-fuerte text-xs' : 'text-xs text-red-700'}>
                 {geo.ok ? `Polígono válido — ${geo.superficieHa} ha` : geo.errors.join(' · ')}
               </span>
             )}
@@ -573,7 +603,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
           )}
           {dibujo.activo && (
             <p
-              className={`mt-1 text-xs ${dibujo.borrador.length >= MIN_VERTICES ? 'text-brand' : 'text-neutral-400'}`}
+              className={`mt-1 text-xs ${dibujo.borrador.length >= MIN_VERTICES ? 'text-brand-fuerte' : 'text-texto-suave'}`}
             >
               {dibujo.borrador.length >= MIN_VERTICES
                 ? `${dibujo.borrador.length} vértices — listo para guardar`
@@ -592,7 +622,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
           <input type="hidden" name="verificacion_humedal" value={verificacionId} readOnly />
           <input type="hidden" name="creacion_key" value={creacionKey} readOnly />
           {erroresEtapa.poligono && (
-            <p className="mt-1 text-xs text-red-300">{erroresEtapa.poligono}</p>
+            <p className="mt-1 text-xs text-red-700">{erroresEtapa.poligono}</p>
           )}
           {humedal.fase === 'analizando' && (
             <p role="status" className="mt-2 text-xs text-neutral-300">
@@ -615,28 +645,94 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       {/* Etapa 2 — Ganado */}
       <section className={etapa === 1 ? 'space-y-4' : 'hidden'}>
         <h2 className="text-lg font-semibold">2. Ganado</h2>
-        <p className="text-sm text-neutral-400">
+        <p className="text-texto-suave text-sm">
           Cargá las caravanas RFID del bastón lector y caracterizá el lote.
         </p>
 
         <div>
-          <label className={claseLabel} htmlFor="archivo_rfid_csv">
-            CSV del bastón lector (caravana_rfid,peso_kg) *
-          </label>
-          <input
-            ref={csvRef}
-            id="archivo_rfid_csv"
-            name="archivo_rfid_csv"
-            type="file"
-            accept=".csv,text/csv"
-            className={erroresEtapa.archivo_rfid_csv ? claseInputError : claseInput}
-            aria-invalid={erroresEtapa.archivo_rfid_csv ? true : undefined}
-            onChange={(event) => void onCsvChange(event)}
-          />
-          <div className="flex flex-wrap items-center gap-3">
+          <p className={claseLabel}>CSV del bastón lector *</p>
+          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              <input
+                ref={csvRef}
+                id="archivo_rfid_csv"
+                name="archivo_rfid_csv"
+                type="file"
+                accept=".csv,text/csv"
+                className="peer sr-only"
+                aria-describedby="csv_ayuda csv_archivo"
+                aria-invalid={erroresEtapa.archivo_rfid_csv ? true : undefined}
+                onChange={(event) => void onCsvChange(event)}
+              />
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-700 bg-neutral-900 text-neutral-400"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                  <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" />
+                  <path d="M9 13h6M9 17h4" />
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1 basis-64">
+                <p id="csv_ayuda" className="text-xs text-neutral-400">
+                  Archivo .csv con encabezado{' '}
+                  <code className="rounded bg-neutral-950 px-1 py-0.5 font-mono text-[11px] text-neutral-300">
+                    caravana_rfid,peso_kg
+                  </code>
+                  . Una fila por animal; se validan caravanas de 15 dígitos (prefijo 032) y pesos
+                  entre {PESO_MIN_KG} y {PESO_MAX_KG} kg.
+                </p>
+                <p
+                  id="csv_archivo"
+                  aria-live="polite"
+                  className={`mt-1 truncate font-mono text-xs ${
+                    csvNombre ? 'text-brand' : 'text-neutral-500'
+                  }`}
+                >
+                  {csvNombre ?? 'Ningún archivo seleccionado'}
+                </p>
+              </div>
+              <label
+                htmlFor="archivo_rfid_csv"
+                className="peer-focus-visible:ring-brand border-brand bg-brand hover:bg-brand/90 cursor-pointer rounded-md border px-4 py-2 text-xs font-semibold text-neutral-950 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-neutral-950"
+              >
+                Seleccionar archivo CSV
+              </label>
+            </div>
+            {csvInfo && (
+              <div className="mt-3 rounded border border-neutral-800 bg-neutral-950 p-3 text-xs">
+                {csvInfo.errors.length > 0 ? (
+                  <ul className="list-disc space-y-0.5 pl-4 text-red-400">
+                    {csvInfo.errors.map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-neutral-300">
+                    {csvInfo.rows} cabezas · promedio {csvInfo.promedio} kg · rango {csvInfo.min}–
+                    {csvInfo.max} kg · <span className="text-brand">{csvInfo.uniformidad}</span>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          {erroresEtapa.archivo_rfid_csv && (
+            <p className="mt-1 text-xs text-red-300">{erroresEtapa.archivo_rfid_csv}</p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-xs text-neutral-500">¿No tenés el archivo a mano?</span>
             <button
               type="button"
-              className="text-brand mt-1 text-xs hover:underline"
+              className="text-brand-fuerte mt-1 text-xs hover:underline"
               onClick={() =>
                 void cargarArchivoDemo(
                   csvRef,
@@ -649,34 +745,15 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             >
               Usar CSV de demo (30 cabezas ~200 kg)
             </button>
-            <span className="text-xs text-neutral-600">·</span>
+            <span className="text-texto-tenue text-xs">·</span>
             <button
               type="button"
-              className="mt-1 text-xs text-neutral-300 hover:text-white"
+              className="text-texto-suave hover:text-texto mt-1 text-xs"
               onClick={() => void generarCaravanasUnicasDemo()}
             >
               Generar caravanas únicas nuevas
             </button>
           </div>
-          {csvInfo && (
-            <div className="mt-2 rounded border border-neutral-800 bg-neutral-900 p-3 text-xs">
-              {csvInfo.errors.length > 0 ? (
-                <ul className="list-disc space-y-0.5 pl-4 text-red-300">
-                  {csvInfo.errors.map((error) => (
-                    <li key={error}>{error}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-neutral-300">
-                  {csvInfo.rows} cabezas · promedio {csvInfo.promedio} kg · rango {csvInfo.min}–
-                  {csvInfo.max} kg · <span className="text-brand">{csvInfo.uniformidad}</span>
-                </p>
-              )}
-            </div>
-          )}
-          {erroresEtapa.archivo_rfid_csv && (
-            <p className="mt-1 text-xs text-red-300">{erroresEtapa.archivo_rfid_csv}</p>
-          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -778,10 +855,10 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
 
       {/* Etapa 3 — Documentos */}
       <section className={etapa === 2 ? 'space-y-4' : 'hidden'}>
-        <h2 className="text-lg font-semibold">3. Documentos</h2>
-        <p className="text-sm text-neutral-400">
-          Adjuntá el boleto de marca y señal. Los hashes SHA-256 se calculan al enviar el
-          formulario.
+        <h2 className="text-lg font-semibold">3. Documentos y certificaciones voluntarias</h2>
+        <p className="text-texto-suave text-sm">
+          Adjuntá el boleto de marca y señal y, opcionalmente, declará certificaciones comerciales
+          voluntarias (Eje 2). Los hashes SHA-256 se calculan al enviar el formulario.
         </p>
         <div>
           <label className={claseLabel} htmlFor="boleto_marca_pdf">
@@ -795,6 +872,135 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             className={claseInput}
           />
         </div>
+
+        <div className="rounded-tarjeta border-borde bg-panel space-y-4 border p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-texto text-sm font-semibold">
+                Certificaciones comerciales voluntarias (Eje 2 · Valor agregado)
+              </h3>
+              <p className="text-texto-suave mt-0.5 text-xs">
+                Opcionales. Aportan valor comercial en góndola (UE / Mercosur) y actúan como filtro
+                de compra, sin sustituir los 3 sellos obligatorios de acceso aduanero EUDR + SENASA
+                (Eje 1).
+              </p>
+            </div>
+            <span className="border-borde-fuerte bg-panel-elevado text-texto-suave rounded border px-2 py-0.5 font-mono text-[11px]">
+              Eje 2 · Voluntario
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {CERTIFICACIONES_COMERCIALES.map((cert) => {
+              const activa = certsActivas[cert.codigo];
+              const usaDemo = certsUsarDemo[cert.codigo];
+
+              return (
+                <div
+                  key={cert.codigo}
+                  className={`rounded-tarjeta border p-3.5 transition-colors ${
+                    activa
+                      ? 'border-brand-fuerte/50 bg-brand/5'
+                      : 'border-borde bg-panel-elevado/40'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      id={`cert_activa_${cert.codigo}`}
+                      name={`cert_activa_${cert.codigo}`}
+                      type="checkbox"
+                      checked={activa}
+                      onChange={(e) =>
+                        setCertsActivas((prev) => ({
+                          ...prev,
+                          [cert.codigo]: e.target.checked,
+                        }))
+                      }
+                      className="accent-brand mt-1 h-4 w-4 shrink-0"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={`cert_activa_${cert.codigo}`}
+                        className="text-texto cursor-pointer text-sm font-semibold"
+                      >
+                        {cert.nombre}
+                      </label>
+                      <p className="text-texto-suave text-xs">{cert.norma}</p>
+                      <p className="text-texto-tenue mt-1 text-xs">{cert.rolTecnico}</p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={activa ? 'border-borde mt-3 space-y-3 border-t pt-3 pl-7' : 'hidden'}
+                  >
+                    <input
+                      type="hidden"
+                      name={`cert_usar_demo_${cert.codigo}`}
+                      value={usaDemo ? 'true' : 'false'}
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className={claseLabel} htmlFor={`cert_emisor_${cert.codigo}`}>
+                          Entidad medidora / certificadora
+                        </label>
+                        <input
+                          id={`cert_emisor_${cert.codigo}`}
+                          name={`cert_emisor_${cert.codigo}`}
+                          className={claseInput}
+                          defaultValue={cert.emisorDefault}
+                        />
+                      </div>
+                      <div>
+                        <label className={claseLabel} htmlFor={`cert_observaciones_${cert.codigo}`}>
+                          Alcance / plan de mitigación o manejo
+                        </label>
+                        <input
+                          id={`cert_observaciones_${cert.codigo}`}
+                          name={`cert_observaciones_${cert.codigo}`}
+                          className={claseInput}
+                          defaultValue={cert.observacionesDefault}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={claseLabel} htmlFor={`cert_pdf_${cert.codigo}`}>
+                        Informe o certificado PDF (opcional, se calcula hash SHA-256)
+                      </label>
+                      <input
+                        id={`cert_pdf_${cert.codigo}`}
+                        name={`cert_pdf_${cert.codigo}`}
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        className={claseInput}
+                        onChange={() =>
+                          setCertsUsarDemo((prev) => ({ ...prev, [cert.codigo]: false }))
+                        }
+                      />
+                      <div className="mt-1 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          className="focus-visible:ring-foco text-brand-fuerte text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                          onClick={() =>
+                            setCertsUsarDemo((prev) => ({ ...prev, [cert.codigo]: true }))
+                          }
+                        >
+                          Usar PDF demo ({cert.demoPdfNombre})
+                        </button>
+                        {usaDemo && (
+                          <span className="text-texto-suave text-xs">
+                            ✓ Se adjuntará {cert.demoPdfNombre} con su hash SHA-256
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <Aviso variante="info">
           La constancia RENSPA se cargó en la etapa 1. Al enviar, cada documento se sella con su
           huella digital.
@@ -832,7 +1038,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue={10000}
             />
             {erroresEtapa.montoTotalFinanciacion && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.montoTotalFinanciacion}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.montoTotalFinanciacion}</p>
             )}
           </div>
           <div>
@@ -851,7 +1057,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue={460}
             />
             {erroresEtapa.pesoObjetivoKg && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.pesoObjetivoKg}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.pesoObjetivoKg}</p>
             )}
           </div>
           <div>
@@ -870,7 +1076,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue={8}
             />
             {erroresEtapa.plazoMeses && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.plazoMeses}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.plazoMeses}</p>
             )}
           </div>
           <div>
@@ -887,7 +1093,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               defaultValue="2026-12-31"
             />
             {erroresEtapa.fechaVigencia && (
-              <p className="mt-1 text-xs text-red-300">{erroresEtapa.fechaVigencia}</p>
+              <p className="mt-1 text-xs text-red-700">{erroresEtapa.fechaVigencia}</p>
             )}
           </div>
         </div>
@@ -904,7 +1110,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             defaultValue="Tropa de 30 terneros Braford para recría y engorde a pastura con suplementación, objetivo 460 kg en 8 meses."
           />
           {erroresEtapa.descripcionOperacion && (
-            <p className="mt-1 text-xs text-red-300">{erroresEtapa.descripcionOperacion}</p>
+            <p className="mt-1 text-xs text-red-700">{erroresEtapa.descripcionOperacion}</p>
           )}
         </div>
 
@@ -953,7 +1159,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
         )}
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-800 pt-4">
+      <div className="border-borde flex flex-wrap items-center justify-between gap-3 border-t pt-4">
         <Boton type="button" variante="secundario" onClick={retroceder} disabled={etapa === 0}>
           ← Atrás
         </Boton>
@@ -965,7 +1171,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             {!walletState?.address && (
-              <span className="text-xs text-neutral-400">
+              <span className="text-texto-suave text-xs">
                 Conectá tu wallet Freighter en la etapa 1 para registrar el lote.
               </span>
             )}

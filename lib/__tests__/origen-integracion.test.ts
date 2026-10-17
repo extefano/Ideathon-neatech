@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type * as authModule from '@/lib/auth';
 import { reintentarGfwAction } from '@/lib/actions';
 
 const mocks = vi.hoisted(() => {
@@ -12,7 +13,10 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
 
-vi.mock('@/lib/auth', () => ({ getCurrentUser: mocks.getCurrentUser }));
+vi.mock('@/lib/auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof authModule>();
+  return { ...actual, getCurrentUser: mocks.getCurrentUser };
+});
 
 vi.mock('@/lib/storage', () => ({
   createAdminClient: () => ({
