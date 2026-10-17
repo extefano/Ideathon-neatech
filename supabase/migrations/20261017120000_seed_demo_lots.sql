@@ -13,7 +13,7 @@ begin
   select count(*) into v_actual from public.lotes where codigo_lote like 'LOTE-DEMO-%';
   if v_actual > 0 and v_actual <> 40 then
     raise exception
-      'Seed demo inconsistente: % lotes LOTE-DEMO-% presentes; se esperaban 40. Ejecutá scripts/sql/reset-lotes-demo.sql.',
+      'Seed demo inconsistente: hay % lotes demo presentes; se esperaban 40. Ejecutá scripts/sql/reset-lotes-demo.sql.',
       v_actual;
   end if;
 end;

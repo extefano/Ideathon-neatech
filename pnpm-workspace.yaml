@@ -1,11 +1,2 @@
 allowBuilds:
-  esbuild: set this to true or false
-# Configuración de pnpm para el repo (pnpm 11 lee la allowlist acá).
-# esbuild (dependencia de tsx, usado por scripts/generar-lotes-demo.ts) necesita
-# su postinstall para descargar el binario de plataforma.
-onlyBuiltDependencies:
-  - esbuild
-
-# No fallar el install si pnpm decide no ejecutar algún build (los binarios de
-# plataforma vienen por dependencias opcionales).
-strictDepBuilds: false
+  esbuild: true
