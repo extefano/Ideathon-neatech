@@ -94,13 +94,15 @@ export function FormFondeo({
     try {
       setPidiendoUsdc(true);
       setErrorTx(null);
-      setEstadoTx(`Transfiriendo ${monto} USDC de prueba desde la cuenta del sistema...`);
-      const res = await solicitarUsdcDemoAction(buyerWallet, monto);
+      // En Stellar Testnet la liquidez en el DEX es limitada, solicitamos hasta 50 USDC
+      const montoAFondear = Math.min(monto, 50);
+      setEstadoTx(`Transfiriendo ${montoAFondear} USDC de prueba desde la cuenta del sistema...`);
+      const res = await solicitarUsdcDemoAction(buyerWallet, montoAFondear);
       if (!res.ok) {
         throw new Error(res.error ?? 'No se pudo enviar USDC de prueba');
       }
       setEstadoTx(
-        `¡${monto} USDC acreditados con éxito para la prueba! (tx: ${res.txHash?.slice(0, 10)}…)`,
+        `¡${montoAFondear} USDC acreditados con éxito para la prueba! (tx: ${res.txHash?.slice(0, 10)}…)`,
       );
       const status = await verificarEstadoCuentaUsdc(buyerWallet);
       setBalanceUsdc(status.balanceUsdc);
@@ -153,10 +155,12 @@ export function FormFondeo({
                 firmarXdrConWalletConnect(xdr, { address: opts.address })
             : undefined;
 
+        // En testnet usamos el monto disponible o el monto del lote para la prueba de firma
+        const montoPrueba = Math.min(monto, balanceUsdc > 0 ? balanceUsdc : 10);
         const pago = await ejecutarPagoUsdcTestnet({
           sourceAddress: buyerWallet,
           destinationAddress: productorWallet,
-          amountUsdc: monto,
+          amountUsdc: montoPrueba,
           memoText: `FUND:${codigoLote}`,
           signer,
         });
@@ -175,6 +179,10 @@ export function FormFondeo({
 
       await fondearLoteAction(formData);
     } catch (err) {
+      if (err instanceof Error && err.message.includes('NEXT_REDIRECT')) {
+        // Redirección exitosa de Next.js, no es un error
+        return;
+      }
       setErrorTx(err instanceof Error ? err.message : String(err));
       setCargando(false);
       setEstadoTx(null);
@@ -220,14 +228,14 @@ export function FormFondeo({
                 </button>
               )}
 
-              {tieneTrustline && balanceUsdc < monto && (
+              {tieneTrustline && balanceUsdc === 0 && (
                 <button
                   type="button"
                   onClick={() => void handleSolicitarUsdc()}
                   disabled={pidiendoUsdc}
                   className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado rounded border px-3 py-1 font-semibold disabled:opacity-50"
                 >
-                  {pidiendoUsdc ? 'Enviando...' : `💧 Recibir ${monto} USDC de prueba`}
+                  {pidiendoUsdc ? 'Enviando...' : `💧 Recibir 50 USDC de prueba`}
                 </button>
               )}
             </div>
