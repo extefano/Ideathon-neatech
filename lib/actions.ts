@@ -806,7 +806,9 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
 
   const user: PerfilUsuario | null = await getCurrentUser();
   if (!user || !canPerformStage(user, 'PASO_4B_RECEPCION')) {
-    volverConError('La recepción en balanza fiscal requiere una cuenta con perfil de Comprador.');
+    volverConError(
+      'La recepción en balanza fiscal requiere una cuenta con perfil de Comprador o Frigorífico.',
+    );
   }
 
   if (lote.estado_publicacion !== 'EN_TRANSITO_A_FRIGORIFICO') {
@@ -923,7 +925,7 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
     txHash = tx.txHash;
   }
 
-  if (user) {
+  if (user && user.rol !== 'FRIGORIFICO') {
     await admin.from('perfiles').update({ wallet: effectiveBuyerWallet }).eq('id', user.id);
   }
 

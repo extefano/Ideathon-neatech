@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Aviso } from '@/components/ui/aviso';
+import { loginDemoAction } from '@/lib/auth-actions';
 import type { PerfilUsuario, RolUsuario } from '@/lib/auth';
 import { esWalletStellar } from '@/lib/stellar-args';
 
@@ -7,6 +8,7 @@ const NOMBRE_ROL: Record<RolUsuario, string> = {
   PRODUCTOR: 'Productor',
   VETERINARIO: 'Veterinario acreditado',
   COMPRADOR: 'Comprador',
+  FRIGORIFICO: 'Frigorífico',
 };
 
 export function CredencialSesion({ user }: { user: PerfilUsuario }) {
@@ -31,12 +33,14 @@ export function CredencialSesion({ user }: { user: PerfilUsuario }) {
 
 export function BannerRolRequerido({
   rolRequerido,
+  rolesPermitidos,
   titulo,
   descripcion,
   userActual,
   redirectTo,
 }: {
   rolRequerido: RolUsuario;
+  rolesPermitidos?: RolUsuario[];
   titulo?: string;
   descripcion?: string;
   userActual?: PerfilUsuario | null;
@@ -62,7 +66,22 @@ export function BannerRolRequerido({
         </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        {userActual ? (
+        {rolesPermitidos && rolesPermitidos.length > 0 ? (
+          rolesPermitidos.map((rol) => (
+            <form key={rol} action={loginDemoAction}>
+              <input type="hidden" name="rol" value={rol} />
+              <input type="hidden" name="redirectTo" value={redirectTo ?? '/'} />
+              <button
+                type="submit"
+                className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 inline-flex min-h-11 cursor-pointer items-center justify-center px-4 py-2 text-xs font-bold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
+              >
+                {userActual
+                  ? `Cambiar a cuenta demo de ${NOMBRE_ROL[rol]} →`
+                  : `Ingresar como demo ${NOMBRE_ROL[rol]} →`}
+              </button>
+            </form>
+          ))
+        ) : userActual ? (
           <Link
             href={loginHref}
             className="rounded-control focus-visible:ring-foco bg-brand inline-flex min-h-11 items-center justify-center px-4 py-2 text-xs font-bold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"

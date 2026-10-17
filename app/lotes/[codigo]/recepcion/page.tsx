@@ -45,7 +45,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
   const cerrado = lote.estado_publicacion === 'CERRADO_CICLO';
 
   const esProductor = user?.rol === 'PRODUCTOR';
-  const esComprador = user?.rol === 'COMPRADOR';
+  const esAutorizado4B = user?.rol === 'COMPRADOR' || user?.rol === 'FRIGORIFICO';
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-8">
@@ -86,11 +86,12 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
           titulo="4B — Recepción en balanza fiscal"
           descripcion="Esta parte la completa el Frigorífico: cargá el CSV de balanza, se concilian las caravanas y se cierra el ciclo con el Sello 3."
         >
-          {!esComprador ? (
+          {!esAutorizado4B ? (
             <BannerRolRequerido
-              rolRequerido="COMPRADOR"
-              titulo="La recepción requiere cuenta de Comprador"
-              descripcion="Solo el Comprador o frigorífico de destino puede cargar el pesaje de balanza fiscal y liquidar el cierre del ciclo."
+              rolRequerido="FRIGORIFICO"
+              rolesPermitidos={['FRIGORIFICO', 'COMPRADOR']}
+              titulo="La recepción requiere cuenta de Frigorífico o Comprador"
+              descripcion="Solo el Frigorífico de destino o el Comprador pueden cargar el pesaje de balanza fiscal y liquidar el cierre del ciclo."
               userActual={user}
               redirectTo={`/lotes/${codigo}/recepcion`}
             />

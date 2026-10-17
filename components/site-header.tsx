@@ -4,7 +4,13 @@ import { getCurrentUser, logoutAction, type RolUsuario } from '@/lib/auth';
 
 function BadgeRol({ rol }: { rol: RolUsuario }) {
   const etiqueta =
-    rol === 'PRODUCTOR' ? 'Productor' : rol === 'VETERINARIO' ? 'Veterinario' : 'Comprador';
+    rol === 'PRODUCTOR'
+      ? 'Productor'
+      : rol === 'VETERINARIO'
+        ? 'Veterinario'
+        : rol === 'FRIGORIFICO'
+          ? 'Frigorífico'
+          : 'Comprador';
   return (
     <span className="text-brand rounded border border-neutral-950 bg-neutral-950 px-2 py-0.5 text-xs font-semibold tracking-wider uppercase">
       {etiqueta}
@@ -36,12 +42,17 @@ export async function SiteHeader() {
             { href: '/', texto: 'Para revisar' },
             { href: '/mercado', texto: 'Mercado' },
           ]
-        : user?.rol === 'COMPRADOR'
+        : user?.rol === 'FRIGORIFICO'
           ? [
+              { href: '/', texto: 'Recepciones' },
               { href: '/mercado', texto: 'Mercado' },
-              { href: '/', texto: 'Mis compras' },
             ]
-          : [{ href: '/mercado', texto: 'Mercado' }];
+          : user?.rol === 'COMPRADOR'
+            ? [
+                { href: '/mercado', texto: 'Mercado' },
+                { href: '/', texto: 'Mis compras' },
+              ]
+            : [{ href: '/mercado', texto: 'Mercado' }];
 
   return (
     <header className="bg-brand border-b-4 border-neutral-950 text-neutral-950">
