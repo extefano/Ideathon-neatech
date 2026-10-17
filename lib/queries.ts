@@ -242,6 +242,89 @@ export async function listarLotesPendientesAuditoria(): Promise<LoteListItem[]> 
   return mapearFilasLote(data);
 }
 
+/**
+ * Lotes en tránsito hacia la planta faenadora (listos para recepción en balanza fiscal).
+ */
+export async function listarLotesEnTransitoFrigorifico(): Promise<LoteListItem[]> {
+  const admin = createAdminClient();
+  let { data, error } = await admin
+    .from('lotes')
+    .select(LOTE_LIST_COLUMNS)
+    .eq('estado_publicacion', 'EN_TRANSITO_A_FRIGORIFICO')
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'EN_TRANSITO_A_FRIGORIFICO')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
+  if (error) throw new Error(`Error listando lotes en tránsito al frigorífico: ${error.message}`);
+  return mapearFilasLote(data);
+}
+
+/**
+ * Lotes listos para despacho (engorde finalizado con Sello 2 sanitario aprobado).
+ */
+export async function listarLotesListosDespachoFrigorifico(): Promise<LoteListItem[]> {
+  const admin = createAdminClient();
+  let { data, error } = await admin
+    .from('lotes')
+    .select(LOTE_LIST_COLUMNS)
+    .eq('estado_publicacion', 'FINANCIADO_EN_ENGORDE')
+    .eq('seal_2_sanitary', true)
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'FINANCIADO_EN_ENGORDE')
+      .eq('seal_2_sanitary', true)
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
+  if (error) throw new Error(`Error listando lotes listos para despacho: ${error.message}`);
+  return mapearFilasLote(data);
+}
+
+/**
+ * Lotes recepcionados con ciclo cerrado (Sello 3 y pasaporte EUDR).
+ */
+export async function listarLotesRecepcionadosFrigorifico(): Promise<LoteListItem[]> {
+  const admin = createAdminClient();
+  let { data, error } = await admin
+    .from('lotes')
+    .select(LOTE_LIST_COLUMNS)
+    .eq('estado_publicacion', 'CERRADO_CICLO')
+    .order('created_at', { ascending: false })
+    .limit(60);
+
+  if (error && error.message.includes('certificaciones_comerciales')) {
+    const fallbackRes = await admin
+      .from('lotes')
+      .select(LOTE_LIST_COLUMNS_BASE)
+      .eq('estado_publicacion', 'CERRADO_CICLO')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    data = fallbackRes.data as typeof data;
+    error = fallbackRes.error;
+  }
+
+  if (error) throw new Error(`Error listando lotes recepcionados: ${error.message}`);
+  return mapearFilasLote(data);
+}
+
 export async function getLoteCompleto(codigo: string) {
   const admin = createAdminClient();
   const { data: lote, error } = await admin

@@ -31,11 +31,13 @@ describe('canPerformStage (matriz de permisos por etapa)', () => {
   const productor = crearUsuarioMock('PRODUCTOR');
   const veterinario = crearUsuarioMock('VETERINARIO');
   const comprador = crearUsuarioMock('COMPRADOR');
+  const frigorifico = crearUsuarioMock('FRIGORIFICO');
 
   it('Paso 1 (Crear lote): solo permitido para PRODUCTOR', () => {
     expect(canPerformStage(productor, 'PASO_1_CREAR_LOTE')).toBe(true);
     expect(canPerformStage(veterinario, 'PASO_1_CREAR_LOTE')).toBe(false);
     expect(canPerformStage(comprador, 'PASO_1_CREAR_LOTE')).toBe(false);
+    expect(canPerformStage(frigorifico, 'PASO_1_CREAR_LOTE')).toBe(false);
     expect(canPerformStage(null, 'PASO_1_CREAR_LOTE')).toBe(false);
   });
 
@@ -43,6 +45,7 @@ describe('canPerformStage (matriz de permisos por etapa)', () => {
     expect(canPerformStage(comprador, 'PASO_2_FONDEAR_ESCROW')).toBe(true);
     expect(canPerformStage(productor, 'PASO_2_FONDEAR_ESCROW')).toBe(false);
     expect(canPerformStage(veterinario, 'PASO_2_FONDEAR_ESCROW')).toBe(false);
+    expect(canPerformStage(frigorifico, 'PASO_2_FONDEAR_ESCROW')).toBe(false);
     expect(canPerformStage(null, 'PASO_2_FONDEAR_ESCROW')).toBe(false);
   });
 
@@ -50,6 +53,7 @@ describe('canPerformStage (matriz de permisos por etapa)', () => {
     expect(canPerformStage(veterinario, 'PASO_3_AUDITORIA_VET')).toBe(true);
     expect(canPerformStage(productor, 'PASO_3_AUDITORIA_VET')).toBe(false);
     expect(canPerformStage(comprador, 'PASO_3_AUDITORIA_VET')).toBe(false);
+    expect(canPerformStage(frigorifico, 'PASO_3_AUDITORIA_VET')).toBe(false);
     expect(canPerformStage(null, 'PASO_3_AUDITORIA_VET')).toBe(false);
   });
 
@@ -57,11 +61,13 @@ describe('canPerformStage (matriz de permisos por etapa)', () => {
     expect(canPerformStage(productor, 'PASO_4A_DESPACHO')).toBe(true);
     expect(canPerformStage(veterinario, 'PASO_4A_DESPACHO')).toBe(false);
     expect(canPerformStage(comprador, 'PASO_4A_DESPACHO')).toBe(false);
+    expect(canPerformStage(frigorifico, 'PASO_4A_DESPACHO')).toBe(false);
     expect(canPerformStage(null, 'PASO_4A_DESPACHO')).toBe(false);
   });
 
-  it('Paso 4B (Recepción balanza): solo permitido para COMPRADOR', () => {
+  it('Paso 4B (Recepción balanza): permitido para COMPRADOR y FRIGORIFICO', () => {
     expect(canPerformStage(comprador, 'PASO_4B_RECEPCION')).toBe(true);
+    expect(canPerformStage(frigorifico, 'PASO_4B_RECEPCION')).toBe(true);
     expect(canPerformStage(productor, 'PASO_4B_RECEPCION')).toBe(false);
     expect(canPerformStage(veterinario, 'PASO_4B_RECEPCION')).toBe(false);
     expect(canPerformStage(null, 'PASO_4B_RECEPCION')).toBe(false);
@@ -72,6 +78,7 @@ describe('canPerformStage (matriz de permisos por etapa)', () => {
     expect(canPerformStage(productor, 'PASO_5_PASAPORTE')).toBe(true);
     expect(canPerformStage(veterinario, 'PASO_5_PASAPORTE')).toBe(true);
     expect(canPerformStage(comprador, 'PASO_5_PASAPORTE')).toBe(true);
+    expect(canPerformStage(frigorifico, 'PASO_5_PASAPORTE')).toBe(true);
 
     expect(canPerformStage(null, 'MERCADO')).toBe(true);
     expect(canPerformStage(productor, 'MERCADO')).toBe(true);
@@ -126,10 +133,11 @@ describe('identidadProductor (identidad desde la sesión)', () => {
 });
 
 describe('DEMO_USERS (cuentas de evaluación rápida)', () => {
-  it('contiene la configuración base para los tres roles', () => {
+  it('contiene la configuración base para los cuatro roles', () => {
     expect(DEMO_USERS.PRODUCTOR).toBeDefined();
     expect(DEMO_USERS.VETERINARIO).toBeDefined();
     expect(DEMO_USERS.COMPRADOR).toBeDefined();
+    expect(DEMO_USERS.FRIGORIFICO).toBeDefined();
 
     expect(DEMO_USERS.PRODUCTOR.rol).toBe('PRODUCTOR');
     expect(DEMO_USERS.PRODUCTOR.nombre_completo).toBe('Cabaña Las Lilas SA');
@@ -142,6 +150,10 @@ describe('DEMO_USERS (cuentas de evaluación rápida)', () => {
     expect(DEMO_USERS.COMPRADOR.rol).toBe('COMPRADOR');
     expect(DEMO_USERS.COMPRADOR.nombre_completo).toBe('Frigorífico Rioplatense SA');
     expect(DEMO_USERS.COMPRADOR.tipo_comprador).toBe('FRIGORIFICO_EXPORTADOR');
+
+    expect(DEMO_USERS.FRIGORIFICO.rol).toBe('FRIGORIFICO');
+    expect(DEMO_USERS.FRIGORIFICO.nombre_completo).toBe('Frigorífico Exportador del Litoral SA');
+    expect(DEMO_USERS.FRIGORIFICO.tipo_comprador).toBe('FRIGORIFICO_EXPORTADOR');
   });
 });
 

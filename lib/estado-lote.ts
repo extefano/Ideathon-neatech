@@ -114,6 +114,21 @@ export function accionLoteParaRol(
   const ficha: AccionLote = { texto: 'Ver ficha del lote', href: `/lotes/${codigo}` };
   const pasaporte: AccionLote = { texto: 'Ver pasaporte EUDR', href: `/pasaporte/${codigo}` };
 
+  if (rol === 'FRIGORIFICO') {
+    switch (estado) {
+      case 'FINANCIADO_EN_ENGORDE':
+        return seal_2_sanitary
+          ? { texto: 'Registrar recepción', href: `/lotes/${codigo}/recepcion` }
+          : ficha;
+      case 'EN_TRANSITO_A_FRIGORIFICO':
+        return { texto: 'Registrar recepción', href: `/lotes/${codigo}/recepcion` };
+      case 'CERRADO_CICLO':
+        return pasaporte;
+      default:
+        return ficha;
+    }
+  }
+
   if (rol === 'VETERINARIO') {
     return estado === 'FINANCIADO_EN_ENGORDE' && !seal_2_sanitary
       ? { texto: 'Revisar auditoría (Mes 4)', href: `/lotes/${codigo}/auditoria` }

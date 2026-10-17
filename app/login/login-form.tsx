@@ -441,12 +441,13 @@ export function LoginForm({
           O ingresá rápidamente con un rol demo para evaluar el flujo:
         </p>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(
             [
               { rol: 'PRODUCTOR', etiqueta: 'Productor', demo: 'Cabaña Las Lilas' },
               { rol: 'VETERINARIO', etiqueta: 'Veterinario', demo: 'Dr. Saavedra' },
               { rol: 'COMPRADOR', etiqueta: 'Comprador', demo: 'Rioplatense SA' },
+              { rol: 'FRIGORIFICO', etiqueta: 'Frigorífico', demo: 'Frig. Litoral' },
             ] as const
           ).map((item) => (
             <form key={item.rol} action={loginDemoAction}>

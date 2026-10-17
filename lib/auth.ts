@@ -1,7 +1,8 @@
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/storage';
 
-export type RolUsuario = 'PRODUCTOR' | 'VETERINARIO' | 'COMPRADOR';
+export type RolUsuario = 'PRODUCTOR' | 'VETERINARIO' | 'COMPRADOR' | 'FRIGORIFICO';
 
 export type Stage =
   | 'PASO_1_CREAR_LOTE'
@@ -111,6 +112,16 @@ export const DEMO_USERS: Record<
     tipo_comprador: 'FRIGORIFICO_EXPORTADOR',
     matricula_ruca: 'RUCA-8921',
   },
+  FRIGORIFICO: {
+    email: 'demo.frigorifico@muunar.agro',
+    password: 'demo-frigorifico-2026',
+    nombre_completo: 'Frigorífico Exportador del Litoral SA',
+    cuit: '30-71987654-3',
+    rol: 'FRIGORIFICO',
+    wallet: 'GDEMO-FRIGORIFICO',
+    tipo_comprador: 'FRIGORIFICO_EXPORTADOR',
+    matricula_ruca: 'RUCA-7742',
+  },
 };
 
 export function rutaInternaSegura(valor: string | null | undefined, alterno = '/'): string {
@@ -199,8 +210,9 @@ export function canPerformStage(user: PerfilUsuario | null | undefined, stage: S
     case 'PASO_4A_DESPACHO':
       return user?.rol === 'PRODUCTOR';
     case 'PASO_2_FONDEAR_ESCROW':
-    case 'PASO_4B_RECEPCION':
       return user?.rol === 'COMPRADOR';
+    case 'PASO_4B_RECEPCION':
+      return user?.rol === 'COMPRADOR' || user?.rol === 'FRIGORIFICO';
     case 'PASO_3_AUDITORIA_VET':
       return user?.rol === 'VETERINARIO';
     case 'PASO_5_PASAPORTE':
@@ -231,6 +243,25 @@ export function esDuenoDelLote(
 
 export async function getCurrentUser(): Promise<PerfilUsuario | null> {
   try {
+    const cookieStore = await cookies();
+    const demoRol = cookieStore.get('muunar_demo_rol')?.value;
+    if (demoRol === 'FRIGORIFICO') {
+      const demo = DEMO_USERS.FRIGORIFICO;
+      return {
+        id: 'mock-frigorifico-id',
+        rol: 'FRIGORIFICO',
+        nombre_completo: demo.nombre_completo,
+        cuit: demo.cuit,
+        matricula: null,
+        tipo_comprador: demo.tipo_comprador ?? 'FRIGORIFICO_EXPORTADOR',
+        wallet: demo.wallet,
+        productor_id: null,
+        veterinario_id: null,
+        comprador_id: null,
+        email: demo.email ?? null,
+      };
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -265,6 +296,9 @@ export async function getCurrentUser(): Promise<PerfilUsuario | null> {
 }
 
 export async function ensureDemoUser(rol: RolUsuario) {
+  if (rol === 'FRIGORIFICO') {
+    return { email: DEMO_USERS.FRIGORIFICO.email, password: DEMO_USERS.FRIGORIFICO.password };
+  }
   const demo = DEMO_USERS[rol];
   const admin = createAdminClient();
 
