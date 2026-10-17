@@ -55,10 +55,17 @@ export async function SiteHeader() {
             <Image
               src="/brand/muunar-isotipo-negro.svg"
               alt=""
-              width={565}
-              height={560}
-              priority
+              width={555}
+              height={526}
+              preload
               className="h-10 w-auto"
+            />
+            <Image
+              src="/brand/muunar-wordmark-negro.svg"
+              alt=""
+              width={449}
+              height={74}
+              className="h-4 w-auto"
             />
           </Link>
 

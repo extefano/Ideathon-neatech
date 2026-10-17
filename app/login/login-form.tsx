@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useActionState, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';

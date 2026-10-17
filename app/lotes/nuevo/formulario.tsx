@@ -11,6 +11,8 @@ import {
   CATEGORIAS,
   CERTIFICACIONES_COMERCIALES,
   MONEDAS,
+  PESO_MAX_KG,
+  PESO_MIN_KG,
   RAZAS,
   TIPOS_OPERACION,
   TIPOS_RODEO,
@@ -92,6 +94,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       LIBRE_ANTIBIOTICOS_HORMONAS: false,
     },
   );
+  const [csvNombre, setCsvNombre] = useState<string | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const renspaRef = useRef<HTMLInputElement>(null);
 
@@ -144,6 +147,7 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   }
 
   async function inspeccionarCsv(file: File) {
+    setCsvNombre(file.name);
     const text = await file.text();
     const parsed = parsePesadasCsv(text);
     if (parsed.errors.length > 0) {
@@ -171,8 +175,27 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
   async function onCsvChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) {
+      setCsvNombre(null);
       setCsvInfo(null);
       return;
+    }
+    await inspeccionarCsv(file);
+  }
+
+  async function generarCaravanasUnicasDemo() {
+    const prefijo = Date.now().toString().slice(-6);
+    const lineas = ['caravana_rfid,peso_kg'];
+    for (let i = 1; i <= 30; i++) {
+      const rfid = `032${prefijo}${String(i).padStart(6, '0')}`;
+      const peso = Math.round(195 + Math.random() * 15);
+      lineas.push(`${rfid},${peso}`);
+    }
+    const blob = new Blob([lineas.join('\n')], { type: 'text/csv' });
+    const file = new File([blob], `pesadas-demo-${prefijo}.csv`, { type: 'text/csv' });
+    if (csvRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      csvRef.current.files = dt.files;
     }
     await inspeccionarCsv(file);
   }
@@ -193,24 +216,6 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
       inputRef.current.files = dt.files;
     }
     if (despues) await despues(file);
-  }
-
-  async function generarCaravanasUnicasDemo() {
-    const prefijo = Date.now().toString().slice(-6);
-    const lineas = ['caravana_rfid,peso_kg'];
-    for (let i = 1; i <= 30; i++) {
-      const rfid = `032${prefijo}${String(i).padStart(6, '0')}`;
-      const peso = Math.round(195 + Math.random() * 15);
-      lineas.push(`${rfid},${peso}`);
-    }
-    const blob = new Blob([lineas.join('\n')], { type: 'text/csv' });
-    const file = new File([blob], `pesadas-demo-${prefijo}.csv`, { type: 'text/csv' });
-    if (csvRef.current) {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      csvRef.current.files = dt.files;
-    }
-    await inspeccionarCsv(file);
   }
 
   return (
@@ -495,20 +500,86 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
         </p>
 
         <div>
-          <label className={claseLabel} htmlFor="archivo_rfid_csv">
-            CSV del bastón lector (caravana_rfid,peso_kg) *
-          </label>
-          <input
-            ref={csvRef}
-            id="archivo_rfid_csv"
-            name="archivo_rfid_csv"
-            type="file"
-            accept=".csv,text/csv"
-            className={erroresEtapa.archivo_rfid_csv ? claseInputError : claseInput}
-            aria-invalid={erroresEtapa.archivo_rfid_csv ? true : undefined}
-            onChange={(event) => void onCsvChange(event)}
-          />
-          <div className="flex flex-wrap items-center gap-3">
+          <p className={claseLabel}>CSV del bastón lector *</p>
+          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              <input
+                ref={csvRef}
+                id="archivo_rfid_csv"
+                name="archivo_rfid_csv"
+                type="file"
+                accept=".csv,text/csv"
+                className="peer sr-only"
+                aria-describedby="csv_ayuda csv_archivo"
+                aria-invalid={erroresEtapa.archivo_rfid_csv ? true : undefined}
+                onChange={(event) => void onCsvChange(event)}
+              />
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-700 bg-neutral-900 text-neutral-400"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                  <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z" />
+                  <path d="M9 13h6M9 17h4" />
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1 basis-64">
+                <p id="csv_ayuda" className="text-xs text-neutral-400">
+                  Archivo .csv con encabezado{' '}
+                  <code className="rounded bg-neutral-950 px-1 py-0.5 font-mono text-[11px] text-neutral-300">
+                    caravana_rfid,peso_kg
+                  </code>
+                  . Una fila por animal; se validan caravanas de 15 dígitos (prefijo 032) y pesos
+                  entre {PESO_MIN_KG} y {PESO_MAX_KG} kg.
+                </p>
+                <p
+                  id="csv_archivo"
+                  aria-live="polite"
+                  className={`mt-1 truncate font-mono text-xs ${
+                    csvNombre ? 'text-brand' : 'text-neutral-500'
+                  }`}
+                >
+                  {csvNombre ?? 'Ningún archivo seleccionado'}
+                </p>
+              </div>
+              <label
+                htmlFor="archivo_rfid_csv"
+                className="peer-focus-visible:ring-brand border-brand bg-brand hover:bg-brand/90 cursor-pointer rounded-md border px-4 py-2 text-xs font-semibold text-neutral-950 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-neutral-950"
+              >
+                Seleccionar archivo CSV
+              </label>
+            </div>
+            {csvInfo && (
+              <div className="mt-3 rounded border border-neutral-800 bg-neutral-950 p-3 text-xs">
+                {csvInfo.errors.length > 0 ? (
+                  <ul className="list-disc space-y-0.5 pl-4 text-red-400">
+                    {csvInfo.errors.map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-neutral-300">
+                    {csvInfo.rows} cabezas · promedio {csvInfo.promedio} kg · rango {csvInfo.min}–
+                    {csvInfo.max} kg · <span className="text-brand">{csvInfo.uniformidad}</span>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          {erroresEtapa.archivo_rfid_csv && (
+            <p className="mt-1 text-xs text-red-300">{erroresEtapa.archivo_rfid_csv}</p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-xs text-neutral-500">¿No tenés el archivo a mano?</span>
             <button
               type="button"
               className="text-brand-fuerte mt-1 text-xs hover:underline"
@@ -533,26 +604,6 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
               Generar caravanas únicas nuevas
             </button>
           </div>
-          {csvInfo && (
-            <div className="border-borde bg-panel mt-2 rounded border p-3 text-xs">
-              {csvInfo.errors.length > 0 ? (
-                <ul className="list-disc space-y-0.5 pl-4 text-red-700">
-                  {csvInfo.errors.map((error) => (
-                    <li key={error}>{error}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-texto-suave">
-                  {csvInfo.rows} cabezas · promedio {csvInfo.promedio} kg · rango {csvInfo.min}–
-                  {csvInfo.max} kg ·{' '}
-                  <span className="text-brand-fuerte">{csvInfo.uniformidad}</span>
-                </p>
-              )}
-            </div>
-          )}
-          {erroresEtapa.archivo_rfid_csv && (
-            <p className="mt-1 text-xs text-red-700">{erroresEtapa.archivo_rfid_csv}</p>
-          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
