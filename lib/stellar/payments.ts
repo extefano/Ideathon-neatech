@@ -43,6 +43,26 @@ export type FirmadorTransaccion = (
 ) => Promise<{ signedTxXdr: string; signerAddress: string }>;
 
 /**
+ * Detecta si la excepción capturada corresponde a una redirección interna de Next.js (`redirect()` en Server Actions),
+ * la cual no debe mostrarse como un error de transacción en la interfaz.
+ */
+export function esErrorRedirectNext(error: unknown): boolean {
+  if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+    return true;
+  }
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'digest' in error &&
+    typeof (error as { digest?: unknown }).digest === 'string' &&
+    (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Normaliza los errores de Freighter, WalletConnect y Horizon a mensajes claros para la UI.
  */
 export function traducirErrorPagoStellar(error: unknown): string {

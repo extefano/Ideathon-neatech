@@ -8,7 +8,7 @@ import { Boton } from '@/components/ui/boton';
 import { despacharLoteAction, recepcionLoteAction } from '@/lib/actions';
 import type { PerfilUsuario } from '@/lib/auth';
 import { esWalletStellar } from '@/lib/stellar-args';
-import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
+import { ejecutarPagoUsdcTestnet, esErrorRedirectNext } from '@/lib/stellar/payments';
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
@@ -153,6 +153,9 @@ export function FormRecepcion({
 
       await recepcionLoteAction(formData);
     } catch (err) {
+      if (esErrorRedirectNext(err)) {
+        return;
+      }
       setErrorTx(err instanceof Error ? err.message : String(err));
       setCargando(false);
       setEstadoTx(null);
