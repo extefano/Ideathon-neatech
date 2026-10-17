@@ -78,7 +78,7 @@ export function FormAuditoria({
       const pago = await ejecutarPagoUsdcTestnet({
         sourceAddress: vetWallet,
         destinationAddress: productorWallet,
-        amountUsdc: montoHito2Usdc ?? 0.0000001,
+        amountUsdc: 0.0000001,
         memoText: `SEAL2:${codigo}`,
         signer,
       });
@@ -225,6 +225,24 @@ export function FormAuditoria({
               onChange={(w) => setWalletState(w)}
             />
           </div>
+        </div>
+
+        <div className="border-borde bg-panel-elevado text-texto-suave rounded-md border p-3 text-xs">
+          <p className="text-texto font-semibold">Detalle de firma y liberación del Sello 2</p>
+          <ul className="mt-1 list-inside list-disc space-y-1">
+            {typeof montoHito2Usdc === 'number' && montoHito2Usdc > 0 && (
+              <li>
+                <strong>Fondo a destrabar del escrow (30 % Mes 4):</strong>{' '}
+                {montoHito2Usdc.toLocaleString('es-AR')} USDC (se transfiere del escrow al Productor
+                si el ADPV cumple el rango INTA).
+              </li>
+            )}
+            <li>
+              <strong>Costo de firmar en tu wallet Freighter:</strong> solo la firma de autorización
+              sanitaria (<code>0,0000001 USDC</code> simbólico + <code>~0,01 XLM</code> de gas de
+              red en Testnet). El veterinario no abona el 30 % del lote.
+            </li>
+          </ul>
         </div>
 
         <div>

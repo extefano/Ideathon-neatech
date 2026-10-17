@@ -141,14 +141,14 @@ export function FormRecepcion({
       const pago = await ejecutarPagoUsdcTestnet({
         sourceAddress: buyerWallet,
         destinationAddress: productorWallet,
-        amountUsdc: montoHito3Usdc ?? 1,
+        amountUsdc: 0.0000001,
         memoText: `SEAL3:${codigo}`,
         signer,
       });
 
       formData.set('tx_hash', pago.txHash);
       setEstadoTx(
-        `¡Liquidación firmada en Stellar Testnet! (${pago.txHash.slice(0, 10)}…). Registrando cierre de ciclo...`,
+        `¡Recepción firmada en Stellar Testnet! (${pago.txHash.slice(0, 10)}…). Liberando 30 % final desde el escrow...`,
       );
 
       await recepcionLoteAction(formData);
@@ -230,6 +230,24 @@ export function FormRecepcion({
           initialAddress={walletInicial}
           onChange={(w) => setWalletState(w)}
         />
+      </div>
+
+      <div className="border-borde bg-panel-elevado text-texto-suave rounded-md border p-3 text-xs">
+        <p className="text-texto font-semibold">Detalle de firma y liquidación del Sello 3</p>
+        <ul className="mt-1 list-inside list-disc space-y-1">
+          {typeof montoHito3Usdc === 'number' && montoHito3Usdc > 0 && (
+            <li>
+              <strong>Fondo a destrabar del escrow (30 % final):</strong>{' '}
+              {montoHito3Usdc.toLocaleString('es-AR')} USDC (ya depositados cuando se fondeó el
+              lote, sujetos a ajuste si faltan kilos).
+            </li>
+          )}
+          <li>
+            <strong>Costo de firmar en tu wallet Freighter:</strong> solo la firma de conformidad
+            on-chain (<code>0,0000001 USDC</code> simbólico + <code>~0,01 XLM</code> de gas de red
+            en Testnet). No se vuelve a debitar el 30 % de tu billetera.
+          </li>
+        </ul>
       </div>
 
       {esMismaWallet && (

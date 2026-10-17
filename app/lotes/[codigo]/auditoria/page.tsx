@@ -5,6 +5,7 @@ import { Aviso } from '@/components/ui/aviso';
 import { Pasos } from '@/components/ui/pasos';
 import { Tarjeta } from '@/components/ui/tarjeta';
 import { getCurrentUser } from '@/lib/auth';
+import { calcularDesembolsos } from '@/lib/escrow';
 import { getLoteCompleto } from '@/lib/queries';
 import { FormAuditoria } from './form-auditoria';
 
@@ -87,6 +88,7 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
               codigo={codigo}
               user={user}
               productorWallet={lote.productor_wallet ?? undefined}
+              montoHito2Usdc={calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0)).hito2}
             />
           </div>
         </Tarjeta>

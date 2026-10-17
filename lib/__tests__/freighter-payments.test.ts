@@ -388,4 +388,18 @@ describe('Criterio de aceptación — Cero GDEMO-* en la UI y manejo de NEXT_RED
       expect(contenido, `Falta esErrorRedirectNext en ${ruta}`).toContain('esErrorRedirectNext');
     }
   });
+
+  it('Sello 2 (auditoría) y Sello 3 (recepción) firman conformidad simbólica (0.0000001 USDC) sin volver a debitar el 30 % de la wallet', () => {
+    const formAuditoria = readFileSync(
+      join(process.cwd(), 'app', 'lotes', '[codigo]', 'auditoria', 'form-auditoria.tsx'),
+      'utf8',
+    );
+    const formRecepcion = readFileSync(
+      join(process.cwd(), 'app', 'lotes', '[codigo]', 'recepcion', 'form-recepcion.tsx'),
+      'utf8',
+    );
+
+    expect(formAuditoria).toContain('amountUsdc: 0.0000001');
+    expect(formRecepcion).toContain('amountUsdc: 0.0000001');
+  });
 });
