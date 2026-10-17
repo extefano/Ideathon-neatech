@@ -35,4 +35,6 @@ jobs:
           version: latest
 
       - name: Push migrations
-        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        run: |
+          supabase migration repair --status reverted 20261017014823 20261017014844 20261017014845 20261017015137 --db-url "$SUPABASE_DB_URL" || true
+          supabase db push --include-all --db-url "$SUPABASE_DB_URL"
