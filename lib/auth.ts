@@ -211,6 +211,24 @@ export function canPerformStage(user: PerfilUsuario | null | undefined, stage: S
   }
 }
 
+export function identidadProductor(user: PerfilUsuario): { nombre: string; cuit: string } {
+  return { nombre: user.nombre_completo.trim(), cuit: user.cuit.trim() };
+}
+
+export function esDuenoDelLote(
+  user: PerfilUsuario,
+  lote: { productor_id?: string | null; productor_wallet?: string | null },
+): boolean {
+  const normalizarWallet = (wallet?: string | null) => wallet?.trim().toUpperCase() ?? null;
+  const coincideProductor = Boolean(
+    user.productor_id && lote.productor_id && user.productor_id === lote.productor_id,
+  );
+  const walletUsuario = normalizarWallet(user.wallet);
+  const walletLote = normalizarWallet(lote.productor_wallet);
+  const coincideWallet = Boolean(walletUsuario && walletUsuario === walletLote);
+  return coincideProductor || coincideWallet;
+}
+
 export async function getCurrentUser(): Promise<PerfilUsuario | null> {
   try {
     const supabase = await createClient();

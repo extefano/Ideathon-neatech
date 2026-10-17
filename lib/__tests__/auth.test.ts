@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   canPerformStage,
   DEMO_USERS,
+  esDuenoDelLote,
+  identidadProductor,
   rutaInternaSegura,
   validarDatosRegistro,
   type PerfilUsuario,
@@ -73,6 +75,53 @@ describe('canPerformStage (matriz de permisos por etapa)', () => {
 
     expect(canPerformStage(null, 'MERCADO')).toBe(true);
     expect(canPerformStage(productor, 'MERCADO')).toBe(true);
+  });
+});
+
+describe('esDuenoDelLote (control de propiedad del lote)', () => {
+  it('acepta al productor cuando coincide productor_id', () => {
+    const user = crearUsuarioMock('PRODUCTOR', { productor_id: 'prod-1' });
+    expect(esDuenoDelLote(user, { productor_id: 'prod-1' })).toBe(true);
+  });
+
+  it('acepta al productor cuando coincide la wallet', () => {
+    const user = crearUsuarioMock('PRODUCTOR', { wallet: 'GWALLET-1' });
+    expect(esDuenoDelLote(user, { productor_wallet: 'GWALLET-1' })).toBe(true);
+  });
+
+  it('rechaza cuando ni el productor_id ni la wallet coinciden', () => {
+    const user = crearUsuarioMock('PRODUCTOR', { productor_id: 'prod-1', wallet: 'GWALLET-1' });
+    expect(esDuenoDelLote(user, { productor_id: 'prod-2', productor_wallet: 'GWALLET-2' })).toBe(
+      false,
+    );
+  });
+
+  it('rechaza a un usuario sin productor_id ni wallet', () => {
+    const user = crearUsuarioMock('PRODUCTOR', { productor_id: null, wallet: null });
+    expect(esDuenoDelLote(user, { productor_id: 'prod-1', productor_wallet: 'GWALLET-1' })).toBe(
+      false,
+    );
+  });
+
+  it('rechaza cuando el lote no tiene datos de productor', () => {
+    const user = crearUsuarioMock('PRODUCTOR', { productor_id: 'prod-1', wallet: 'GWALLET-1' });
+    expect(esDuenoDelLote(user, {})).toBe(false);
+    expect(esDuenoDelLote(user, { productor_id: null, productor_wallet: null })).toBe(false);
+  });
+
+  it('compara la wallet sin distinguir mayúsculas ni espacios', () => {
+    const user = crearUsuarioMock('PRODUCTOR', { wallet: ' gwallet-1 ' });
+    expect(esDuenoDelLote(user, { productor_wallet: 'GWALLET-1' })).toBe(true);
+  });
+});
+
+describe('identidadProductor (identidad desde la sesión)', () => {
+  it('recorta espacios de nombre y CUIT', () => {
+    const user = crearUsuarioMock('PRODUCTOR', {
+      nombre_completo: '  Cabaña Sesión SA  ',
+      cuit: '  30-11111111-1  ',
+    });
+    expect(identidadProductor(user)).toEqual({ nombre: 'Cabaña Sesión SA', cuit: '30-11111111-1' });
   });
 });
 

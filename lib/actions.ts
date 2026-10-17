@@ -1,7 +1,13 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth';
+import {
+  canPerformStage,
+  esDuenoDelLote,
+  getCurrentUser,
+  identidadProductor,
+  type PerfilUsuario,
+} from '@/lib/auth';
 import { eudrGeoHash, rfidListHash, sha256Hex } from '@/lib/crypto';
 import { parsePesadasCsv, resumenPesadas, conciliarCaravanas } from '@/lib/csv';
 import {
@@ -77,10 +83,16 @@ async function intentarValidacionGfw(input: {
   const eudrHash = eudrGeoHash({ poligono: input.poligono, gfw, checkedAt: gfw.checkedAt });
 
   if (hayDeforestacion(gfw)) {
-    await admin
+    const { error: updateError } = await admin
       .from('lotes')
       .update({ gfw_consulta: gfw, eudr_geo_hash: eudrHash, estado_publicacion: 'RECHAZADO_EUDR' })
       .eq('id', input.loteId);
+    if (updateError) {
+      return {
+        ok: false,
+        error: `No se pudo registrar la validación EUDR: ${updateError.message}`,
+      };
+    }
     return { ok: true };
   }
 
@@ -97,7 +109,7 @@ async function intentarValidacionGfw(input: {
     tokenSacAddress: TOKEN_SAC_TESTNET_USDC,
   });
 
-  await admin
+  const { error: updateError } = await admin
     .from('lotes')
     .update({
       gfw_consulta: gfw,
@@ -107,13 +119,16 @@ async function intentarValidacionGfw(input: {
       estado_publicacion: 'DISPONIBLE',
     })
     .eq('id', input.loteId);
+  if (updateError) {
+    return { ok: false, error: `No se pudo anclar el Sello 1: ${updateError.message}` };
+  }
 
   return { ok: true };
 }
 
 export async function crearLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'PRODUCTOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_1_CREAR_LOTE')) {
     return { errors: ['Esta acción requiere una cuenta con perfil de Productor.'] };
   }
 
@@ -158,8 +173,7 @@ export async function crearLoteAction(_prev: FormState, formData: FormData): Pro
     };
   }
 
-  const productorNombre = String(formData.get('productor_nombre') ?? '').trim();
-  const productorCuit = String(formData.get('productor_cuit') ?? '').trim();
+  const { nombre: productorNombre, cuit: productorCuit } = identidadProductor(user);
   const productorWallet = String(formData.get('productor_wallet') ?? '').trim();
   if (!esWalletStellar(productorWallet)) {
     return {
@@ -361,8 +375,8 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
   const codigo = String(formData.get('codigo') ?? '');
   if (!codigo) redirect('/');
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'PRODUCTOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_1_CREAR_LOTE')) {
     redirect(
       `/lotes/${codigo}?error=${encodeURIComponent(
         'El reintento EUDR requiere una cuenta con perfil de Productor.',
@@ -377,6 +391,14 @@ export async function reintentarGfwAction(formData: FormData): Promise<void> {
     .eq('codigo_lote', codigo)
     .maybeSingle();
   if (!lote) redirect('/');
+
+  if (!esDuenoDelLote(user, lote)) {
+    redirect(
+      `/lotes/${codigo}?error=${encodeURIComponent(
+        'Solo el productor dueño del lote puede reintentar la validación EUDR.',
+      )}`,
+    );
+  }
 
   const resultado = await intentarValidacionGfw({
     loteId: String(lote.id),
@@ -402,8 +424,8 @@ export async function fondearLoteAction(formData: FormData): Promise<void> {
   const codigo = String(formData.get('codigo') ?? '');
   if (!codigo) redirect('/');
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'COMPRADOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_2_FONDEAR_ESCROW')) {
     redirect(
       `/lotes/${codigo}?error=${encodeURIComponent(
         'El fondeo de escrow requiere una cuenta con perfil de Comprador.',
@@ -538,8 +560,8 @@ export async function registrarAuditoriaAction(formData: FormData): Promise<void
     );
   }
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'VETERINARIO') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_3_AUDITORIA_VET')) {
     volverConError(
       'La auditoría sanitaria está reservada exclusivamente a Veterinarios acreditados. El productor y el comprador tienen prohibido este paso.',
     );
@@ -730,8 +752,8 @@ export async function despacharLoteAction(formData: FormData): Promise<void> {
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'PRODUCTOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_4A_DESPACHO')) {
     volverConError('El despacho DT-e requiere una cuenta con perfil de Productor.');
   }
 
@@ -782,8 +804,8 @@ export async function recepcionLoteAction(formData: FormData): Promise<void> {
   const volverConError: (mensaje: string) => never = (mensaje) =>
     redirect(`/lotes/${codigo}?error=${encodeURIComponent(mensaje)}`);
 
-  const user = await getCurrentUser();
-  if (user && user.rol !== 'COMPRADOR') {
+  const user: PerfilUsuario | null = await getCurrentUser();
+  if (!user || !canPerformStage(user, 'PASO_4B_RECEPCION')) {
     volverConError('La recepción en balanza fiscal requiere una cuenta con perfil de Comprador.');
   }
 

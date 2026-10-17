@@ -257,8 +257,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <input
               id="productor_nombre"
               name="productor_nombre"
-              className={claseInput}
-              placeholder="Estancia La Esperanza SA"
+              readOnly
+              aria-describedby="productor_identidad_ayuda"
+              className={`${claseInput} cursor-not-allowed opacity-70`}
               defaultValue={user?.nombre_completo ?? ''}
             />
           </div>
@@ -269,8 +270,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             <input
               id="productor_cuit"
               name="productor_cuit"
-              className={claseInput}
-              placeholder="30-71234567-8"
+              readOnly
+              aria-describedby="productor_identidad_ayuda"
+              className={`${claseInput} cursor-not-allowed opacity-70`}
               defaultValue={user?.cuit ?? ''}
             />
           </div>
@@ -283,6 +285,9 @@ export function FormularioLote({ user }: { user?: PerfilUsuario } = {}) {
             />
           </div>
         </div>
+        <p id="productor_identidad_ayuda" className="text-xs text-neutral-400">
+          El nombre y el CUIT se toman de tu cuenta; si necesitás cambiarlos, actualizá tu perfil.
+        </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
