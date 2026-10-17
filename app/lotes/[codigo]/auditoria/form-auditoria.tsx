@@ -103,7 +103,6 @@ export function FormAuditoria({
     <form
       onSubmit={(e) => void handleSubmit(e)}
       action={registrarAuditoriaAction}
-      encType="multipart/form-data"
       className="space-y-6"
     >
       <input type="hidden" name="codigo" value={codigo} />

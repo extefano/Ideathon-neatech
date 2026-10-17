@@ -55,6 +55,8 @@ export function FormFondeo({
   const esMismaWallet = Boolean(
     productorWallet && esWalletReal && buyerWallet.toUpperCase() === productorWallet.toUpperCase(),
   );
+  const saldoInsuficiente =
+    esWalletReal && esTestnet && !verificandoUsdc && tieneTrustline === true && balanceUsdc < monto;
 
   useEffect(() => {
     if (!esWalletReal || !esTestnet) return;
@@ -127,6 +129,13 @@ export function FormFondeo({
       return;
     }
 
+    if (tieneTrustline && balanceUsdc < monto) {
+      setErrorTx(
+        `Saldo insuficiente en tu wallet: tenés ${balanceUsdc.toLocaleString('es-AR', { maximumFractionDigits: 2 })} USDC y este lote requiere ${monto.toLocaleString('es-AR')} USDC.`,
+      );
+      return;
+    }
+
     setCargando(true);
     setErrorTx(null);
     setEstadoTx('Construyendo pago clásico USDC en Stellar Testnet y solicitando firma...');
@@ -156,12 +165,10 @@ export function FormFondeo({
                 firmarXdrConWalletConnect(xdr, { address: opts.address })
             : undefined;
 
-        // En testnet usamos el monto disponible o el monto del lote para la prueba de firma
-        const montoPrueba = Math.min(monto, balanceUsdc > 0 ? balanceUsdc : 10);
         const pago = await ejecutarPagoUsdcTestnet({
           sourceAddress: buyerWallet,
           destinationAddress: productorWallet,
-          amountUsdc: montoPrueba,
+          amountUsdc: monto,
           memoText: `FUND:${codigoLote}`,
           signer,
         });
@@ -248,17 +255,6 @@ export function FormFondeo({
               )}
             </div>
           </div>
-
-          {esMismaWallet && (
-            <div
-              role="alert"
-              className="text-brand-fuerte border-borde-fuerte bg-panel mt-3 rounded border p-2"
-            >
-              <TriangleAlert aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />
-              <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del productor
-              del lote. Debés usar una cuenta distinta en Freighter para actuar como comprador.
-            </div>
-          )}
         </div>
       )}
 
@@ -293,7 +289,12 @@ export function FormFondeo({
           <button
             type="submit"
             disabled={
-              cargando || !esWalletReal || !esTestnet || esMismaWallet || tieneTrustline === false
+              cargando ||
+              !esWalletReal ||
+              !esTestnet ||
+              esMismaWallet ||
+              tieneTrustline === false ||
+              saldoInsuficiente
             }
             className="rounded-control bg-brand hover:bg-brand/90 inline-flex h-10 w-full cursor-pointer items-center justify-center px-4 text-sm font-semibold text-neutral-950 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -301,6 +302,35 @@ export function FormFondeo({
           </button>
         </div>
       </form>
+
+      {esMismaWallet && (
+        <div
+          role="alert"
+          className="text-brand-fuerte border-borde-fuerte bg-panel rounded-control border px-3 py-2 text-xs"
+        >
+          <TriangleAlert aria-hidden="true" className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" />
+          <strong>Auto-compra bloqueada:</strong> Tu wallet es la misma que la del productor del
+          lote. Usá otra cuenta en Freighter para actuar como comprador.
+        </div>
+      )}
+
+      {saldoInsuficiente && !esMismaWallet && (
+        <div
+          role="alert"
+          className="border-borde-fuerte bg-panel-elevado text-texto-suave rounded-control border px-3 py-2 text-xs"
+        >
+          <TriangleAlert
+            aria-hidden="true"
+            className="text-brand-fuerte mr-1.5 inline h-3.5 w-3.5 align-[-2px]"
+          />
+          <strong className="text-texto">Saldo insuficiente en tu wallet:</strong> Tenés{' '}
+          <strong className="text-texto font-mono">
+            {balanceUsdc.toLocaleString('es-AR', { maximumFractionDigits: 2 })} USDC
+          </strong>{' '}
+          disponibles y este lote requiere{' '}
+          <strong className="text-texto font-mono">{monto.toLocaleString('es-AR')} USDC</strong>.
+        </div>
+      )}
 
       {estadoTx && (
         <div className="text-brand-fuerte border-borde-fuerte bg-panel rounded-md border p-3 text-xs">
