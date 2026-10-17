@@ -1,9 +1,11 @@
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
 import { Aviso } from '@/components/ui/aviso';
 import { Pasos } from '@/components/ui/pasos';
 import { Tarjeta } from '@/components/ui/tarjeta';
 import { getCurrentUser } from '@/lib/auth';
+import { calcularDesembolsos } from '@/lib/escrow';
 import { getLoteCompleto } from '@/lib/queries';
 import { FormAuditoria } from './form-auditoria';
 
@@ -32,9 +34,10 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
   const volver = (
     <Link
       href={`/lotes/${codigo}`}
-      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave inline-flex items-center gap-1 text-sm"
     >
-      ← Volver a la ficha
+      <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+      Volver a la ficha
     </Link>
   );
 
@@ -85,6 +88,7 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
               codigo={codigo}
               user={user}
               productorWallet={lote.productor_wallet ?? undefined}
+              montoHito2Usdc={calcularDesembolsos(Number(lote.monto_total_financiacion ?? 0)).hito2}
             />
           </div>
         </Tarjeta>

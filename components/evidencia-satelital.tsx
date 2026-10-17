@@ -1,3 +1,4 @@
+import { Check, X } from 'lucide-react';
 import { MapaLote } from '@/components/mapa-lote';
 import { Aviso } from '@/components/ui/aviso';
 import { Tarjeta } from '@/components/ui/tarjeta';
@@ -53,16 +54,16 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
         role="status"
         className="border-brand-fuerte/40 bg-brand/10 text-brand-fuerte inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
       >
-        <span className="bg-brand h-1.5 w-1.5 rounded-full text-neutral-950" />✓ Conforme EUDR ·
-        Libre de deforestación
+        <Check aria-hidden="true" strokeWidth={3} className="h-3.5 w-3.5" />
+        Conforme EUDR · Libre de deforestación
       </span>
     ) : (
       <span
         role="alert"
         className="inline-flex items-center gap-1.5 rounded-full border border-red-600/40 bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-700"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />✕ No conforme EUDR · Pérdida arbórea
-        detectada
+        <X aria-hidden="true" strokeWidth={3} className="h-3.5 w-3.5" />
+        No conforme EUDR · Pérdida arbórea detectada
       </span>
     )
   ) : (

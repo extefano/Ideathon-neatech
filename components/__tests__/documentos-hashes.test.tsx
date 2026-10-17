@@ -62,8 +62,8 @@ describe('DocumentosHashes component', () => {
     expect(html).toContain('Documento de traslado oficial SENASA y recepción (Sello 3).');
 
     // Enlaces a documentos disponibles
-    expect(html).toContain('Ver constancia RENSPA ↗');
-    expect(html).toContain('Ver boleto de marca ↗');
+    expect(html).toContain('Ver constancia RENSPA');
+    expect(html).toContain('Ver boleto de marca');
 
     // Estados pendientes descriptivos para sellos no ejecutados
     expect(html).toContain('Pendiente de auditoría Mes 4');

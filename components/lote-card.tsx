@@ -1,3 +1,4 @@
+import { ArrowRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { EstadoBadge } from '@/components/estado-badge';
 import type { RolUsuario } from '@/lib/auth';
@@ -78,7 +79,10 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
           <div className="flex items-center justify-between text-xs">
             <span className="text-texto-tenue font-medium">Evolución peso</span>
             <span className="text-texto font-mono font-semibold">
-              {lote.peso_promedio_kg ?? '—'} kg → {lote.peso_objetivo_kg ?? '—'} kg
+              {lote.peso_promedio_kg ?? '—'} kg
+              <ArrowRight aria-hidden="true" className="mx-1 inline h-3 w-3 align-[-2px]" />
+              <span className="sr-only">a</span>
+              {lote.peso_objetivo_kg ?? '—'} kg
             </span>
           </div>
         </div>
@@ -117,7 +121,9 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
                     : 'border-borde-fuerte bg-superficie/50 text-texto-tenue'
                 }`}
               >
-                {sello.activo && <span aria-hidden="true">✓</span>}
+                {sello.activo && (
+                  <Check aria-hidden="true" strokeWidth={3} className="h-3 w-3 shrink-0" />
+                )}
                 <span>{sello.nombre}</span>
               </span>
             ))}
@@ -138,9 +144,11 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
                     title={`${def.nombre} (${def.norma})`}
                     className="border-borde-fuerte bg-panel-elevado text-texto inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium"
                   >
-                    <span aria-hidden="true" className="text-brand-fuerte">
-                      ✓
-                    </span>
+                    <Check
+                      aria-hidden="true"
+                      strokeWidth={3}
+                      className="text-brand-fuerte h-3 w-3 shrink-0"
+                    />
                     <span>{def.etiquetaTarjeta}</span>
                   </span>
                 );
@@ -164,9 +172,10 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
           className="rounded-control focus-visible:ring-foco focus-visible:ring-offset-superficie border-borde-fuerte bg-panel-elevado text-texto hover:border-brand-fuerte hover:bg-brand/10 hover:text-brand-fuerte group mt-3 inline-flex min-h-11 items-center justify-center gap-1.5 border px-4 py-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           <span>{accion.texto}</span>
-          <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
-            →
-          </span>
+          <ArrowRight
+            aria-hidden="true"
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+          />
         </Link>
       )}
     </article>

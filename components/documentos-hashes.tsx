@@ -1,5 +1,16 @@
 'use client';
 
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Maximize,
+  Pause,
+  Play,
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import type { DocumentoHash } from '@/lib/documentos-hashes';
 
@@ -130,11 +141,11 @@ export function DocumentosHashes({
                 : null,
         docLabel:
           doc.clave === 'renspa_doc_hash'
-            ? 'Ver constancia RENSPA ↗'
+            ? 'Ver constancia RENSPA'
             : doc.clave === 'ada_hash'
-              ? 'Ver acta veterinaria ↗'
+              ? 'Ver acta veterinaria'
               : doc.clave === 'dte_pdf_hash'
-                ? 'Ver DT-e oficial ↗'
+                ? 'Ver DT-e oficial'
                 : undefined,
         pendienteTexto: doc.pendiente,
       }))
@@ -146,7 +157,7 @@ export function DocumentosHashes({
           sello: 'Sello 1 · Origen',
           hash: renspaHash,
           docUrl: renspaUrl,
-          docLabel: 'Ver constancia RENSPA ↗',
+          docLabel: 'Ver constancia RENSPA',
           pendienteTexto: 'Pendiente de emisión oficial',
         },
         {
@@ -172,7 +183,7 @@ export function DocumentosHashes({
           sello: 'Sello 2 · Sanidad',
           hash: actaHash,
           docUrl: actaUrl,
-          docLabel: 'Ver acta veterinaria ↗',
+          docLabel: 'Ver acta veterinaria',
           pendienteTexto: 'Pendiente de auditoría Mes 4',
         },
         {
@@ -182,7 +193,7 @@ export function DocumentosHashes({
           sello: 'Sello 3 · Cierre',
           hash: dteHash,
           docUrl: dteUrl,
-          docLabel: 'Ver DT-e oficial ↗',
+          docLabel: 'Ver DT-e oficial',
           pendienteTexto: 'Pendiente de despacho a faena',
         },
       ];
@@ -228,13 +239,9 @@ export function DocumentosHashes({
             aria-label={estaPausado ? 'Reanudar video' : 'Pausar video'}
           >
             {estaPausado ? (
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              <Play aria-hidden="true" className="h-4 w-4" />
             ) : (
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-              </svg>
+              <Pause aria-hidden="true" className="h-4 w-4" />
             )}
           </button>
 
@@ -246,13 +253,9 @@ export function DocumentosHashes({
             aria-label={estaSilenciado ? 'Activar sonido' : 'Silenciar sonido'}
           >
             {estaSilenciado ? (
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-              </svg>
+              <VolumeX aria-hidden="true" className="h-4 w-4" />
             ) : (
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-              </svg>
+              <Volume2 aria-hidden="true" className="h-4 w-4" />
             )}
           </button>
 
@@ -263,9 +266,7 @@ export function DocumentosHashes({
             title="Pantalla completa"
             aria-label="Pantalla completa"
           >
-            <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-            </svg>
+            <Maximize aria-hidden="true" className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -311,7 +312,8 @@ export function DocumentosHashes({
                       rel="noreferrer"
                       className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
                     >
-                      {doc.docLabel ?? 'Ver documento ↗'}
+                      {doc.docLabel ?? 'Ver documento'}
+                      <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
@@ -341,16 +343,12 @@ export function DocumentosHashes({
                       >
                         {esCopiado ? (
                           <>
-                            <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
-                              <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                            </svg>
+                            <Check aria-hidden="true" strokeWidth={3} className="h-3 w-3" />
                             <span>¡Copiado!</span>
                           </>
                         ) : (
                           <>
-                            <svg className="h-3 w-3 fill-current" viewBox="0 0 24 24">
-                              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-                            </svg>
+                            <Copy aria-hidden="true" className="h-3 w-3" />
                             <span>Copiar</span>
                           </>
                         )}
@@ -374,9 +372,10 @@ export function DocumentosHashes({
                 href={boletoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 font-medium focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 font-medium focus-visible:ring-2 focus-visible:outline-none"
               >
-                Ver boleto de marca ↗
+                Ver boleto de marca
+                <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
               </a>
             </div>
           )}
@@ -385,17 +384,7 @@ export function DocumentosHashes({
         {/* 3. Cuadro explicativo de inmutabilidad on-chain */}
         <div className="rounded-tarjeta border-brand-fuerte/30 bg-brand/5 text-texto-suave mt-5 border p-4 text-xs">
           <div className="flex items-start gap-2.5">
-            <svg
-              className="text-brand-fuerte mt-0.5 h-4 w-4 shrink-0 fill-current"
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <ShieldCheck aria-hidden="true" className="text-brand-fuerte mt-0.5 h-4 w-4 shrink-0" />
             <div className="space-y-1">
               <p className="font-semibold text-white">Garantía criptográfica on-chain</p>
               <p className="text-texto-suave leading-relaxed">

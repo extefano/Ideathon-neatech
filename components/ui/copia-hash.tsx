@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useState } from 'react';
 
 export function CopiaHash({ valor }: { valor: string }) {
@@ -26,7 +27,14 @@ export function CopiaHash({ valor }: { valor: string }) {
         aria-label={copiado ? 'Hash copiado' : 'Copiar hash al portapapeles'}
         className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto hover:border-texto-tenue border px-2 py-1 text-[11px] font-semibold focus-visible:ring-2 focus-visible:outline-none"
       >
-        {copiado ? 'Copiado ✓' : 'Copiar'}
+        {copiado ? (
+          <span className="inline-flex items-center gap-1">
+            <Check aria-hidden="true" strokeWidth={3} className="h-3.5 w-3.5" />
+            Copiado
+          </span>
+        ) : (
+          'Copiar'
+        )}
       </button>
     </div>
   );
