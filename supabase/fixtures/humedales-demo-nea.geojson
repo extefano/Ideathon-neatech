@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "demo-humedal-oeste",
+      "properties": { "clase": "humedal-demo" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [-58.1, -29.5],
+              [-58.07, -29.5],
+              [-58.07, -29.45],
+              [-58.1, -29.45],
+              [-58.1, -29.5]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "demo-laguna-sur",
+      "properties": { "clase": "humedal-demo" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [-58.2, -29.55],
+              [-58.16, -29.55],
+              [-58.16, -29.52],
+              [-58.2, -29.52],
+              [-58.2, -29.55]
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

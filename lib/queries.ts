@@ -18,23 +18,66 @@ export type LoteListItem = {
   seal_1_eudr: boolean;
   seal_2_sanitary: boolean;
   seal_3_reception: boolean;
+  porcentaje_humedal: number | null;
+  estado_humedal: string | null;
   created_at: string;
 };
 
 const LOTE_LIST_COLUMNS =
-  'id, codigo_lote, titulo, estado_publicacion, provincia, localidad, categoria, raza, cantidad_cabezas, peso_promedio_kg, peso_objetivo_kg, monto_total_financiacion, moneda, seal_1_eudr, seal_2_sanitary, seal_3_reception, created_at';
+  'id, codigo_lote, titulo, estado_publicacion, provincia, localidad, categoria, raza, cantidad_cabezas, peso_promedio_kg, peso_objetivo_kg, monto_total_financiacion, moneda, seal_1_eudr, seal_2_sanitary, seal_3_reception, porcentaje_humedal, estado_humedal, created_at';
 
-export async function listarLotes(opts?: { estado?: EstadoLote }): Promise<LoteListItem[]> {
+export type FiltroHumedalListado = {
+  min?: number | null;
+  max?: number | null;
+  soloSinDato?: boolean;
+};
+
+export type OpcionesListarLotes = {
+  estado?: EstadoLote;
+  humedal?: FiltroHumedalListado;
+  provincia?: string;
+  categoria?: string;
+  raza?: string;
+  moneda?: string;
+};
+
+export async function listarLotes(opts?: OpcionesListarLotes): Promise<LoteListItem[]> {
   const admin = createAdminClient();
-  let query = admin
-    .from('lotes')
-    .select(LOTE_LIST_COLUMNS)
-    .order('created_at', { ascending: false })
-    .limit(60);
+  let query = admin.from('lotes').select(LOTE_LIST_COLUMNS);
 
   if (opts?.estado) {
     query = query.eq('estado_publicacion', opts.estado);
   }
+  if (opts?.provincia) {
+    query = query.eq('provincia', opts.provincia);
+  }
+  if (opts?.categoria) {
+    query = query.eq('categoria', opts.categoria);
+  }
+  if (opts?.raza) {
+    query = query.eq('raza', opts.raza);
+  }
+  if (opts?.moneda) {
+    query = query.eq('moneda', opts.moneda);
+  }
+
+  // El filtro de humedal se aplica en la consulta, antes del límite: un lote
+  // que cumple no puede quedar afuera por estar fuera de los primeros 60.
+  const humedal = opts?.humedal;
+  if (humedal?.soloSinDato) {
+    query = query.is('porcentaje_humedal', null);
+  } else if (humedal) {
+    if (typeof humedal.min === 'number') {
+      query = query.gte('porcentaje_humedal', humedal.min);
+    }
+    if (typeof humedal.max === 'number') {
+      query = query.lte('porcentaje_humedal', humedal.max);
+    }
+  }
+
+  // Todos los filtros van antes del límite: la ventana de 60 es de resultados
+  // que ya cumplen, no de lotes recientes que después se descartan.
+  query = query.order('created_at', { ascending: false }).limit(60);
 
   const { data, error } = await query;
   if (error) throw new Error(`Error listando lotes: ${error.message}`);

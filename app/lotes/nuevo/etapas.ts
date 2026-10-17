@@ -5,6 +5,7 @@ export type DatosEtapa = {
   provincia: string;
   localidad: string;
   poligonoOk: boolean;
+  dibujoActivo: boolean;
   archivoCsv: boolean;
   csvOk: boolean;
   monto: string;
@@ -26,7 +27,9 @@ export function validarEtapa(etapa: number, datos: DatosEtapa): ErroresEtapa {
       errores.renspa = 'Formato RENSPA inválido (XX.XXX.X.XXXXX/XX).';
     if (!datos.provincia) errores.provincia = 'Indicá la provincia.';
     if (!datos.localidad) errores.localidad = 'Indicá la localidad.';
-    if (!datos.poligonoOk) errores.poligono = 'Dibujá o pegá el polígono del establecimiento.';
+    if (datos.dibujoActivo)
+      errores.poligono = 'Terminá o guardá el dibujo del polígono antes de continuar.';
+    else if (!datos.poligonoOk) errores.poligono = 'Dibujá o pegá el polígono del establecimiento.';
   } else if (etapa === 1) {
     if (!datos.archivoCsv) errores.archivo_rfid_csv = 'Subí el CSV del bastón lector.';
     else if (!datos.csvOk) errores.archivo_rfid_csv = 'El CSV tiene errores; revisá el detalle.';

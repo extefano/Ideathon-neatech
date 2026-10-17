@@ -9,6 +9,11 @@
 //!    ajuste proporcional por faltante de peso (Sello 3).
 //!
 //! Los documentos completos viven fuera de la cadena; on-chain solo se anclan hashes SHA-256.
+//!
+//! El hash de origen (`eudr_geo_hash`, argumento de `create_and_verify_origin`) compromete el
+//! manifiesto de origen v2 (`muunar.origen.v2`), que incluye el SHA-256 del reporte de humedales
+//! del establecimiento. El contrato no interpreta ese JSON: solo conserva y devuelve el hash,
+//! y la verificación de inclusión se hace fuera de la cadena con los bytes exactos.
 
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, token, Address, Env,

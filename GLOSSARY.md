@@ -26,6 +26,7 @@ Términos canónicos del proyecto. Usar estos nombres en código, issues, tests 
 - **Sello 1 (Origen Libre de Deforestación)**: verificación EUDR del polígono contra GFW + anclaje de hashes.
 - **Sello 2 (Sanidad y Engorde)**: auditoría del Mes 4 (vacunación + pesada) validada con ADPV.
 - **Sello 3 (Cierre y Recepción)**: recepción en frigorífico y liquidación final.
+- **Estado de origen**: ciclo de vida del anclaje del Sello 1: `PENDIENTE` → `PREPARADO` (manifiesto y raíz persistidos antes de enviar) → `ENVIADO` → `CONFIRMADO` (red real) o `DEMO` (cliente fake). `RECHAZADO` (deforestación) y `CONFLICTO` (raíz on-chain distinta de la preparada) son terminales y congelan la evidencia; un reintento reutiliza el manifiesto preparado y nunca lo regenera.
 - **Hito**: etapa del contrato de financiación. Desembolsos: 40% (Hito 1, al fondear), 30% (Hito 2, Mes 4), 30% (Hito 3, recepción).
 - **Escrow**: contrato inteligente en Soroban que retiene los USDC/EURC y libera por hitos.
 - **Pasaporte digital EUDR**: página pública con QR (`/pasaporte/[codigo_lote]`) con las 3 pruebas on-chain y el legajo.
@@ -42,5 +43,10 @@ Términos canónicos del proyecto. Usar estos nombres en código, issues, tests 
 
 - **EUDR**: Reglamento (UE) 2023/1115; exige origen libre de deforestación posterior al 31/12/2020.
 - **GFW**: Global Forest Watch (`data-api.globalforestwatch.org`), dataset `umd_tree_cover_loss`; pérdida arbórea ≥ 2021 en el polígono = rechazo.
+- **Porcentaje de humedal**: proporción (0–100 %) del polígono del establecimiento clasificada como humedal por la fuente principal, calculada en PostGIS (EPSG:6933, unión previa sin doble conteo). Se almacena con 6 decimales y un recorte positivo nunca se reporta como 0 (piso 0,000001 %). Es un **atributo informativo del lote**: no se ancla on-chain ni condiciona el Sello 1.
+- **Fuente de humedales versionada**: producto oficial o científico (INH, MapBiomas) con versión, clases, escala y cobertura observacional propias. Una versión publicada es inmutable; los datos de desarrollo se marcan como demo.
+- **Sin dato de humedal**: resultado explícito (`SIN_DATOS`, `COBERTURA_PARCIAL`, `ERROR_CONSULTA`) cuando el 0 % no puede afirmarse. Jamás se muestra como cero.
+- **Reporte de humedales**: documento canónico `muunar.humedal.v1` con geometría normalizada, métricas y fuente. Se persiste como snapshot con su SHA-256 como integridad interna del atributo; **no se ancla on-chain**.
+- **Manifiesto de origen v2**: documento `muunar.origen.v2` (código, polígono normalizado y consulta GFW) cuya raíz SHA-256 es el `eudr_geo_hash` que recibe Soroban en el Sello 1. No incluye atributos informativos como humedales (ADR-0002).
 - **Hash SHA-256**: huella del contenido de un archivo (PDF/CSV) anclada on-chain; permite detectar alteraciones pero no prueba veracidad.
 - **Taxonomía de estados**: `CARGADO`, `VALIDADO_POR_PLATAFORMA`, `CONTRASTADO_CON_FUENTE_OFICIAL`, `REGISTRADO_EN_BLOCKCHAIN`, `PAGO_LIBERADO`.

@@ -61,3 +61,20 @@ export function puntosDesdePoligono(texto: string): Punto[] {
     return [];
   }
 }
+
+/**
+ * Detecta anillos interiores (agujeros) en un Polygon o Feature con geometry
+ * Polygon. El editor de mapa solo dibuja el anillo exterior, así que un
+ * polígono con agujeros no debe entrar en modo dibujo (se perderían).
+ */
+export function poligonoTieneAgujeros(texto: string): boolean {
+  if (!texto) return false;
+  try {
+    const parsed = JSON.parse(texto) as { coordinates?: unknown; geometry?: unknown };
+    const geom = (parsed.geometry ?? parsed) as { type?: string; coordinates?: unknown };
+    if (geom.type !== 'Polygon' || !Array.isArray(geom.coordinates)) return false;
+    return geom.coordinates.length > 1;
+  } catch {
+    return false;
+  }
+}

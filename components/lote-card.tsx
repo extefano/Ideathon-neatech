@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { EstadoBadge } from '@/components/estado-badge';
 import { resumirLote } from '@/lib/estado-lote';
+import { formatearPorcentajeHumedal } from '@/lib/humedales';
 import type { LoteListItem } from '@/lib/queries';
 
 export function LoteCard({ lote }: { lote: LoteListItem }) {
@@ -38,6 +39,19 @@ export function LoteCard({ lote }: { lote: LoteListItem }) {
         {lote.moneda} {lote.monto_total_financiacion?.toLocaleString('es-AR') ?? '—'} ·{' '}
         {lote.peso_promedio_kg ?? '—'} kg → {lote.peso_objetivo_kg ?? '—'} kg
       </p>
+
+      {lote.estado_humedal && (
+        <p className="mt-1 text-xs">
+          <span
+            className={lote.estado_humedal === 'VERIFICADO' ? 'text-brand' : 'text-neutral-500'}
+          >
+            Humedal:{' '}
+            {lote.estado_humedal === 'VERIFICADO' && lote.porcentaje_humedal !== null
+              ? `${formatearPorcentajeHumedal(String(lote.porcentaje_humedal))} % del campo`
+              : 'sin dato'}
+          </span>
+        </p>
+      )}
 
       <div className="mt-3 flex gap-1.5">
         {sellos.map((sello) => (

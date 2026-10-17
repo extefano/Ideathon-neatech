@@ -1,0 +1,29 @@
+{
+  "metodo": "ST_MakeValid + ST_CollectionExtract(polygonal) en PostGIS 3",
+  "reparadas": [
+    {
+      "idx": 597,
+      "ref": "yaguari-597",
+      "clase": "corredor ribereño",
+      "motivo": "ST_MakeValid (autointersección en la fuente oficial)"
+    },
+    {
+      "idx": 611,
+      "ref": "yaguari-611",
+      "clase": "arrocera",
+      "motivo": "ST_MakeValid (autointersección en la fuente oficial)"
+    },
+    {
+      "idx": 616,
+      "ref": "yaguari-616",
+      "clase": "arrocera",
+      "motivo": "ST_MakeValid (autointersección en la fuente oficial)"
+    },
+    {
+      "idx": 627,
+      "ref": "yaguari-627",
+      "clase": "arrocera",
+      "motivo": "ST_MakeValid (autointersección en la fuente oficial)"
+    }
+  ]
+}

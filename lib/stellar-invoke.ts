@@ -53,11 +53,16 @@ export async function invocarContrato<T = unknown>(opts: {
     const txHash = enviada.sendTransactionResponse?.hash ?? enviada.getTransactionResponse?.txHash;
     if (!txHash) throw new Error('La red no devolvió el hash de la transacción');
 
+    // Un hash de transacción no prueba éxito: si la red la rechazó, leer el
+    // resultado lanza y NO debemos continuar como si hubiera funcionado.
     let resultado: T | undefined;
     try {
       resultado = enviada.result as T;
-    } catch {
-      resultado = undefined;
+    } catch (error) {
+      throw new Error(
+        'La red no confirmó la transacción como exitosa (revisar el hash en el explorador)',
+        { cause: error },
+      );
     }
     return { txHash, resultado };
   } catch (error) {

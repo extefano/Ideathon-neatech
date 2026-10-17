@@ -188,10 +188,29 @@ export const TOKEN_SAC_TESTNET_USDC =
 
 export function getStellarClient(): StellarTraceabilityClient {
   const modo = process.env.STELLAR_MODE ?? 'fake';
-  if (modo === 'real' && STELLAR_CONTRACT_ID && process.env.STELLAR_ADMIN_SECRET) {
+  if (modo === 'real') {
+    if (!STELLAR_CONTRACT_ID || !process.env.STELLAR_ADMIN_SECRET) {
+      throw new Error(
+        'Modo real incompleto: faltan NEXT_PUBLIC_STELLAR_CONTRACT_ID o STELLAR_ADMIN_SECRET. Corregí la configuración o usá STELLAR_MODE=fake para la demo.',
+      );
+    }
     return new SorobanServerClient();
   }
   return new FakeStellarClient();
+}
+
+/** Contexto de anclaje para registrar en la evidencia del lote (nunca como real si es demo). */
+export function contextoAnclajeStellar(): {
+  red: 'testnet' | 'public';
+  contratoId: string | null;
+  modo: 'fake' | 'real';
+} {
+  const red = STELLAR_NETWORK_PASSPHRASE.includes('Public') ? 'public' : 'testnet';
+  return {
+    red,
+    contratoId: STELLAR_CONTRACT_ID || null,
+    modo: (process.env.STELLAR_MODE ?? 'fake') === 'real' ? 'real' : 'fake',
+  };
 }
 
 export function adminKeypair(): Keypair {
