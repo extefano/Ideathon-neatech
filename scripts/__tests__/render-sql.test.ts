@@ -38,4 +38,17 @@ describe('Render de la migración SQL demo (#45)', () => {
     };
     expect(renderMigracion(lotes, meta)).toBe(renderMigracion(lotes, meta));
   });
+
+  it('la guardia RAISE usa un único placeholder (los "%" literales rompen PL/pgSQL)', () => {
+    const sql = renderMigracion(lotes, {
+      count: lotes.length,
+      seed: 12345,
+      estado: 'DISPONIBLE',
+      certificaciones: false,
+    });
+    const lineas = sql.split('\n');
+    const indice = lineas.findIndex((linea) => linea.includes('raise exception'));
+    expect(indice).toBeGreaterThanOrEqual(0);
+    expect(lineas[indice + 1].match(/%/g) ?? []).toHaveLength(1);
+  });
 });

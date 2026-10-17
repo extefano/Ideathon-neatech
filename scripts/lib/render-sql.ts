@@ -156,7 +156,7 @@ export function renderMigracion(lotes: readonly LoteDemo[], meta: MetaMigracion)
     `  select count(*) into v_actual from public.lotes where codigo_lote like '${PREFIJO_CODIGO_DEMO}%';`,
     `  if v_actual > 0 and v_actual <> ${meta.count} then`,
     `    raise exception`,
-    `      'Seed demo inconsistente: % lotes ${PREFIJO_CODIGO_DEMO}% presentes; se esperaban ${meta.count}. Ejecutá scripts/sql/reset-lotes-demo.sql.',`,
+    `      'Seed demo inconsistente: hay % lotes demo presentes; se esperaban ${meta.count}. Ejecutá scripts/sql/reset-lotes-demo.sql.',`,
     `      v_actual;`,
     `  end if;`,
     `end;`,
