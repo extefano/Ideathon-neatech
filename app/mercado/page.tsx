@@ -1,3 +1,4 @@
+import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { LoteCard } from '@/components/lote-card';
 import { Aviso } from '@/components/ui/aviso';
@@ -5,6 +6,7 @@ import {
   CERTIFICACIONES_COMERCIALES,
   esCodigoCertificacionComercial,
   filtrarLotesPorCertificacion,
+  obtenerDefinicionCertificacion,
   type CodigoCertificacionComercial,
 } from '@/lib/domain';
 import { listarLotes, type LoteListItem } from '@/lib/queries';
@@ -48,24 +50,29 @@ function CampoSelect({
   name,
   valor,
   opciones,
+  placeholder = 'Todas',
 }: {
   etiqueta: string;
   name: string;
   valor: string;
   opciones: string[];
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={`filtro-${name}`} className="text-texto-suave block text-xs font-semibold">
+      <label
+        htmlFor={`filtro-${name}`}
+        className="text-texto-tenue block text-[10px] font-semibold tracking-wider uppercase"
+      >
         {etiqueta}
       </label>
       <select
         id={`filtro-${name}`}
         name={name}
         defaultValue={valor}
-        className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-superficie/40 text-texto hover:border-texto-tenue focus:bg-panel h-9 w-full border py-1.5 pr-9 pl-3 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
       >
-        <option value="">Todas</option>
+        <option value="">{placeholder}</option>
         {opciones.map((opcion) => (
           <option key={opcion} value={opcion}>
             {opcion}
@@ -120,13 +127,35 @@ export default async function MercadoPage({
 
   const filtrados = certFiltro ? filtrarLotesPorCertificacion(lotes, certFiltro) : lotes;
 
+  const etiquetasFiltrosActivos: string[] = [];
+  if (filtros.provincia) etiquetasFiltrosActivos.push(filtros.provincia);
+  if (filtros.categoria) etiquetasFiltrosActivos.push(filtros.categoria);
+  if (filtros.raza) etiquetasFiltrosActivos.push(filtros.raza);
+  if (filtros.moneda) etiquetasFiltrosActivos.push(filtros.moneda);
+  if (filtroHumedalValido) {
+    if (humedal.sinDato) {
+      etiquetasFiltrosActivos.push('Sin dato de humedal');
+    } else if (humedal.min != null && humedal.max != null) {
+      etiquetasFiltrosActivos.push(`Humedal ${humedal.min}–${humedal.max} %`);
+    } else if (humedal.min != null) {
+      etiquetasFiltrosActivos.push(`Humedal ≥ ${humedal.min} %`);
+    } else if (humedal.max != null) {
+      etiquetasFiltrosActivos.push(`Humedal ≤ ${humedal.max} %`);
+    }
+  }
+  if (certFiltro) {
+    etiquetasFiltrosActivos.push(obtenerDefinicionCertificacion(certFiltro).etiquetaTarjeta);
+  }
+
   return (
-    <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Mercado de lotes</h1>
-        <p className="text-texto-suave max-w-3xl">
-          Lotes con origen verificado y libre de deforestación (EUDR) y certificaciones comerciales
-          voluntarias. Compará kilos, precio por kg y uniformidad antes de financiar.
+    <main className="mx-auto max-w-6xl space-y-6 p-6 sm:p-8">
+      <header className="space-y-1.5">
+        <h1 className="text-texto text-2xl font-bold tracking-tight sm:text-3xl">
+          Mercado de lotes
+        </h1>
+        <p className="text-texto-suave text-sm sm:text-base">
+          Ganado con origen verificado libre de deforestación, listo para financiar y seguir etapa
+          por etapa.
         </p>
       </header>
 
@@ -140,7 +169,7 @@ export default async function MercadoPage({
         </Aviso>
       )}
 
-      <form method="get" className="rounded-tarjeta border-borde bg-panel border p-4">
+      <form method="get" className="rounded-tarjeta border-borde bg-panel border p-4 shadow-xs">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <CampoSelect
             etiqueta="Provincia"
@@ -160,59 +189,10 @@ export default async function MercadoPage({
             valor={filtros.raza ?? ''}
             opciones={conValorActual(unicos(disponibles, 'raza'), filtros.raza)}
           />
-          <CampoSelect
-            etiqueta="Moneda"
-            name="moneda"
-            valor={filtros.moneda ?? ''}
-            opciones={conValorActual(['USDC', 'EURC'], filtros.moneda)}
-          />
-          <div className="space-y-1">
-            <label htmlFor="filtro-humMin" className="text-texto-suave block text-xs font-semibold">
-              Humedal mínimo (%)
-            </label>
-            <input
-              id="filtro-humMin"
-              name="humMin"
-              type="number"
-              min={0}
-              max={100}
-              step="0.1"
-              defaultValue={humedal.min ?? ''}
-              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="filtro-humMax" className="text-texto-suave block text-xs font-semibold">
-              Humedal máximo (%)
-            </label>
-            <input
-              id="filtro-humMax"
-              name="humMax"
-              type="number"
-              min={0}
-              max={100}
-              step="0.1"
-              defaultValue={humedal.max ?? ''}
-              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
-            />
-          </div>
-          <div className="flex min-h-11 items-center gap-2 pb-2">
-            <input
-              id="filtro-humSinDato"
-              name="humSinDato"
-              type="checkbox"
-              value="1"
-              defaultChecked={humedal.sinDato}
-              className="accent-brand h-4 w-4"
-            />
-            <label htmlFor="filtro-humSinDato" className="text-texto text-sm">
-              Solo lotes sin dato de humedal
-            </label>
-          </div>
           <div className="space-y-1">
             <label
               htmlFor="filtro-certificacion"
-              className="text-texto-suave block text-xs font-semibold"
+              className="text-texto-tenue block text-[10px] font-semibold tracking-wider uppercase"
             >
               Valor agregado
             </label>
@@ -220,7 +200,7 @@ export default async function MercadoPage({
               id="filtro-certificacion"
               name="certificacion"
               defaultValue={certFiltro}
-              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-superficie/40 text-texto hover:border-texto-tenue focus:bg-panel h-9 w-full border py-1.5 pr-9 pl-3 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none sm:text-sm"
             >
               <option value="">Todas las preferencias</option>
               {CERTIFICACIONES_COMERCIALES.map((cert) => (
@@ -230,22 +210,89 @@ export default async function MercadoPage({
               ))}
             </select>
           </div>
+          <CampoSelect
+            etiqueta="Moneda"
+            name="moneda"
+            valor={filtros.moneda ?? ''}
+            opciones={conValorActual(['USDC', 'EURC'], filtros.moneda)}
+            placeholder="Todas"
+          />
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 min-h-11 px-4 py-2 text-sm font-semibold text-neutral-950 focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Aplicar filtros
-          </button>
-          {hayFiltros && (
-            <Link
-              href="/mercado"
-              className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm underline focus-visible:ring-2 focus-visible:outline-none"
+
+        <div className="border-borde/80 mt-3.5 flex flex-col gap-3 border-t pt-3.5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-wrap items-end gap-2.5">
+            <div className="w-full space-y-1 sm:w-auto">
+              <label
+                htmlFor="filtro-humMin"
+                className="text-texto-tenue block text-[10px] font-semibold tracking-wider uppercase"
+              >
+                Rango de humedal (%)
+              </label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  id="filtro-humMin"
+                  name="humMin"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  placeholder="Mín (0)"
+                  defaultValue={humedal.min ?? ''}
+                  className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-superficie/40 text-texto placeholder:text-texto-tenue hover:border-texto-tenue focus:bg-panel h-9 w-full border px-2.5 py-1.5 font-mono text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none sm:w-24"
+                />
+                <span aria-hidden="true" className="text-texto-tenue text-xs font-semibold">
+                  –
+                </span>
+                <label htmlFor="filtro-humMax" className="sr-only">
+                  Humedal máximo (%)
+                </label>
+                <input
+                  id="filtro-humMax"
+                  name="humMax"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  placeholder="Máx (100)"
+                  defaultValue={humedal.max ?? ''}
+                  className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-superficie/40 text-texto placeholder:text-texto-tenue hover:border-texto-tenue focus:bg-panel h-9 w-full border px-2.5 py-1.5 font-mono text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none sm:w-24"
+                />
+              </div>
+            </div>
+            <label
+              htmlFor="filtro-humSinDato"
+              className="rounded-control border-borde-fuerte bg-superficie/40 hover:border-texto-tenue has-[:checked]:border-brand-fuerte/60 has-[:checked]:bg-brand/15 focus-within:ring-foco flex h-9 cursor-pointer items-center gap-2 border px-3 py-1.5 text-xs font-medium transition-colors select-none focus-within:ring-2"
             >
-              Limpiar filtros
-            </Link>
-          )}
+              <input
+                id="filtro-humSinDato"
+                name="humSinDato"
+                type="checkbox"
+                value="1"
+                defaultChecked={humedal.sinDato}
+                className="accent-brand h-3.5 w-3.5 rounded focus:outline-none"
+              />
+              <span className="text-texto text-xs font-medium">Solo lotes sin dato de humedal</span>
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+            {hayFiltros && (
+              <Link
+                href="/mercado"
+                className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto-suave hover:border-texto-tenue hover:bg-panel-elevado hover:text-texto inline-flex h-8.5 items-center justify-center gap-1.5 border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <RotateCcw aria-hidden="true" className="h-3 w-3" />
+                <span>Limpiar</span>
+              </Link>
+            )}
+            <button
+              type="submit"
+              className="rounded-control focus-visible:ring-foco bg-brand hover:bg-brand/90 border-brand-fuerte/30 inline-flex h-8.5 cursor-pointer items-center justify-center gap-1.5 border px-3.5 py-1.5 text-xs font-semibold text-neutral-950 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <SlidersHorizontal aria-hidden="true" className="h-3.5 w-3.5" />
+              <span>Aplicar filtros</span>
+            </button>
+          </div>
         </div>
       </form>
 
@@ -260,11 +307,34 @@ export default async function MercadoPage({
             : 'No hay lotes disponibles en este momento.'}
         </Aviso>
       ) : (
-        <section aria-label="Listado de lotes" className="space-y-4">
-          <h2 className="text-lg font-semibold">
-            Lotes ({filtrados.length}
-            {hayFiltros ? ` de ${disponibles.length}` : ''})
-          </h2>
+        <section aria-label="Listado de lotes" className="space-y-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-texto text-lg font-bold tracking-tight">Lotes disponibles</h2>
+              <span className="border-borde-fuerte bg-panel-elevado text-texto-suave inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 text-center font-mono text-xs leading-none font-semibold">
+                {filtrados.length}
+                {hayFiltros ? ` de ${disponibles.length}` : ''}
+              </span>
+            </div>
+            {etiquetasFiltrosActivos.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {etiquetasFiltrosActivos.map((etiqueta) => (
+                  <span
+                    key={etiqueta}
+                    className="border-brand-fuerte/30 bg-brand/15 text-brand-fuerte inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                  >
+                    {etiqueta}
+                  </span>
+                ))}
+                <Link
+                  href="/mercado"
+                  className="focus-visible:ring-foco text-texto-suave hover:text-brand-fuerte ml-1 text-xs font-semibold underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  Limpiar
+                </Link>
+              </div>
+            )}
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtrados.map((lote) => (
               <LoteCard key={lote.id} lote={lote} />

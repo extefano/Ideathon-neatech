@@ -49,14 +49,35 @@ const lote7: LoteListItem = {
 };
 
 describe('LoteCard (Eje 1 vs Eje 2 · #42)', () => {
-  it('distingue visualmente los Sellos EUDR (Eje 1) de las certificaciones voluntarias (Eje 2)', () => {
-    render(<LoteCard lote={lote7} />);
+  it('distingue visualmente los Sellos EUDR (Eje 1) como step-progress con tooltip y las certificaciones voluntarias (Eje 2) como píldoras sin ticks', () => {
+    const { rerender } = render(
+      <LoteCard lote={{ ...lote7, titulo: '[DEMO] 40 Novillitos Hereford - 240 kg' }} />,
+    );
 
-    expect(screen.getByText(/Sellos EUDR \(Obligatorios · Eje 1\):/i)).toBeInTheDocument();
-    expect(screen.getByText('1 · Origen')).toBeInTheDocument();
-    expect(screen.getByText(/Valor agregado \(Voluntarios · Eje 2\):/i)).toBeInTheDocument();
-    expect(screen.getByText(/GEI · Sinergia/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sin Antibióticos/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '40 Novillitos Hereford' })).toBeInTheDocument();
+    expect(screen.getByText('Sellos EUDR')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Estado actual de los sellos EUDR/i }),
+    ).toHaveTextContent('?');
+    expect(screen.getByRole('tooltip')).toHaveTextContent(
+      /Origen verificado \(Sello 1\)\. Esperando que un Comprador deposite el pago en garantía\./i,
+    );
+    expect(screen.getByRole('list', { name: /Progreso de sellos EUDR/i })).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('Origen')).toBeInTheDocument();
+    expect(screen.getByText('Sanidad').closest('li')).not.toHaveAttribute('aria-current');
+    expect(screen.getByText('Cierre')).toBeInTheDocument();
+
+    expect(screen.getByText('Valor agregado')).toBeInTheDocument();
+    const pildoraGei = screen.getByText(/GEI · Sinergia/i);
+    const pildoraAntibioticos = screen.getByText(/Sin Antibióticos/i);
+    expect(pildoraGei).toHaveClass('rounded-full');
+    expect(pildoraGei.querySelector('svg')).toBeNull();
+    expect(pildoraAntibioticos).toHaveClass('rounded-full');
+    expect(pildoraAntibioticos.querySelector('svg')).toBeNull();
+
+    rerender(<LoteCard lote={{ ...lote7, estado_publicacion: 'FINANCIADO_EN_ENGORDE' }} />);
+    expect(screen.getByText('Sanidad').closest('li')).toHaveAttribute('aria-current', 'step');
   });
 });
 

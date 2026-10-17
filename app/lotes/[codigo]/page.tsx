@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BannerRolRequerido, CredencialSesion } from '@/components/auth-guard';
@@ -58,16 +58,38 @@ function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
   );
 }
 
-function SelloItem({ nombre, activo, falta }: { nombre: string; activo: boolean; falta: string }) {
+function SelloItem({
+  numero,
+  nombre,
+  activo,
+  falta,
+  esUltimo = false,
+}: {
+  numero: number;
+  nombre: string;
+  activo: boolean;
+  falta: string;
+  esUltimo?: boolean;
+}) {
   return (
-    <li className="flex items-start gap-3">
+    <li className="relative flex items-start gap-3.5 pb-4 last:pb-0">
+      {!esUltimo && (
+        <span
+          aria-hidden="true"
+          className={`absolute top-6 -bottom-1 left-3 w-0.5 -translate-x-1/2 ${
+            activo ? 'bg-brand-fuerte/50' : 'bg-borde-fuerte'
+          }`}
+        />
+      )}
       <span
         aria-hidden="true"
-        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
-          activo ? 'border-brand-fuerte text-brand-fuerte' : 'border-borde-fuerte text-texto-tenue'
+        className={`relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold ${
+          activo
+            ? 'border-brand-fuerte bg-brand text-neutral-950 shadow-2xs'
+            : 'border-borde-fuerte bg-panel text-texto-tenue'
         }`}
       >
-        {activo ? <Check strokeWidth={3} className="h-3.5 w-3.5" /> : '·'}
+        {numero}
       </span>
       <div>
         <p className={`text-sm font-semibold ${activo ? 'text-texto' : 'text-texto-suave'}`}>
@@ -155,6 +177,7 @@ export default async function LotePage({
       docUrlResuelta: await urlFirmada('documentos', cert.doc_url),
     })),
   );
+  const tituloLimpio = String(lote.titulo ?? 'Lote sin título').replace(/^\[DEMO\]\s*/i, '');
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-8">
@@ -172,7 +195,7 @@ export default async function LotePage({
             <span className="text-texto-suave font-mono text-sm">{lote.codigo_lote}</span>
             <EstadoBadge estado={estado} />
           </div>
-          <h1 className="mt-2 text-3xl font-bold">{lote.titulo ?? 'Lote sin título'}</h1>
+          <h1 className="mt-2 text-3xl font-bold">{tituloLimpio}</h1>
           <p className="text-texto-suave mt-1 text-sm">
             RENSPA {lote.renspa} · {lote.localidad}, {lote.provincia} · {lote.superficie_ha} ha ·{' '}
             {lote.tipo_operacion ?? '—'}
@@ -309,26 +332,30 @@ export default async function LotePage({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Tarjeta
-          titulo="Progreso de los 3 sellos (Eje 1 · Obligatorio)"
-          descripcion="Requisitos indispensables de cumplimiento aduanero y sanitario (EUDR + SENASA)."
+          titulo="Sellos EUDR"
+          descripcion="Requisitos de cumplimiento aduanero y sanitario (EUDR + SENASA)."
         >
-          <ul className="space-y-4">
+          <ol className="mt-1">
             <SelloItem
-              nombre="Sello 1 · Origen libre de deforestación"
+              numero={1}
+              nombre="Origen libre de deforestación"
               activo={Boolean(lote.seal_1_eudr)}
               falta="validación satelital EUDR y polígono"
             />
             <SelloItem
-              nombre="Sello 2 · Sanidad y engorde"
+              numero={2}
+              nombre="Sanidad y engorde"
               activo={sello2}
               falta="auditoría del Mes 4 del Veterinario acreditado"
             />
             <SelloItem
-              nombre="Sello 3 · Cierre y recepción"
+              numero={3}
+              nombre="Cierre y recepción"
               activo={Boolean(lote.seal_3_reception)}
               falta="despacho DT-e y recepción en balanza fiscal"
+              esUltimo
             />
-          </ul>
+          </ol>
         </Tarjeta>
 
         <Tarjeta
