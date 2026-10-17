@@ -34,16 +34,15 @@ jobs:
         with:
           version: latest
 
-      - name: Reparar historial remoto (versiones aplicadas fuera de banda vía MCP)
+      - name: Push migrations (reparando huérfanas remotas si hace falta)
         run: |
-          ORPHANS=$(supabase migration list --db-url "$SUPABASE_DB_URL" \
-            | awk -F'|' '{gsub(/[[:space:]]/,"",$1); gsub(/[[:space:]]/,"",$2)} NF>=2 && $1=="" && $2 ~ /^[0-9]+$/ {printf "%s ", $2}')
-          if [ -n "$ORPHANS" ]; then
-            echo "Versiones huérfanas (remotas sin archivo local) a reparar: $ORPHANS"
-            supabase migration repair --status reverted $ORPHANS --db-url "$SUPABASE_DB_URL"
-          else
-            echo "Sin versiones huérfanas en el historial remoto."
+          OUT=$(supabase db push --include-all --db-url "$SUPABASE_DB_URL" 2>&1) && { echo "$OUT"; exit 0; }
+          echo "$OUT"
+          ORPHANS=$(printf '%s\n' "$OUT" | grep -oE 'migration repair --status reverted [0-9 ]+' | head -1 | sed 's/.*reverted //')
+          if [ -z "$ORPHANS" ]; then
+            echo "No se pudieron extraer versiones huérfanas del error; abortando." >&2
+            exit 1
           fi
-
-      - name: Push migrations
-        run: supabase db push --include-all --db-url "$SUPABASE_DB_URL"
+          echo "Versiones huérfanas (aplicadas fuera de banda vía MCP) a reparar: $ORPHANS"
+          supabase migration repair --status reverted $ORPHANS --db-url "$SUPABASE_DB_URL"
+          supabase db push --include-all --db-url "$SUPABASE_DB_URL"
