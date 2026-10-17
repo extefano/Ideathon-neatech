@@ -110,6 +110,7 @@ describe('PorcentajeHumedal', () => {
 
     expect(html).toContain('Sin dato de humedal');
     expect(html).toContain('cobertura parcial');
+    expect(html).toContain('fuera del área que cubre la fuente');
     expect(html).toContain('61.5');
   });
 });

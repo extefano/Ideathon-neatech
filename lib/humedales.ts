@@ -163,11 +163,11 @@ export function descripcionHumedal(reporte: {
       return `${pct} % del campo`;
     }
     case 'COBERTURA_PARCIAL':
-      return 'Sin dato (cobertura parcial de la fuente)';
+      return 'Sin dato: el campo queda fuera del área cubierta por la fuente (cobertura parcial)';
     case 'SIN_COBERTURA':
-      return 'Sin dato (la fuente no cubre este campo)';
+      return 'Sin dato: la fuente no cubre este campo';
     case 'SIN_DATOS':
-      return 'Sin dato (no hay fuente de humedales cargada)';
+      return 'Sin dato: no hay una fuente de humedales publicada';
     case 'ERROR_CONSULTA':
       return 'Sin dato (no se pudo calcular)';
   }

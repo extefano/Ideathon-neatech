@@ -86,8 +86,14 @@ export function LoteCard({ lote, perspectiva }: { lote: LoteListItem; perspectiv
           <div className="border-borde/50 border-t pt-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="text-texto-tenue font-medium">Humedal (informativo)</span>
-              <span className="text-texto font-mono font-semibold">
-                {lote.estado_humedal === 'VERIFICADO' && lote.porcentaje_humedal !== null
+              <span
+                className={
+                  lote.estado_humedal === 'VERIFICADO'
+                    ? 'text-brand-fuerte font-mono font-semibold'
+                    : 'text-texto-tenue font-mono font-semibold'
+                }
+              >
+                {lote.estado_humedal === 'VERIFICADO' && lote.porcentaje_humedal != null
                   ? `${formatearPorcentajeHumedal(String(lote.porcentaje_humedal))} % del campo`
                   : 'sin dato'}
               </span>

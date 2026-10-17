@@ -7,8 +7,8 @@ import {
 } from '@/lib/humedales';
 
 /**
- * Resumen ambiental persistido del lote (ficha y pasaporte). No consulta la
- * fuente en vivo: muestra el snapshot que acompañó al Sello 1.
+ * Resumen ambiental persistido del lote (ficha y pasaporte): atributo
+ * informativo, sin anclaje on-chain. Usa el amarillo de marca del sitio.
  */
 export function ResumenHumedal({
   estado,
@@ -24,20 +24,19 @@ export function ResumenHumedal({
   const verificado = estado === 'VERIFICADO';
 
   return (
-    <div
-      className={`rounded-tarjeta border p-3.5 text-sm ${
-        verificado ? 'border-brand/30 bg-brand/5' : 'border-neutral-700 bg-neutral-900/60'
-      }`}
-    >
-      <p className={`font-semibold ${verificado ? 'text-brand' : 'text-neutral-200'}`}>
-        Humedales: {descripcionHumedal({ estado, porcentajeHumedal })}
+    <div className="rounded-tarjeta border-brand-fuerte/30 bg-brand/10 text-texto border p-3.5 text-sm">
+      <p className="font-semibold">
+        Humedales:{' '}
+        <span className={verificado ? 'text-brand-fuerte' : undefined}>
+          {descripcionHumedal({ estado, porcentajeHumedal })}
+        </span>
       </p>
       {verificado && superficieHumedalHa && (
-        <p className="mt-0.5 text-xs text-neutral-400">
+        <p className="text-texto-suave mt-0.5 text-xs">
           {formatearHectareas(superficieHumedalHa)} ha clasificadas como humedal.
         </p>
       )}
-      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
+      <p className="text-texto-suave mt-1 flex flex-wrap items-center gap-2 text-xs">
         {fuente ? (
           <span>
             Fuente: {etiquetaFuenteHumedal(fuente)}
@@ -52,8 +51,8 @@ export function ResumenHumedal({
           </span>
         )}
       </p>
-      <p className="mt-1 text-[11px] text-neutral-500">
-        Dato estructural e informativo del establecimiento; no condiciona por sí solo el Sello 1.
+      <p className="text-texto-tenue mt-1 text-[11px]">
+        Atributo informativo del establecimiento; no forma parte del anclaje del Sello 1.
       </p>
     </div>
   );
