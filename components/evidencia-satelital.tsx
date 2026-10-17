@@ -51,7 +51,7 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
     esConforme ? (
       <span
         role="status"
-        className="border-brand/40 bg-brand/10 text-brand inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+        className="border-brand-fuerte/40 bg-brand/10 text-brand-fuerte inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
       >
         <span className="bg-brand h-1.5 w-1.5 rounded-full text-neutral-950" />✓ Conforme EUDR ·
         Libre de deforestación
@@ -59,15 +59,15 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
     ) : (
       <span
         role="alert"
-        className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-300"
+        className="inline-flex items-center gap-1.5 rounded-full border border-red-600/40 bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-700"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-red-400" />✕ No conforme EUDR · Pérdida arbórea
+        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />✕ No conforme EUDR · Pérdida arbórea
         detectada
       </span>
     )
   ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-0.5 text-xs font-medium text-neutral-400">
-      <span className="h-1.5 w-1.5 rounded-full bg-neutral-500" />
+    <span className="border-borde-fuerte bg-panel text-texto-suave inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium">
+      <span className="bg-texto-tenue h-1.5 w-1.5 rounded-full" />
       Sin análisis satelital
     </span>
   );
@@ -83,21 +83,21 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
         {/* Resultado del análisis */}
         {tieneGfw ? (
           esConforme ? (
-            <div className="rounded-tarjeta border-brand/30 bg-brand/5 border p-3.5 text-sm">
+            <div className="rounded-tarjeta border-brand-fuerte/30 bg-brand/5 border p-3.5 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-brand font-medium">Pérdida arbórea post-2020:</span>
-                <span className="text-brand font-semibold">0,00 ha</span>
+                <span className="text-brand-fuerte font-medium">Pérdida arbórea post-2020:</span>
+                <span className="text-brand-fuerte font-semibold">0,00 ha</span>
               </div>
-              <p className="mt-1 text-xs text-neutral-300">
+              <p className="text-texto-suave mt-1 text-xs">
                 La parcela analizada no presenta pérdida de bosque nativo desde la fecha de corte
                 reglamentaria.
               </p>
             </div>
           ) : (
-            <div className="rounded-tarjeta border border-red-500/30 bg-red-950/20 p-3.5 text-sm">
+            <div className="rounded-tarjeta border border-red-600/30 bg-red-50 p-3.5 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-red-300">Pérdida arbórea post-2020:</span>
-                <span className="font-semibold text-red-400">
+                <span className="font-medium text-red-700">Pérdida arbórea post-2020:</span>
+                <span className="font-semibold text-red-600">
                   {totalLoss.toLocaleString('es-AR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -105,24 +105,24 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
                   ha
                 </span>
               </div>
-              <p className="mt-1 text-xs text-neutral-300">
-                Se detectaron <strong className="text-red-300">{totalLoss} ha</strong> de pérdida de
+              <p className="text-texto-suave mt-1 text-xs">
+                Se detectaron <strong className="text-red-700">{totalLoss} ha</strong> de pérdida de
                 masa arbórea posterior a 2020, por lo que el lote no es apto para exportación EUDR.
               </p>
 
               {/* Desglose anual en tags/chips */}
               {gfw?.byYear && gfw.byYear.length > 0 && (
-                <div className="mt-3 border-t border-red-500/20 pt-2.5">
-                  <span className="text-xs font-medium text-neutral-400">
+                <div className="mt-3 border-t border-red-600/20 pt-2.5">
+                  <span className="text-texto-suave text-xs font-medium">
                     Desglose por año detectado:
                   </span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {gfw.byYear.map((item) => (
                       <span
                         key={item.year}
-                        className="rounded-control inline-flex items-center gap-1.5 border border-red-500/40 bg-red-950/40 px-2.5 py-1 text-xs text-red-200 transition hover:bg-red-900/40"
+                        className="rounded-control inline-flex items-center gap-1.5 border border-red-600/40 bg-red-100 px-2.5 py-1 text-xs text-red-700 transition hover:bg-red-100"
                       >
-                        <span className="font-semibold text-red-300">{item.year}:</span>
+                        <span className="font-semibold text-red-700">{item.year}:</span>
                         <span>
                           {item.lossHa.toLocaleString('es-AR', {
                             minimumFractionDigits: 2,
@@ -145,9 +145,9 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
         )}
 
         {/* Bloque pedagógico sutil con icono explicativo */}
-        <div className="rounded-tarjeta flex items-start gap-2.5 border border-neutral-800 bg-neutral-900/60 p-3 text-xs text-neutral-400">
+        <div className="rounded-tarjeta border-borde bg-panel-elevado text-texto-suave flex items-start gap-2.5 border p-3 text-xs">
           <svg
-            className="text-brand mt-0.5 h-4 w-4 shrink-0"
+            className="text-brand-fuerte mt-0.5 h-4 w-4 shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -161,7 +161,7 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
             />
           </svg>
           <p className="leading-relaxed">
-            <strong className="text-neutral-300">Corte reglamentario EUDR (31/12/2020):</strong> El
+            <strong className="text-texto-suave">Corte reglamentario EUDR (31/12/2020):</strong> El
             Reglamento de la Unión Europea sobre deforestación (EUDR) prohíbe la comercialización y
             exportación de ganado proveniente de parcelas con deforestación posterior al 31 de
             diciembre de 2020.
@@ -170,14 +170,14 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
 
         {/* Metadatos y fuente comprensibles */}
         {tieneGfw && (
-          <dl className="space-y-1 text-xs text-neutral-400">
+          <dl className="text-texto-suave space-y-1 text-xs">
             <div>
-              <dt className="inline text-neutral-500">Fuente satelital: </dt>
+              <dt className="text-texto-tenue inline">Fuente satelital: </dt>
               <dd className="inline">Global Forest Watch (Universidad de Maryland / Hansen)</dd>
             </div>
             {fechaAuditoria && (
               <div>
-                <dt className="inline text-neutral-500">Auditoría: </dt>
+                <dt className="text-texto-tenue inline">Auditoría: </dt>
                 <dd className="inline">Verificado satelitalmente el {fechaAuditoria}</dd>
               </div>
             )}
@@ -186,11 +186,11 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
 
         {/* Acordeón colapsable para inspectores / detalle técnico */}
         {tieneGfw && (
-          <details className="group rounded-tarjeta border border-neutral-800 bg-neutral-900/40 text-xs">
-            <summary className="flex cursor-pointer items-center justify-between p-2.5 text-neutral-400 transition select-none hover:text-neutral-200">
+          <details className="group rounded-tarjeta border-borde bg-panel border text-xs">
+            <summary className="text-texto-suave hover:text-texto flex cursor-pointer items-center justify-between p-2.5 transition select-none">
               <span className="flex items-center gap-1.5 font-medium">
                 <svg
-                  className="h-3.5 w-3.5 text-neutral-500 transition-transform duration-200 group-open:rotate-90"
+                  className="text-texto-tenue h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-90"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -201,25 +201,25 @@ export function EvidenciaSatelital({ poligono, gfw }: EvidenciaSatelitalProps) {
                 </svg>
                 Ver detalle técnico de auditoría
               </span>
-              <span className="text-[10px] tracking-wider text-neutral-500 uppercase">
+              <span className="text-texto-tenue text-[10px] tracking-wider uppercase">
                 GFW API v2
               </span>
             </summary>
-            <div className="space-y-1.5 border-t border-neutral-800/80 px-3 py-2.5 font-mono text-[11px] text-neutral-400">
+            <div className="border-borde text-texto-suave space-y-1.5 border-t px-3 py-2.5 font-mono text-[11px]">
               <div className="flex justify-between gap-2">
-                <span className="text-neutral-500">dataset:</span>
-                <span className="text-neutral-300">umd_tree_cover_loss (Hansen / UMD)</span>
+                <span className="text-texto-tenue">dataset:</span>
+                <span className="text-texto-suave">umd_tree_cover_loss (Hansen / UMD)</span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className="text-neutral-500">criterio_api:</span>
-                <span className="text-neutral-300">
+                <span className="text-texto-tenue">criterio_api:</span>
+                <span className="text-texto-suave">
                   {gfw?.criterio ?? 'umd_tree_cover_loss >= 2021'}
                 </span>
               </div>
               {gfw?.checkedAt && (
                 <div className="flex justify-between gap-2">
-                  <span className="text-neutral-500">checked_at_iso:</span>
-                  <span className="text-neutral-300">{gfw.checkedAt}</span>
+                  <span className="text-texto-tenue">checked_at_iso:</span>
+                  <span className="text-texto-suave">{gfw.checkedAt}</span>
                 </div>
               )}
             </div>

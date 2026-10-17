@@ -6,8 +6,8 @@ type Tamano = 'md' | 'lg';
 const variantes: Record<Variante, string> = {
   primario: 'bg-brand text-neutral-950 hover:bg-brand/90',
   secundario:
-    'border border-neutral-700 bg-neutral-900 text-neutral-100 hover:border-neutral-500 hover:bg-neutral-800',
-  peligro: 'border border-red-500/50 bg-red-500/10 text-red-300 hover:bg-red-500/20',
+    'border border-borde-fuerte bg-panel text-texto hover:border-texto-tenue hover:bg-panel-elevado',
+  peligro: 'border border-red-600/40 bg-red-500/10 text-red-700 hover:bg-red-500/20',
 };
 
 const tamanos: Record<Tamano, string> = {

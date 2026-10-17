@@ -12,8 +12,8 @@ import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
-  'w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-brand focus:outline-none';
-const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400';
+  'w-full rounded-md border border-borde-fuerte bg-panel px-3 py-2 text-sm text-texto focus:border-brand-fuerte focus:outline-none';
+const claseLabel = 'mb-1 block text-xs font-medium uppercase tracking-wide text-texto-suave';
 
 export function FormFondeo({
   codigoLote,
@@ -183,7 +183,7 @@ export function FormFondeo({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-neutral-800 bg-neutral-950/80 p-3 text-xs text-neutral-400">
+      <div className="border-borde bg-panel-elevado text-texto-suave rounded-md border p-3 text-xs">
         ℹ️ <strong>Nota de transparencia:</strong> El esquema de escrow 40/30/30 opera en modo demo
         hasta el despliegue del contrato Soroban definitivo; cada hito ejecuta un{' '}
         <strong>pago clásico USDC real en Stellar Testnet</strong> firmado con tu wallet Freighter y
@@ -191,20 +191,20 @@ export function FormFondeo({
       </div>
 
       {esWalletReal && esTestnet && (
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-4 text-xs">
+        <div className="border-borde bg-panel rounded-lg border p-4 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <span className="font-semibold text-neutral-300">
+              <span className="text-texto-suave font-semibold">
                 Estado de tu wallet en Testnet:{' '}
               </span>
               {verificandoUsdc ? (
-                <span className="text-neutral-400">Verificando USDC...</span>
+                <span className="text-texto-suave">Verificando USDC...</span>
               ) : tieneTrustline ? (
-                <span className="text-brand">
+                <span className="text-brand-fuerte">
                   Trustline USDC activa · Balance: {balanceUsdc.toLocaleString('es-AR')} USDC
                 </span>
               ) : (
-                <span className="text-neutral-400">Falta trustline de USDC</span>
+                <span className="text-texto-suave">Falta trustline de USDC</span>
               )}
             </div>
 
@@ -214,7 +214,7 @@ export function FormFondeo({
                   type="button"
                   onClick={() => void handleActivarTrustline()}
                   disabled={creandoTrustline}
-                  className="rounded border border-neutral-700 bg-neutral-800 px-3 py-1 font-semibold text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
+                  className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado rounded border px-3 py-1 font-semibold disabled:opacity-50"
                 >
                   {creandoTrustline ? 'Abriendo en Freighter...' : '➕ Habilitar Trustline USDC'}
                 </button>
@@ -225,7 +225,7 @@ export function FormFondeo({
                   type="button"
                   onClick={() => void handleSolicitarUsdc()}
                   disabled={pidiendoUsdc}
-                  className="rounded border border-neutral-700 bg-neutral-800 px-3 py-1 font-semibold text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
+                  className="border-borde-fuerte bg-panel-elevado text-texto hover:bg-panel-elevado rounded border px-3 py-1 font-semibold disabled:opacity-50"
                 >
                   {pidiendoUsdc ? 'Enviando...' : `💧 Recibir ${monto} USDC de prueba`}
                 </button>
@@ -236,7 +236,7 @@ export function FormFondeo({
           {esMismaWallet && (
             <div
               role="alert"
-              className="text-brand mt-3 rounded border border-neutral-700 bg-neutral-900/90 p-2"
+              className="text-brand-fuerte border-borde-fuerte bg-panel mt-3 rounded border p-2"
             >
               ⚠️ <strong>Auto-compra bloqueada:</strong> Esta cuenta es la misma que la del
               productor del lote. Debés usar una cuenta distinta en Freighter para actuar como
@@ -287,7 +287,7 @@ export function FormFondeo({
       </form>
 
       {estadoTx && (
-        <div className="text-brand rounded-md border border-neutral-700 bg-neutral-900 p-3 text-xs">
+        <div className="text-brand-fuerte border-borde-fuerte bg-panel rounded-md border p-3 text-xs">
           {estadoTx}
         </div>
       )}
@@ -295,7 +295,7 @@ export function FormFondeo({
       {errorTx && (
         <div
           role="alert"
-          className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300"
+          className="rounded-md border border-red-600/40 bg-red-500/10 p-3 text-xs text-red-700"
         >
           {errorTx}
         </div>

@@ -39,7 +39,7 @@ function TxLink({ etiqueta, txHash }: { etiqueta: string; txHash: unknown }) {
       href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
       target="_blank"
       rel="noreferrer"
-      className="focus-visible:ring-foco text-brand text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-foco text-brand-fuerte text-xs hover:underline focus-visible:ring-2 focus-visible:outline-none"
     >
       {etiqueta} ↗
     </a>
@@ -52,16 +52,16 @@ function SelloItem({ nombre, activo, falta }: { nombre: string; activo: boolean;
       <span
         aria-hidden="true"
         className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
-          activo ? 'border-brand text-brand' : 'border-neutral-600 text-neutral-500'
+          activo ? 'border-brand-fuerte text-brand-fuerte' : 'border-borde-fuerte text-texto-tenue'
         }`}
       >
         {activo ? '✓' : '·'}
       </span>
       <div>
-        <p className={`text-sm font-semibold ${activo ? 'text-neutral-100' : 'text-neutral-400'}`}>
+        <p className={`text-sm font-semibold ${activo ? 'text-texto' : 'text-texto-suave'}`}>
           {nombre}
         </p>
-        <p className="text-xs text-neutral-500">
+        <p className="text-texto-tenue text-xs">
           {activo ? 'Verificado y anclado en Stellar.' : `Falta: ${falta}`}
         </p>
       </div>
@@ -135,18 +135,21 @@ export default async function LotePage({
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-8">
-      <Link href="/" className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400">
+      <Link
+        href="/"
+        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      >
         ← Lotes
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-sm text-neutral-400">{lote.codigo_lote}</span>
+            <span className="text-texto-suave font-mono text-sm">{lote.codigo_lote}</span>
             <EstadoBadge estado={estado} />
           </div>
           <h1 className="mt-2 text-3xl font-bold">{lote.titulo ?? 'Lote sin título'}</h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="text-texto-suave mt-1 text-sm">
             RENSPA {lote.renspa} · {lote.localidad}, {lote.provincia} · {lote.superficie_ha} ha ·{' '}
             {lote.tipo_operacion ?? '—'}
           </p>
@@ -174,8 +177,8 @@ export default async function LotePage({
 
       <Tarjeta titulo="Resumen y próximos pasos" descripcion={resumen.descripcion}>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-neutral-300">
-            Estado canónico: <span className="text-neutral-100">{resumen.canonico}</span>
+          <span className="text-texto-suave text-sm">
+            Estado canónico: <span className="text-texto">{resumen.canonico}</span>
           </span>
           {resumen.accion && estado !== 'DISPONIBLE' && (
             <Link
@@ -322,7 +325,7 @@ export default async function LotePage({
 
           <Tarjeta titulo="Detalles técnicos verificables">
             <details>
-              <summary className="cursor-pointer text-sm font-semibold text-neutral-200">
+              <summary className="text-texto cursor-pointer text-sm font-semibold">
                 Transacciones, caravanas y accesos técnicos
               </summary>
               <div className="mt-4 space-y-5">
@@ -336,7 +339,7 @@ export default async function LotePage({
                 <div className="flex flex-wrap gap-4 text-xs">
                   {renspaUrl && (
                     <a
-                      className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       href={renspaUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -346,7 +349,7 @@ export default async function LotePage({
                   )}
                   {boletoUrl && (
                     <a
-                      className="focus-visible:ring-foco text-brand hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte hover:underline focus-visible:ring-2 focus-visible:outline-none"
                       href={boletoUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -355,12 +358,12 @@ export default async function LotePage({
                     </a>
                   )}
                   {!renspaUrl && !boletoUrl && (
-                    <span className="text-neutral-500">Documentos con acceso restringido.</span>
+                    <span className="text-texto-tenue">Documentos con acceso restringido.</span>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-200">
+                  <h3 className="text-texto text-sm font-semibold">
                     Caravanas RFID ({caravanas.length})
                   </h3>
                   <Tabla
@@ -391,7 +394,7 @@ export default async function LotePage({
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-200">Movimientos del escrow</h3>
+                  <h3 className="text-texto text-sm font-semibold">Movimientos del escrow</h3>
                   <Tabla
                     className="mt-2"
                     columnas={[
@@ -412,10 +415,8 @@ export default async function LotePage({
                   />
                 </div>
 
-                <div className="space-y-1 text-sm text-neutral-300">
-                  <h3 className="text-sm font-semibold text-neutral-200">
-                    Productor y trazabilidad
-                  </h3>
+                <div className="text-texto-suave space-y-1 text-sm">
+                  <h3 className="text-texto text-sm font-semibold">Productor y trazabilidad</h3>
                   <p>
                     Productor:{' '}
                     {productor?.nombre_razon_social ??
@@ -424,16 +425,16 @@ export default async function LotePage({
                         : 'Productor registrado')}
                     {productor?.cuit ? ` · CUIT ${productor.cuit}` : ''}
                   </p>
-                  <p className="font-mono text-xs text-neutral-500">
+                  <p className="text-texto-tenue font-mono text-xs">
                     {lote.productor_wallet && esWalletStellar(String(lote.productor_wallet))
                       ? String(lote.productor_wallet)
                       : 'Wallet pendiente de vinculación en Freighter'}
                   </p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-texto-tenue text-xs">
                     {lote.cantidad_cabezas} cabezas · {lote.peso_promedio_kg} kg promedio (
                     {lote.peso_min_kg}–{lote.peso_max_kg}) · {lote.uniformidad}
                   </p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-texto-tenue text-xs">
                     Auditorías veterinarias: {auditorias.length} · Recepciones: {recepciones.length}{' '}
                     (Pasos 3 y 4)
                   </p>

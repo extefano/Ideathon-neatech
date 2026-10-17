@@ -11,8 +11,8 @@ import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
-  'w-full rounded-control min-h-11 border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none';
-const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-neutral-400 uppercase';
+  'w-full rounded-control min-h-11 border border-borde-fuerte bg-panel px-3 py-2 text-sm text-texto focus-visible:border-brand-fuerte focus-visible:outline-none';
+const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-texto-suave uppercase';
 
 async function cargarEnInput(inputId: string, url: string, nombre: string, tipo: string) {
   const input = document.getElementById(inputId);
@@ -106,7 +106,7 @@ export function FormAuditoria({
       <input type="hidden" name="codigo" value={codigo} />
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-neutral-200">1. Acta de vacunación SIGSA</h3>
+        <h3 className="text-texto text-sm font-semibold">1. Acta de vacunación SIGSA</h3>
         <div>
           <label className={claseLabel} htmlFor="acta_pdf">
             Acta SIGSA (PDF/imagen) *
@@ -120,7 +120,7 @@ export function FormAuditoria({
           />
           <button
             type="button"
-            className="text-brand mt-1 text-xs hover:underline"
+            className="text-brand-fuerte mt-1 text-xs hover:underline"
             onClick={() =>
               void cargarEnInput(
                 'acta_pdf',
@@ -136,7 +136,7 @@ export function FormAuditoria({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-neutral-200">2. Pesada del Mes 4</h3>
+        <h3 className="text-texto text-sm font-semibold">2. Pesada del Mes 4</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={claseLabel} htmlFor="csv_mes4">
@@ -151,7 +151,7 @@ export function FormAuditoria({
             />
             <button
               type="button"
-              className="text-brand mt-1 text-xs hover:underline"
+              className="text-brand-fuerte mt-1 text-xs hover:underline"
               onClick={() =>
                 void cargarEnInput(
                   'csv_mes4',
@@ -163,7 +163,7 @@ export function FormAuditoria({
             >
               Usar CSV de demo (30 cabezas ~320 kg)
             </button>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="text-texto-tenue mt-1 text-xs">
               Si alguna caravana no coincide con el padrón del lote, verás el detalle al firmar.
             </p>
           </div>
@@ -180,7 +180,7 @@ export function FormAuditoria({
               className={claseInput}
               defaultValue={120}
             />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="text-texto-tenue mt-1 text-xs">
               120 días representan el Mes 4 del ciclo.
             </p>
           </div>
@@ -188,7 +188,7 @@ export function FormAuditoria({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-neutral-200">3. Resultado y firma</h3>
+        <h3 className="text-texto text-sm font-semibold">3. Resultado y firma</h3>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className={claseLabel} htmlFor="vet_nombre">

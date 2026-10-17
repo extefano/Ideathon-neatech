@@ -31,8 +31,10 @@ Reutilizá los presets, no inventes duraciones por pantalla.
   (`ok`/`alerta`/`error`).
 - Usá `components/ui/*` (botón, campo, tarjeta, aviso, pasos, tabla) en vez de
   repetir `rounded-lg border border-neutral-800 bg-neutral-950/60 …`.
-- Paleta: fondo oscuro; `bg-brand` (`#FDDA24`) **siempre** con
-  `text-neutral-950`; rojo solo para rechazo/error; nunca
-  emerald/sky/indigo/violet/amber.
+- Paleta: fondo claro cálido —usá los tokens de superficie (`superficie`,
+  `panel`, `panel-elevado`, `borde`, `borde-fuerte`) y de texto (`texto`,
+  `texto-suave`, `texto-tenue`); `bg-brand` (`#FDDA24`) **siempre** con
+  `text-neutral-950` y `text-brand-fuerte` para texto/acento sobre claro; rojo
+  solo para rechazo/error; nunca emerald/sky/indigo/violet/amber.
 - `prettier-plugin-tailwindcss` ordena las clases: no pelees por el orden
   manual.

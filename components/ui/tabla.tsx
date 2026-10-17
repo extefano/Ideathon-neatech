@@ -18,13 +18,13 @@ export function Tabla({
   className?: string;
 }) {
   if (filas.length === 0) {
-    return <p className={`text-sm text-neutral-500 ${className}`}>{vacio}</p>;
+    return <p className={`text-texto-tenue text-sm ${className}`}>{vacio}</p>;
   }
 
   return (
     <div className={`overflow-x-auto ${className}`}>
       <table className="w-full text-left text-sm">
-        <thead className="text-neutral-400">
+        <thead className="text-texto-suave">
           <tr>
             {columnas.map((columna) => (
               <th
@@ -39,7 +39,7 @@ export function Tabla({
         </thead>
         <tbody>
           {filas.map((fila, indice) => (
-            <tr key={indice} className="border-t border-neutral-900">
+            <tr key={indice} className="border-borde border-t">
               {columnas.map((columna) => (
                 <td
                   key={columna.clave}

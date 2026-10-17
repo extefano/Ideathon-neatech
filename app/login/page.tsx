@@ -60,7 +60,7 @@ export default async function LoginPage({
 
       <Suspense
         fallback={
-          <div className="rounded-tarjeta border-borde bg-panel h-96 w-full max-w-md border p-8 text-center text-xs text-neutral-500">
+          <div className="rounded-tarjeta border-borde bg-panel text-texto-tenue h-96 w-full max-w-md border p-8 text-center text-xs">
             Cargando…
           </div>
         }

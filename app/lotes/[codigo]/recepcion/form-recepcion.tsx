@@ -12,8 +12,8 @@ import { ejecutarPagoUsdcTestnet } from '@/lib/stellar/payments';
 import { firmarXdrConWalletConnect } from '@/lib/stellar/walletconnect';
 
 const claseInput =
-  'w-full rounded-control min-h-11 border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:border-brand focus-visible:outline-none';
-const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-neutral-400 uppercase';
+  'w-full rounded-control min-h-11 border border-borde-fuerte bg-panel px-3 py-2 text-sm text-texto focus-visible:border-brand-fuerte focus-visible:outline-none';
+const claseLabel = 'mb-1 block text-xs font-semibold tracking-wide text-texto-suave uppercase';
 
 async function cargarEnInput(inputId: string, url: string, nombre: string, tipo: string) {
   const input = document.getElementById(inputId);
@@ -64,7 +64,7 @@ export function FormDespacho({ codigo }: { codigo: string; user?: PerfilUsuario 
           />
           <button
             type="button"
-            className="text-brand mt-1 cursor-pointer text-xs hover:underline"
+            className="text-brand-fuerte mt-1 cursor-pointer text-xs hover:underline"
             onClick={() =>
               void cargarEnInput('dte_pdf', '/demo/dte-demo.pdf', 'dte-demo.pdf', 'application/pdf')
             }
@@ -176,7 +176,7 @@ export function FormRecepcion({
           />
           <button
             type="button"
-            className="text-brand mt-1 cursor-pointer text-xs hover:underline"
+            className="text-brand-fuerte mt-1 cursor-pointer text-xs hover:underline"
             onClick={() =>
               void cargarEnInput(
                 'csv_recepcion',
@@ -188,7 +188,7 @@ export function FormRecepcion({
           >
             Usar CSV de demo (30 cabezas ~460 kg)
           </button>
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="text-texto-tenue mt-1 text-xs">
             Si alguna caravana no coincide, verás el detalle al confirmar.
           </p>
         </div>
@@ -205,7 +205,7 @@ export function FormRecepcion({
           />
           <button
             type="button"
-            className="text-brand mt-1 cursor-pointer text-xs hover:underline"
+            className="text-brand-fuerte mt-1 cursor-pointer text-xs hover:underline"
             onClick={() =>
               void cargarEnInput(
                 'ticket_pdf',

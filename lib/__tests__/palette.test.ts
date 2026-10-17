@@ -110,6 +110,9 @@ describe('Tokens de diseño (#26)', () => {
 
   it('reserva el rojo (--color-error) como única excepción de la paleta', () => {
     const error = css.match(/--color-error:\s*([^;]+);/i)?.[1]?.trim() ?? '';
-    expect(error).toMatch(/red|#fca5a5|#(f|e)[0-9a-f]/i);
+    expect(error).toMatch(/^#[0-9a-f]{6}$/i);
+    const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(error.slice(i, i + 2), 16));
+    expect(r).toBeGreaterThan(g);
+    expect(r).toBeGreaterThan(b);
   });
 });

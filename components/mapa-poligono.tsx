@@ -20,7 +20,7 @@ export default function MapaPoligono({
   const centro: LatLngExpression = ring[0] ?? [-29.19, -58.08];
 
   return (
-    <div className={`overflow-hidden rounded-md border border-neutral-700 ${altura}`}>
+    <div className={`border-borde-fuerte overflow-hidden rounded-md border ${altura}`}>
       <MapContainer center={centro} zoom={13} className="h-full w-full" scrollWheelZoom={false}>
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"

@@ -151,11 +151,11 @@ export function LoginForm({
   return (
     <div className="rounded-tarjeta border-borde bg-panel w-full max-w-md border p-6 shadow-2xl sm:p-8">
       <div className="text-center">
-        <span className="text-xl font-black tracking-widest text-white">MUUNAR</span>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
+        <span className="text-texto text-xl font-black tracking-widest">MUUNAR</span>
+        <h1 className="text-texto mt-1 text-2xl font-bold tracking-tight">
           {tab === 'login' ? 'Iniciar sesión' : 'Creá tu cuenta'}
         </h1>
-        <p className="mt-1 text-xs text-neutral-400">
+        <p className="text-texto-suave mt-1 text-xs">
           {tab === 'login'
             ? 'Accedé a tu perfil de trazabilidad ganadera EUDR'
             : 'Elegí tu rol en la cadena y completá tus datos'}
@@ -165,7 +165,7 @@ export function LoginForm({
       <div
         role="tablist"
         aria-label="Ingresar o registrarse"
-        className="rounded-control mt-6 grid grid-cols-2 border border-neutral-800 bg-neutral-900/60 p-1"
+        className="rounded-control border-borde bg-panel-elevado mt-6 grid grid-cols-2 border p-1"
       >
         <button
           type="button"
@@ -175,7 +175,7 @@ export function LoginForm({
           className={`rounded-control focus-visible:ring-foco cursor-pointer py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:outline-none ${
             tab === 'login'
               ? 'bg-brand text-neutral-950 shadow'
-              : 'text-neutral-400 hover:text-neutral-200'
+              : 'text-texto-suave hover:text-texto'
           }`}
         >
           Iniciar sesión
@@ -188,7 +188,7 @@ export function LoginForm({
           className={`rounded-control focus-visible:ring-foco cursor-pointer py-2 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:outline-none ${
             tab === 'register'
               ? 'bg-brand text-neutral-950 shadow'
-              : 'text-neutral-400 hover:text-neutral-200'
+              : 'text-texto-suave hover:text-texto'
           }`}
         >
           Registrar
@@ -230,16 +230,16 @@ export function LoginForm({
             <IconoFacebook />
           </Boton>
         </div>
-        <p className="text-center text-[11px] text-neutral-500">
+        <p className="text-texto-tenue text-center text-[11px]">
           Ingreso con redes sociales: próximamente.
         </p>
 
         <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-neutral-800" aria-hidden="true" />
-          <span className="text-[11px] font-medium tracking-wider text-neutral-500 uppercase">
+          <span className="bg-borde h-px flex-1" aria-hidden="true" />
+          <span className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
             o con tu correo
           </span>
-          <span className="h-px flex-1 bg-neutral-800" aria-hidden="true" />
+          <span className="bg-borde h-px flex-1" aria-hidden="true" />
         </div>
       </div>
 
@@ -304,7 +304,7 @@ export function LoginForm({
           )}
 
           <fieldset>
-            <legend className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            <legend className="text-texto-suave text-xs font-semibold tracking-wide uppercase">
               1. Elegí tu perfil en la cadena
             </legend>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -318,16 +318,16 @@ export function LoginForm({
                     onClick={() => setRol(item.id)}
                     className={`rounded-tarjeta focus-visible:ring-foco flex cursor-pointer flex-col items-start gap-1 border p-3 text-left transition-all focus-visible:ring-2 focus-visible:outline-none ${
                       activo
-                        ? 'border-brand ring-brand bg-neutral-900 ring-1'
-                        : 'border-neutral-800 bg-neutral-950/60 hover:border-neutral-700'
+                        ? 'border-brand-fuerte ring-brand-fuerte bg-panel ring-1'
+                        : 'border-borde bg-panel hover:border-borde-fuerte'
                     }`}
                   >
                     <span
-                      className={`text-xs font-bold ${activo ? 'text-brand' : 'text-neutral-200'}`}
+                      className={`text-xs font-bold ${activo ? 'text-brand-fuerte' : 'text-texto'}`}
                     >
                       {item.titulo}
                     </span>
-                    <span className="text-[11px] leading-tight text-neutral-500">
+                    <span className="text-texto-tenue text-[11px] leading-tight">
                       {item.descripcion}
                     </span>
                   </button>
@@ -337,7 +337,7 @@ export function LoginForm({
           </fieldset>
 
           <fieldset className="space-y-4">
-            <legend className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            <legend className="text-texto-suave text-xs font-semibold tracking-wide uppercase">
               2. Tus datos profesionales
             </legend>
 
@@ -382,14 +382,14 @@ export function LoginForm({
                 <div className="space-y-1">
                   <label
                     htmlFor="campo-tipo_comprador"
-                    className="block text-xs font-semibold tracking-wide text-neutral-400 uppercase"
+                    className="text-texto-suave block text-xs font-semibold tracking-wide uppercase"
                   >
                     Tipo de comprador
                   </label>
                   <select
                     id="campo-tipo_comprador"
                     name="tipo_comprador"
-                    className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                   >
                     <option value="FRIGORIFICO_EXPORTADOR">Frigorífico exportador</option>
                     <option value="INVERSOR_AGRO">Inversor agropecuario</option>
@@ -429,8 +429,8 @@ export function LoginForm({
         </form>
       )}
 
-      <div className="mt-8 border-t border-neutral-800 pt-5">
-        <p className="text-center text-[11px] font-medium text-neutral-400">
+      <div className="border-borde mt-8 border-t pt-5">
+        <p className="text-texto-suave text-center text-[11px] font-medium">
           O ingresá rápidamente con un rol demo para evaluar el flujo:
         </p>
 
@@ -447,10 +447,10 @@ export function LoginForm({
               <input type="hidden" name="redirectTo" value={redirectTarget} />
               <button
                 type="submit"
-                className="rounded-control focus-visible:ring-foco hover:border-brand w-full cursor-pointer border border-neutral-800 bg-neutral-900/80 p-2 text-center text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                className="rounded-control focus-visible:ring-foco hover:border-brand-fuerte border-borde bg-panel w-full cursor-pointer border p-2 text-center text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
-                <span className="block font-semibold text-neutral-200">{item.etiqueta}</span>
-                <span className="block truncate text-[10px] text-neutral-500">{item.demo}</span>
+                <span className="text-texto block font-semibold">{item.etiqueta}</span>
+                <span className="text-texto-tenue block truncate text-[10px]">{item.demo}</span>
               </button>
             </form>
           ))}

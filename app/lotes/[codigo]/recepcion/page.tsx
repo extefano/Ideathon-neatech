@@ -33,7 +33,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
   const volver = (
     <Link
       href={`/lotes/${codigo}`}
-      className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400"
+      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
     >
       ← Volver a la ficha
     </Link>
@@ -52,7 +52,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
       {volver}
       <div>
         <h1 className="text-3xl font-bold">Cierre de ciclo — Paso 4</h1>
-        <p className="mt-2 text-sm text-neutral-400">
+        <p className="text-texto-suave mt-2 text-sm">
           {lote.codigo_lote} · {lote.titulo} · objetivo {lote.peso_objetivo_kg} kg
         </p>
       </div>
@@ -117,7 +117,7 @@ export default async function RecepcionPage({ params }: { params: Promise<{ codi
 
       {cerrado && (
         <Tarjeta titulo="Ciclo cerrado">
-          <p className="text-sm text-neutral-300">
+          <p className="text-texto-suave text-sm">
             Los 3 sellos están verificados. El pasaporte EUDR público ya está disponible.
           </p>
           <Link

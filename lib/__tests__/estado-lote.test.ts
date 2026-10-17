@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { etiquetaEstado, resumirLote } from '@/lib/estado-lote';
+import { accionLoteParaRol, etiquetaEstado, resumirLote } from '@/lib/estado-lote';
 
 describe('etiquetaEstado (#30)', () => {
   it('describe cada estado en lenguaje claro, sin el enum crudo', () => {
@@ -63,5 +63,58 @@ describe('resumirLote (#30)', () => {
       codigo: 'LOTE-4',
     });
     expect(resumen.accion?.href).toBe('/pasaporte/LOTE-4');
+  });
+});
+
+describe('accionLoteParaRol (vistas por rol)', () => {
+  const base = { estado: 'DISPONIBLE' as const, seal_2_sanitary: false, codigo: 'LOTE-9' };
+
+  it('el productor nunca ve "Fondear" y va a la ficha', () => {
+    const accion = accionLoteParaRol(base, 'PRODUCTOR');
+    expect(accion).toEqual({ texto: 'Ver ficha del lote', href: '/lotes/LOTE-9' });
+  });
+
+  it('el productor despacha solo con Sello 2 y no ofrece auditoría', () => {
+    expect(accionLoteParaRol({ ...base, estado: 'FINANCIADO_EN_ENGORDE' }, 'PRODUCTOR')).toEqual({
+      texto: 'Ver ficha del lote',
+      href: '/lotes/LOTE-9',
+    });
+    expect(
+      accionLoteParaRol(
+        { ...base, estado: 'FINANCIADO_EN_ENGORDE', seal_2_sanitary: true },
+        'PRODUCTOR',
+      ),
+    ).toEqual({ texto: 'Despachar (DT-e)', href: '/lotes/LOTE-9/recepcion' });
+  });
+
+  it('el productor no recibe acción en un lote rechazado', () => {
+    expect(accionLoteParaRol({ ...base, estado: 'RECHAZADO_EUDR' }, 'PRODUCTOR')).toBeNull();
+  });
+
+  it('el veterinario revisa solo los financiados sin Sello 2', () => {
+    expect(accionLoteParaRol({ ...base, estado: 'FINANCIADO_EN_ENGORDE' }, 'VETERINARIO')).toEqual({
+      texto: 'Revisar auditoría (Mes 4)',
+      href: '/lotes/LOTE-9/auditoria',
+    });
+    expect(
+      accionLoteParaRol(
+        { ...base, estado: 'FINANCIADO_EN_ENGORDE', seal_2_sanitary: true },
+        'VETERINARIO',
+      ),
+    ).toEqual({ texto: 'Ver ficha del lote', href: '/lotes/LOTE-9' });
+  });
+
+  it('el comprador fondea disponibles y recibe en tránsito', () => {
+    expect(accionLoteParaRol(base, 'COMPRADOR')).toEqual({
+      texto: 'Fondear y financiar',
+      href: '/lotes/LOTE-9',
+    });
+    expect(
+      accionLoteParaRol({ ...base, estado: 'EN_TRANSITO_A_FRIGORIFICO' }, 'COMPRADOR'),
+    ).toEqual({ texto: 'Registrar recepción', href: '/lotes/LOTE-9/recepcion' });
+    expect(accionLoteParaRol({ ...base, estado: 'CERRADO_CICLO' }, 'COMPRADOR')).toEqual({
+      texto: 'Ver pasaporte EUDR',
+      href: '/pasaporte/LOTE-9',
+    });
   });
 });

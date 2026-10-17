@@ -34,14 +34,14 @@ function CampoSelect({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={`filtro-${name}`} className="block text-xs font-semibold text-neutral-400">
+      <label htmlFor={`filtro-${name}`} className="text-texto-suave block text-xs font-semibold">
         {etiqueta}
       </label>
       <select
         id={`filtro-${name}`}
         name={name}
         defaultValue={valor}
-        className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
       >
         <option value="">Todas</option>
         {opciones.map((opcion) => (
@@ -89,13 +89,16 @@ export default async function MercadoPage({
 
   return (
     <main className="mx-auto max-w-6xl space-y-8 p-8">
-      <Link href="/" className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400">
+      <Link
+        href="/"
+        className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
+      >
         ← Inicio
       </Link>
 
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">Mercado de lotes</h1>
-        <p className="max-w-3xl text-neutral-400">
+        <p className="text-texto-suave max-w-3xl">
           Lotes con origen verificado y libre de deforestación. Compará kilos, precio por kg y
           uniformidad antes de financiar.
         </p>
@@ -127,14 +130,14 @@ export default async function MercadoPage({
             opciones={unicos(lotes, 'raza')}
           />
           <div className="space-y-1">
-            <label htmlFor="filtro-moneda" className="block text-xs font-semibold text-neutral-400">
+            <label htmlFor="filtro-moneda" className="text-texto-suave block text-xs font-semibold">
               Moneda
             </label>
             <select
               id="filtro-moneda"
               name="moneda"
               defaultValue={filtros.moneda}
-              className="rounded-control focus-visible:ring-foco min-h-11 w-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-control focus-visible:ring-foco border-borde-fuerte bg-panel text-texto min-h-11 w-full border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
             >
               <option value="">Todas</option>
               <option value="USDC">USDC</option>
@@ -152,7 +155,7 @@ export default async function MercadoPage({
           {hayFiltros && (
             <Link
               href="/mercado"
-              className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400 underline focus-visible:ring-2 focus-visible:outline-none"
+              className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm underline focus-visible:ring-2 focus-visible:outline-none"
             >
               Limpiar filtros
             </Link>

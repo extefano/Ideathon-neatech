@@ -1,3 +1,4 @@
+import type { RolUsuario } from '@/lib/auth';
 import type { EstadoLote } from '@/lib/domain';
 
 export type AccionLote = { texto: string; href: string };
@@ -98,5 +99,57 @@ export function resumirLote(input: {
         descripcion: 'Los 3 sellos están verificados. El pasaporte EUDR público está disponible.',
         accion: { texto: 'Ver pasaporte EUDR', href: `/pasaporte/${codigo}` },
       };
+  }
+}
+
+/**
+ * Acción principal de una tarjeta de lote según el rol que mira.
+ * Evita ofrecer pasos que ese rol no puede ejecutar (ej. al productor, "Fondear").
+ */
+export function accionLoteParaRol(
+  input: { estado: EstadoLote; seal_2_sanitary: boolean; codigo: string },
+  rol: RolUsuario,
+): AccionLote | null {
+  const { estado, seal_2_sanitary, codigo } = input;
+  const ficha: AccionLote = { texto: 'Ver ficha del lote', href: `/lotes/${codigo}` };
+  const pasaporte: AccionLote = { texto: 'Ver pasaporte EUDR', href: `/pasaporte/${codigo}` };
+
+  if (rol === 'VETERINARIO') {
+    return estado === 'FINANCIADO_EN_ENGORDE' && !seal_2_sanitary
+      ? { texto: 'Revisar auditoría (Mes 4)', href: `/lotes/${codigo}/auditoria` }
+      : ficha;
+  }
+
+  if (rol === 'COMPRADOR') {
+    switch (estado) {
+      case 'DISPONIBLE':
+        return { texto: 'Fondear y financiar', href: `/lotes/${codigo}` };
+      case 'FINANCIADO_EN_ENGORDE':
+        return seal_2_sanitary
+          ? { texto: 'Registrar recepción', href: `/lotes/${codigo}/recepcion` }
+          : ficha;
+      case 'EN_TRANSITO_A_FRIGORIFICO':
+        return { texto: 'Registrar recepción', href: `/lotes/${codigo}/recepcion` };
+      case 'CERRADO_CICLO':
+        return pasaporte;
+      default:
+        return ficha;
+    }
+  }
+
+  // PRODUCTOR
+  switch (estado) {
+    case 'PENDIENTE_VALIDACION':
+      return { texto: 'Reintentar validación', href: `/lotes/${codigo}` };
+    case 'RECHAZADO_EUDR':
+      return null;
+    case 'FINANCIADO_EN_ENGORDE':
+      return seal_2_sanitary
+        ? { texto: 'Despachar (DT-e)', href: `/lotes/${codigo}/recepcion` }
+        : ficha;
+    case 'CERRADO_CICLO':
+      return pasaporte;
+    default:
+      return ficha;
   }
 }

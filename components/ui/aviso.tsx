@@ -4,22 +4,22 @@ type Variante = 'info' | 'exito' | 'alerta' | 'error';
 
 const estilos: Record<Variante, { clase: string; rol: 'status' | 'alert'; icono: string }> = {
   info: {
-    clase: 'border-neutral-700 bg-neutral-900 text-neutral-200',
+    clase: 'border-borde-fuerte bg-panel-elevado text-texto',
     rol: 'status',
     icono: 'ℹ',
   },
   exito: {
-    clase: 'border-brand/40 bg-brand/10 text-brand',
+    clase: 'border-brand/60 bg-brand/15 text-brand-fuerte',
     rol: 'status',
     icono: '✓',
   },
   alerta: {
-    clase: 'border-neutral-500/60 bg-neutral-500/10 text-neutral-100',
+    clase: 'border-brand-fuerte/40 bg-brand/10 text-texto',
     rol: 'alert',
     icono: '⚠',
   },
   error: {
-    clase: 'border-red-500/40 bg-red-500/10 text-red-300',
+    clase: 'border-red-600/40 bg-red-500/10 text-red-700',
     rol: 'alert',
     icono: '✕',
   },

@@ -32,7 +32,7 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
   const volver = (
     <Link
       href={`/lotes/${codigo}`}
-      className="focus-visible:ring-foco hover:text-brand text-sm text-neutral-400"
+      className="focus-visible:ring-foco hover:text-brand-fuerte text-texto-suave text-sm"
     >
       ← Volver a la ficha
     </Link>
@@ -59,7 +59,7 @@ export default async function AuditoriaPage({ params }: { params: Promise<{ codi
       {volver}
       <div>
         <h1 className="text-3xl font-bold">Auditoría sanitaria — Mes 4</h1>
-        <p className="mt-2 text-sm text-neutral-400">
+        <p className="text-texto-suave mt-2 text-sm">
           {lote.codigo_lote} · {lote.titulo} · peso inicial {lote.peso_promedio_kg} kg
         </p>
       </div>

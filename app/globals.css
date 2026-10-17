@@ -3,6 +3,8 @@
 @theme {
   /* Paleta de marca (#18): amarillo Stellar + negro + blanco. No cambiar. */
   --color-brand: #fdda24;
+  /* Amarillo legible como texto/acento sobre superficies claras (oscurecido). */
+  --color-brand-fuerte: #8a6a00;
 
   /* Escala tipográfica: principal 16 px, secundaria 14 px. */
   --text-base: 1rem; /* 16 px — texto principal */
@@ -10,28 +12,33 @@
   --text-sm: 0.875rem; /* 14 px — texto secundario */
   --text-sm--line-height: 1.25rem;
 
-  /* Superficies sobre fondo oscuro. */
-  --color-superficie: #0a0a0a; /* fondo base de la app */
-  --color-panel: #171717; /* tarjetas y paneles */
-  --color-panel-elevado: #262626; /* elementos elevados / hover */
-  --color-borde: #262626; /* bordes por defecto */
-  --color-borde-fuerte: #404040; /* bordes con más contraste */
+  /* Superficies cálidas de modo claro (crema + blanco roto). */
+  --color-superficie: #faf7f0; /* fondo base de la app */
+  --color-panel: #fffdf9; /* tarjetas y paneles */
+  --color-panel-elevado: #f2ecdf; /* elementos elevados / hover */
+  --color-borde: #e8e0d0; /* bordes por defecto */
+  --color-borde-fuerte: #d3c7b1; /* bordes con más contraste */
+
+  /* Jerarquía de texto sobre superficies claras. */
+  --color-texto: #1c1917; /* texto principal */
+  --color-texto-suave: #57534e; /* texto secundario */
+  --color-texto-tenue: #857b6b; /* etiquetas y texto auxiliar */
 
   /* Radios compartidos. */
   --radius-control: 0.375rem; /* botones, campos e inputs */
   --radius-tarjeta: 0.5rem; /* tarjetas y secciones */
 
-  /* Anillo de foco de teclado (alto contraste sobre superficies oscuras). */
-  --color-foco: #fdda24;
+  /* Anillo de foco de teclado (alto contraste sobre superficies claras). */
+  --color-foco: #1c1917;
 
   /* Estados semánticos, dentro de la paleta. */
-  --color-ok: #fdda24; /* conforme / verificado (amarillo, con texto negro) */
-  --color-alerta: #d4d4d4; /* advertencia / informativo (neutro claro) */
-  --color-error: #fca5a5; /* error / rechazo (única excepción: rojo) */
+  --color-ok: #1c1917; /* conforme / verificado (texto oscuro sobre tinte amarillo) */
+  --color-alerta: #57534e; /* advertencia / informativo (neutro cálido) */
+  --color-error: #b91c1c; /* error / rechazo (única excepción: rojo) */
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 @layer base {

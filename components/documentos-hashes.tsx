@@ -188,9 +188,9 @@ export function DocumentosHashes({
       ];
 
   return (
-    <section className="rounded-tarjeta overflow-hidden border border-neutral-800 bg-neutral-950/60">
+    <section className="rounded-tarjeta border-borde bg-panel overflow-hidden border">
       {/* 1. Header con video responsivo en bucle continuo */}
-      <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+      <div className="bg-panel-elevado relative aspect-video w-full overflow-hidden">
         <video
           ref={videoRef}
           src={videoSrc}
@@ -272,14 +272,14 @@ export function DocumentosHashes({
 
       {/* 2. Cuerpo de documentos y hashes */}
       <div className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-3">
+        <div className="border-borde flex flex-wrap items-center justify-between gap-2 border-b pb-3">
           <div>
             <h2 className="text-lg font-semibold text-white">Documentos y hashes</h2>
-            <p className="mt-0.5 text-xs text-neutral-400">
+            <p className="text-texto-suave mt-0.5 text-xs">
               Cada documento queda sellado con una huella digital que no se puede alterar.
             </p>
           </div>
-          <span className="font-mono text-xs text-neutral-500">SHA-256 · Soroban</span>
+          <span className="text-texto-tenue font-mono text-xs">SHA-256 · Soroban</span>
         </div>
 
         <div className="mt-4 space-y-3">
@@ -291,17 +291,17 @@ export function DocumentosHashes({
             return (
               <div
                 key={doc.id}
-                className="rounded-tarjeta border border-neutral-800/80 bg-neutral-900/50 p-3.5 transition-colors hover:border-neutral-700"
+                className="rounded-tarjeta border-borde bg-panel hover:border-borde-fuerte border p-3.5 transition-colors"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-neutral-100">{doc.nombre}</span>
-                      <span className="rounded border border-neutral-800 bg-neutral-900 px-1.5 py-0.5 font-mono text-[10px] text-neutral-400">
+                      <span className="text-texto text-sm font-medium">{doc.nombre}</span>
+                      <span className="border-borde bg-panel text-texto-suave rounded border px-1.5 py-0.5 font-mono text-[10px]">
                         {doc.sello}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-neutral-400">{doc.descripcion}</p>
+                    <p className="text-texto-suave mt-1 text-xs">{doc.descripcion}</p>
                   </div>
 
                   {doc.docUrl && (
@@ -309,7 +309,7 @@ export function DocumentosHashes({
                       href={doc.docUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="focus-visible:ring-foco text-brand hover:text-brand/80 inline-flex items-center gap-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
+                      className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 inline-flex items-center gap-1 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none"
                     >
                       {doc.docLabel ?? 'Ver documento ↗'}
                     </a>
@@ -317,14 +317,14 @@ export function DocumentosHashes({
                 </div>
 
                 {/* Fila del hash o estado pendiente */}
-                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-800/60 pt-2.5 text-xs">
+                <div className="border-borde mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t pt-2.5 text-xs">
                   {hashValor ? (
                     <>
                       <div className="flex items-center gap-2 overflow-hidden">
-                        <span className="text-[11px] font-medium tracking-wider text-neutral-500 uppercase">
+                        <span className="text-texto-tenue text-[11px] font-medium tracking-wider uppercase">
                           Hash:
                         </span>
-                        <code className="truncate font-mono text-neutral-300" title={hashValor}>
+                        <code className="text-texto-suave truncate font-mono" title={hashValor}>
                           {truncarHash(hashValor)}
                         </code>
                       </div>
@@ -334,8 +334,8 @@ export function DocumentosHashes({
                         onClick={() => void copiarAlPortapapeles(doc.id, hashValor)}
                         className={`rounded-control focus-visible:ring-foco inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none ${
                           esCopiado
-                            ? 'border-brand/40 bg-brand/10 text-brand'
-                            : 'border-neutral-700 bg-neutral-800/70 text-neutral-300 hover:border-neutral-500 hover:text-white'
+                            ? 'border-brand-fuerte/40 bg-brand/10 text-brand-fuerte'
+                            : 'border-borde-fuerte bg-panel-elevado text-texto-suave hover:border-texto-tenue hover:text-texto'
                         }`}
                         title="Copiar hash SHA-256 al portapapeles"
                       >
@@ -357,8 +357,8 @@ export function DocumentosHashes({
                       </button>
                     </>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-neutral-500">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-600" />
+                    <div className="text-texto-tenue flex items-center gap-1.5">
+                      <span className="bg-texto-tenue inline-block h-1.5 w-1.5 rounded-full" />
                       <span className="font-mono text-xs">{doc.pendienteTexto}</span>
                     </div>
                   )}
@@ -368,13 +368,13 @@ export function DocumentosHashes({
           })}
 
           {boletoUrl && (
-            <div className="rounded-tarjeta flex items-center justify-between border border-neutral-800/80 bg-neutral-900/30 p-3 text-xs">
-              <span className="text-neutral-400">Boleto de marca oficial (diseño y señal)</span>
+            <div className="rounded-tarjeta border-borde bg-panel flex items-center justify-between border p-3 text-xs">
+              <span className="text-texto-suave">Boleto de marca oficial (diseño y señal)</span>
               <a
                 href={boletoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="focus-visible:ring-foco text-brand hover:text-brand/80 font-medium focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-visible:ring-foco text-brand-fuerte hover:text-brand-fuerte/80 font-medium focus-visible:ring-2 focus-visible:outline-none"
               >
                 Ver boleto de marca ↗
               </a>
@@ -383,10 +383,10 @@ export function DocumentosHashes({
         </div>
 
         {/* 3. Cuadro explicativo de inmutabilidad on-chain */}
-        <div className="rounded-tarjeta border-brand/30 bg-brand/5 mt-5 border p-4 text-xs text-neutral-300">
+        <div className="rounded-tarjeta border-brand-fuerte/30 bg-brand/5 text-texto-suave mt-5 border p-4 text-xs">
           <div className="flex items-start gap-2.5">
             <svg
-              className="text-brand mt-0.5 h-4 w-4 shrink-0 fill-current"
+              className="text-brand-fuerte mt-0.5 h-4 w-4 shrink-0 fill-current"
               viewBox="0 0 20 20"
               aria-hidden="true"
             >
@@ -398,7 +398,7 @@ export function DocumentosHashes({
             </svg>
             <div className="space-y-1">
               <p className="font-semibold text-white">Garantía criptográfica on-chain</p>
-              <p className="leading-relaxed text-neutral-400">
+              <p className="text-texto-suave leading-relaxed">
                 Cada documento y polígono cuenta con una huella digital criptográfica (hash SHA-256)
                 anclada en la blockchain de Stellar/Soroban. Esto garantiza que ningún dato pueda
                 ser alterado ni adulterado posteriormente ante auditorías sanitarias o compradores

@@ -12,11 +12,11 @@ export default async function NuevoLotePage() {
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-8">
       <div>
-        <Link href="/" className="text-sm text-neutral-400 hover:text-yellow-400">
+        <Link href="/" className="text-texto-suave hover:text-brand-fuerte text-sm">
           ← Volver
         </Link>
         <h1 className="mt-4 text-3xl font-bold">Registrar lote — Paso 1</h1>
-        <p className="mt-2 max-w-3xl text-neutral-400">
+        <p className="text-texto-suave mt-2 max-w-3xl">
           Origen, documentación, trazabilidad RFID y condiciones comerciales. Al enviar se consulta
           Global Forest Watch contra el polígono (EUDR, corte 31/12/2020) y, sin desmonte, se
           registra el Sello 1 con los hashes SHA-256.

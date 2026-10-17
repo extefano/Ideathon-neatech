@@ -20,8 +20,8 @@ export function Pasos({
           estado === 'actual'
             ? 'border-brand bg-brand text-neutral-950'
             : estado === 'completada'
-              ? 'border-brand/40 bg-brand/10 text-brand'
-              : 'border-neutral-800 bg-neutral-900/60 text-neutral-500';
+              ? 'border-brand-fuerte/40 bg-brand/15 text-brand-fuerte'
+              : 'border-borde bg-panel-elevado text-texto-tenue';
 
         return (
           <li

@@ -16,14 +16,12 @@ export function Tarjeta({
   const hayEncabezado = Boolean(titulo || descripcion || acciones);
 
   return (
-    <section
-      className={`rounded-tarjeta border border-neutral-800 bg-neutral-950/60 p-5 ${className}`}
-    >
+    <section className={`rounded-tarjeta border-borde bg-panel border p-5 ${className}`}>
       {hayEncabezado && (
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             {titulo && <h2 className="text-lg font-semibold">{titulo}</h2>}
-            {descripcion && <p className="mt-1 text-sm text-neutral-400">{descripcion}</p>}
+            {descripcion && <p className="text-texto-suave mt-1 text-sm">{descripcion}</p>}
           </div>
           {acciones && <div className="shrink-0">{acciones}</div>}
         </header>
