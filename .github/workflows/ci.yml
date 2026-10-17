@@ -83,12 +83,13 @@ jobs:
         run: pnpm test
 
   db-test:
-    name: DB Migration Test (postgres:17)
+    name: DB Migration Test (postgis 17)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:17
+        # Imagen con PostGIS: las migraciones de humedales requieren la extensión.
+        image: postgis/postgis:17-3.5
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -119,7 +120,7 @@ jobs:
           npm install --global "pnpm@$version"
           pnpm --version
       - run: pnpm install --frozen-lockfile
-      # Aplica las migraciones + la migración demo generada sobre un postgres:17 aislado
+      # Aplica las migraciones + la migración demo generada sobre un postgis 17 aislado
       # y verifica idempotencia, filtros de marketplace, limpieza y reset (#45).
       - name: Test de integración de migraciones
         run: pnpm test:db
